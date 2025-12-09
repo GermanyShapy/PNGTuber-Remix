@@ -5,7 +5,7 @@ extends Node
 var currently_speaking : bool = false
 var blinking : bool = false
 var tween : Tween
-
+var min_duration_timer : float = 0.0
 
 func _ready() -> void:
 	Global.speaking.connect(speaking)
