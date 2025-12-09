@@ -86,6 +86,7 @@ func save_data():
 				"show_only": sprt.show_only,
 				"saved_disappear": saved_events,
 				"hold_to_show":sprt.hold_to_show,
+				"min_duration":sprt.min_duration,
 				"is_collapsed": sprt.is_collapsed,
 				"is_premultiplied": true,
 				"layer_color": sprt.layer_color,
@@ -111,6 +112,7 @@ func save_data():
 				"show_only": sprt.show_only,
 				"saved_disappear": saved_events,
 				"hold_to_show":sprt.hold_to_show,
+				"min_duration":sprt.min_duration,
 				"is_collapsed": sprt.is_collapsed,
 				"is_premultiplied": true,
 				"layer_color": sprt.layer_color,
@@ -374,6 +376,8 @@ func set_common_data(sprite, sprite_obj):
 			sprite_obj.show_only = sprite.show_only
 		if sprite.has("hold_to_show"):
 			sprite_obj.hold_to_show = sprite.hold_to_show
+		if sprite.has("min_duration"):
+			sprite_obj.min_duration = sprite.min_duration
 		sprite_obj.get_node("%Sprite2D").visible = sprite.was_active_before
 		sprite_obj.was_active_before = sprite.was_active_before
 

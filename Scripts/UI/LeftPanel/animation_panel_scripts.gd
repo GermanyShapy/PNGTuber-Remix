@@ -39,8 +39,11 @@ func enable():
 				
 			if i.sprite_type == "Sprite2D" && !append_folder_selected:
 				%AnimationFramesSlider.value = i.get_value("hframes")
+				%AnimationFramesLabel.text = "Animation frames H : " + str(i.get_value("hframes"))
 				%AnimationFramesSlider2.value = i.get_value("vframes")
+				%AnimationFramesLabel2.text = "Animation frames V : " + str(i.get_value("vframes"))
 				%AnimationSpeedSlider.value = i.get_value("animation_speed")
+				%AnimationSpeedLabel.text = "Animation Speed : " + str(i.get_value("animation_speed")) + " Fps"
 			
 	should_change = true
 
@@ -49,8 +52,8 @@ func _on_animation_frames_slider_value_changed(value):
 		for i in Global.held_sprites:
 			if i.sprite_type == "Sprite2D":
 				if i != null && is_instance_valid(i):
-					%AnimationFramesLabel.text = "Animation frames H : " + str(value)
-					i.sprite_data.hframes = value
+					%AnimationFramesLabel.text = "Animation frames H : " + str(roundi(value))
+					i.sprite_data.hframes = roundi(value)
 					i.animation()
 					i.get_node("%Grab").anchors_preset = Control.LayoutPreset.PRESET_FULL_RECT
 					i.save_state(Global.current_state)
@@ -60,8 +63,8 @@ func _on_animation_speed_slider_value_changed(value):
 		for i in Global.held_sprites:
 			if i.sprite_type == "Sprite2D":
 				if i != null && is_instance_valid(i):
-					%AnimationSpeedLabel.text = "Animation Speed : " + str(value) + " Fps"
-					i.sprite_data.animation_speed = value
+					%AnimationSpeedLabel.text = "Animation Speed : " + str(roundi(value)) + " Fps"
+					i.sprite_data.animation_speed = roundi(value)
 					i.animation()
 					i.save_state(Global.current_state)
 
@@ -71,8 +74,8 @@ func _on_animation_frames_slider_2_value_changed(value: float) -> void:
 		for i in Global.held_sprites:
 			if i.sprite_type == "Sprite2D":
 				if i != null && is_instance_valid(i):
-					%AnimationFramesLabel2.text = "Animation frames V : " + str(value)
-					i.sprite_data.vframes = value
+					%AnimationFramesLabel2.text = "Animation frames V : " + str(roundi(value))
+					i.sprite_data.vframes = roundi(value)
 					i.animation()
 					i.get_node("%Grab").anchors_preset = Control.LayoutPreset.PRESET_FULL_RECT
 					i.save_state(Global.current_state)

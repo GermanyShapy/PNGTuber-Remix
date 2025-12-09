@@ -1,9 +1,10 @@
-[gd_scene load_steps=10 format=3 uid="uid://djud66j0a78qo"]
+[gd_scene load_steps=11 format=3 uid="uid://djud66j0a78qo"]
 
 [ext_resource type="Script" uid="uid://duusstqanilvd" path="res://Scripts/UI/RightPanel/assets_panel.gd" id="1_c51j7"]
 [ext_resource type="Script" uid="uid://cjsuqv0mug802" path="res://Scripts/UI/States/AssetStateButton.gd" id="2_dpute"]
 [ext_resource type="Texture2D" uid="uid://8rb6kumug0p5" path="res://UI/Assets/DeleteButton.png" id="3_tplhm"]
 [ext_resource type="Texture2D" uid="uid://dst8ervfhipkm" path="res://UI/Assets/ZoominButton.png" id="4_4rvn6"]
+[ext_resource type="Script" uid="uid://181yhrus3jhb" path="res://Scripts/UI/Others/Spinboxes.gd" id="4_olugq"]
 [ext_resource type="Texture2D" uid="uid://bxuqwqa2tk5j8" path="res://UI/Assets/ZoomOutButton.png" id="5_w5yqn"]
 [ext_resource type="Script" uid="uid://dy1cd6xda1pu5" path="res://UI/BetterSlider/BetterToggles.gd" id="6_w5yqn"]
 [ext_resource type="Script" uid="uid://dp6m7k27uygdf" path="res://Scripts/UI/RightPanel/CycleToggles.gd" id="7_hf4n0"]
@@ -87,6 +88,24 @@ layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "TR_HOLD_TO_SHOW_TOOLTIP"
 text = "TR_HOLD_TO_SHOW"
+
+[node name="HBoxMinDuration" type="HBoxContainer" parent="Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MinDurationLabel" type="Label" parent="Buttons/HBoxMinDuration"]
+custom_minimum_size = Vector2(74, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "TR_MIN_DURATION"
+
+[node name="MinDurationSpinBox" type="SpinBox" parent="Buttons/HBoxMinDuration"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1000.0
+step = 0.01
+script = ExtResource("4_olugq")
 
 [node name="ShouldDisListContainer" type="VBoxContainer" parent="."]
 unique_name_in_owner = true
@@ -336,6 +355,7 @@ expand_icon = true
 [connection signal="toggled" from="Buttons/DontHideOnToggleCheck" to="Buttons/HBoxAsset/IsAssetButton" method="_on_dont_hide_on_toggle_check_toggled"]
 [connection signal="toggled" from="Buttons/ShouldDisappearCheck" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_disappear_check_toggled"]
 [connection signal="toggled" from="Buttons/HoldToShowCheck" to="Buttons/HBoxAsset/IsAssetButton" method="_on_hold_to_show_on_toggle_check_toggled"]
+[connection signal="value_changed" from="Buttons/HBoxMinDuration/MinDurationSpinBox" to="Buttons/HBoxAsset/IsAssetButton" method="_on_min_duration_spin_box_value_changed"]
 [connection signal="pressed" from="ShouldDisListContainer/HBoxContainer/ShouldDisAddButton" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_dis_add_button_pressed"]
 [connection signal="pressed" from="ShouldDisListContainer/HBoxContainer/ShouldDisDelButton" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_dis_del_button_pressed"]
 [connection signal="toggled" from="ShouldDisListContainer/HBoxContainer/ShouldDisRemapButton" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_dis_remap_button_toggled"]

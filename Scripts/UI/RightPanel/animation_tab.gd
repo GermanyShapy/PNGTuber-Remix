@@ -48,6 +48,7 @@ func set_data():
 		%AnimationReset.button_pressed = i.get_value("should_reset")
 		%AnimationOneShot.button_pressed = i.get_value("one_shot")
 		%ResetonStateChange.button_pressed = i.get_value("should_reset_state")
+		%NeverReset.button_pressed = i.get_value("never_reset")
 		%RSSlider.value = i.get_value("rainbow_speed")
 		if i.sprite_type == "Sprite2D":
 			%NonAnimatedSheetCheck.button_pressed = i.get_value("non_animated_sheet")
@@ -83,6 +84,14 @@ func _on_reseton_state_change_toggled(toggled_on: bool) -> void:
 				StateButton.multi_edit(toggled_on, "should_reset_state", i, i.states)
 				i.save_state(Global.current_state)
 
+
+func _on_never_reset_toggled(toggled_on: bool) -> void:
+	if should_change:
+		for i in Global.held_sprites:
+			if i != null && is_instance_valid(i):
+				i.sprite_data.never_reset = toggled_on
+				StateButton.multi_edit(toggled_on, "never_reset", i, i.states)
+				i.save_state(Global.current_state)
 
 func _on_rs_slider_value_changed(value):
 	if should_change:

@@ -94,6 +94,14 @@ tooltip_text = "TR_RESET_ON_STATE_CHANGE_TOOLTIP"
 theme_override_font_sizes/font_size = 14
 text = "TR_RESET_ON_STATE_CHANGE"
 
+[node name="NeverReset" type="CheckBox" parent="Scroll/MarginContainer/VBoxContainer/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "TR_RESET_ON_STATE_CHANGE_TOOLTIP"
+theme_override_font_sizes/font_size = 14
+text = "TR_NEVER_RESET"
+
 [node name="Sp4" type="HSeparator" parent="Scroll/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 5
@@ -258,6 +266,7 @@ value_to_update = "fade_speed_asset"
 [connection signal="toggled" from="Scroll/MarginContainer/VBoxContainer/GridContainer/AnimationReset" to="." method="_on_animation_reset_toggled"]
 [connection signal="toggled" from="Scroll/MarginContainer/VBoxContainer/GridContainer/AnimationOneShot" to="." method="_on_animation_one_shot_toggled"]
 [connection signal="toggled" from="Scroll/MarginContainer/VBoxContainer/GridContainer/ResetonStateChange" to="." method="_on_reseton_state_change_toggled"]
+[connection signal="toggled" from="Scroll/MarginContainer/VBoxContainer/GridContainer/NeverReset" to="." method="_on_never_reset_toggled"]
 [connection signal="value_changed" from="Scroll/MarginContainer/VBoxContainer/EffectsGrid/RSSlider" to="." method="_on_rs_slider_value_changed"]
 [connection signal="toggled" from="Scroll/MarginContainer/VBoxContainer/NonAnimatedSheetCheck" to="." method="_on_non_animated_sheet_check_toggled"]
 [connection signal="mouse_entered" from="Scroll/MarginContainer/VBoxContainer/FrameHBox/FrameSpinbox" to="." method="_on_frame_spinbox_mouse_entered"]

@@ -166,3 +166,7 @@ func _on_dont_hide_on_toggle_check_toggled(toggled_on: bool) -> void:
 func _on_hold_to_show_on_toggle_check_toggled(toggled_on: bool) -> void:
 	if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
 		Global.held_sprites[0].hold_to_show = toggled_on
+
+func _on_min_duration_spin_box_value_changed(value: float) -> void:
+	if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
+		Global.held_sprites[0].min_duration = value

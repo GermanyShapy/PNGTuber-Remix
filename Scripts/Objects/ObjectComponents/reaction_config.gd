@@ -43,8 +43,15 @@ func _physics_process(_delta: float) -> void:
 		is_trying_to_disappear = true
 	if !GlobInput.is_action_pressed(str(actor.sprite_id)) and actor.hold_to_show and actor.was_active_before:
 		is_trying_to_disappear = true
+	#the minimal duration for sprite to show, avoiding disappearance
+	if min_duration_timer > 0.0:
+		is_trying_to_disappear = false
+		min_duration_timer -= _delta
+	
 	if is_trying_to_appear:
 		%Sprite2D.visible = true
+		if actor.min_duration > 0.00001:
+			min_duration_timer = actor.min_duration	# start the duration protect
 	if is_trying_to_disappear:
 		if actor.get_value("fade_asset"):
 			var new_visibility = await actor.fade_asset(false, actor, %Sprite2D)

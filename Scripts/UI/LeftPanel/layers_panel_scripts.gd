@@ -195,6 +195,7 @@ func _copy_common(src, dst):
 	dst.should_disappear = src.should_disappear
 	dst.show_only = src.show_only
 	dst.hold_to_show = src.hold_to_show
+	dst.min_duration = src.min_duration
 	dst.is_asset = src.is_asset
 	dst.saved_event = src.saved_event
 	dst.was_active_before = src.was_active_before

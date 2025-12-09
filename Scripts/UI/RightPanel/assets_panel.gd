@@ -15,6 +15,7 @@ func nullfy():
 	%ShouldDisappearCheck.disabled = true
 	%DontHideOnToggleCheck.disabled = true
 	%HoldToShowCheck.disabled = true
+	%MinDurationSpinBox.editable = false
 	%ShouldDisDelButton.disabled = true
 	%ShouldDisRemapButton.disabled = true
 	%ShouldDisAddButton.disabled = true
@@ -32,6 +33,7 @@ func enable():
 		%ShouldDisappearCheck.disabled = false
 		%DontHideOnToggleCheck.disabled = false
 		%HoldToShowCheck.disabled = false
+		%MinDurationSpinBox.editable = true
 		%ShouldDisAddButton.disabled = false
 		%ShouldDisDelButton.disabled = false
 		%ShouldDisRemapButton.disabled = false
@@ -58,9 +60,10 @@ func set_data():
 	else:
 		%ShouldDisListContainer.hide()
 	%HoldToShowCheck.button_pressed = Global.held_sprites[0].hold_to_show
+	%MinDurationSpinBox.value = Global.held_sprites[0].min_duration
 	%IsAssetButton.update_key_text()
 	%CycleChoiceSprite.select(Global.held_sprites[0].sprite_data.cycle)
-
+	
 func _on_cycle_choice_item_selected(index: int) -> void:
 	if index == 0:
 		%CycleMargin.hide()
