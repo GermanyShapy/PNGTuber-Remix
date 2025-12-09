@@ -6,7 +6,7 @@ enum FileType {
 	Open,
 }
 
-var project_sel = preload("res://Scripts/UI/ProjectManager/project_selector.gd")
+var project_sel = preload("res://UI/ProjectManager/project_selector.tscn")
 var current_type : FileType = FileType.None
 var placeholder_path : String = ""
 

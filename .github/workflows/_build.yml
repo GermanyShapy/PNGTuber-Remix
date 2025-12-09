@@ -13,7 +13,7 @@ on:
       godot_version:
         required: false
         type: string
-        default: 4.7
+        default: 4.4.1
 
 permissions:
   contents: write
@@ -42,7 +42,7 @@ jobs:
           mkdir -v -p build/windows
           EXPORT_DIR="$(readlink -f build)"
           git config --global --add safe.directory /__w/PNGTuber-Remix/PNGTuber-Remix
-          git describe --tags --exclude nightly --always > "$EXPORT_DIR/windows/version.txt"
+          git describe --tags --exclude nightly --always > "$EXPORT_DIR/windows/.version"
           godot --headless --verbose --export-release "Windows Desktop" "$EXPORT_DIR/windows/PNGTuber-Remix.exe"
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -70,14 +70,13 @@ jobs:
           mkdir -v -p build/linux
           EXPORT_DIR="$(readlink -f build)"
           git config --global --add safe.directory /__w/PNGTuber-Remix/PNGTuber-Remix
-          git describe --tags --exclude nightly --always > "$EXPORT_DIR/linux/version.txt"
+          git describe --tags --exclude nightly --always > "$EXPORT_DIR/linux/.version"
           godot --headless --verbose --export-release "Linux/X11" "$EXPORT_DIR/linux/PNGTuber-Remix.x86_64"
-          tar -cvf build/linux.tar build/linux
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux
-          path: build/linux.tar
+          path: build/linux
           include-hidden-files: true
 
   export-mac:
@@ -100,7 +99,7 @@ jobs:
           mkdir -v -p build/mac
           EXPORT_DIR="$(readlink -f build)"
           git config --global --add safe.directory /__w/PNGTuber-Remix/PNGTuber-Remix
-          git describe --tags --exclude nightly --always > "$EXPORT_DIR/mac/version.txt"
+          git describe --tags --exclude nightly --always > "$EXPORT_DIR/mac/.version"
           godot --headless --verbose --export-release "macOS" "$EXPORT_DIR/mac/PNGTuber-Remix.zip"
       - name: Upload Artifact
         uses: actions/upload-artifact@v4

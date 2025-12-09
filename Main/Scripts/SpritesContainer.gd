@@ -1,6 +1,6 @@
 extends Node2D
 
-signal update_anim
+signal reinfoanim
 var mouth_closed = 0
 var mouth_open = 0
 
@@ -28,9 +28,6 @@ var default_model_effects : Dictionary = {
 	effect_type = 0,
 	effect_size = 1,
 	effect_color = Color.WHITE,
-	roll_speed = 0.8,
-	roll_size = 15.0,
-	aberration = 0.03,
 }
 
 var state_param_mc : Dictionary = state_parameters_default.duplicate()
@@ -180,11 +177,10 @@ func get_state(state):
 			else:
 				not_speaking()
 		
-		update_anim.emit()
+		reinfoanim.emit()
 
 func not_speaking():
 	currenly_speaking = false
-	Global.mouth = Global.Mouth.Closed
 	if !Global.static_view:
 		match mouth_closed:
 			0:
@@ -203,7 +199,6 @@ func not_speaking():
 func speaking():
 #	modulate = Color.WHITE
 	currenly_speaking = true
-	Global.mouth = Global.Mouth.Open
 	if !Global.static_view:
 		match mouth_open:
 			0:
@@ -241,8 +236,8 @@ func set_mc_one_bounce():
 		yVel = state_param_mo.bounce_energy * -1
 
 func set_mc_wobble():
-	position.x = lerp(position.x, sin(tick*state_param_mc.xFrq)*state_param_mc.xAmp, 0.08)
-	position.y = lerp(position.y, sin(tick*state_param_mc.yFrq)*state_param_mc.yAmp, 0.08)
+	position.x = lerp(position.x, sin(tick*state_param_mo.xFrq)*state_param_mo.xAmp, 0.08)
+	position.y = lerp(position.y, sin(tick*state_param_mo.yFrq)*state_param_mo.yAmp, 0.08)
 	bounceChange = position.y/10
 
 func set_mc_squish():
@@ -290,7 +285,3 @@ func set_effects():
 		# outline, auro
 		Global.viewer.material.set_shader_parameter("line_scale", model_effects.effect_size)
 		Global.viewer.material.set_shader_parameter("line_color", model_effects.effect_color)
-		
-		Global.viewer.material.set_shader_parameter("roll_speed", model_effects.roll_speed)
-		Global.viewer.material.set_shader_parameter("roll_size", model_effects.roll_size)
-		Global.viewer.material.set_shader_parameter("aberration", model_effects.aberration)

@@ -14,9 +14,11 @@ enum State {
 	AddNormal,
 	AddAppend,
 	ImportPSD,
-	}
+}
 var current_state : State
 var can_scroll : bool = false
+
+var rec_inp : bool = false
 
 @onready var origin = %SpritesContainer
 var of := Vector2.ZERO
@@ -45,29 +47,6 @@ func _ready():
 	Global.mode_changed.connect(mode_changed)
 	Global.update_ui_pieces.connect(update_pieces)
 	update_pieces()
-	get_window().files_dropped.connect(file_dropped)
-
-func file_dropped(files : PackedStringArray):
-	sprite_paths.clear()
-	for file in files:
-		if file.get_extension().to_lower() == "png":
-			current_state = State.LoadSprites
-			sprite_paths.append(file)
-		elif file.get_extension().to_lower() == "pngremix":
-			current_state = State.LoadFile
-			sprite_paths.clear()
-			Global.new_file.emit()
-			SaveAndLoad.load_file(file, true)
-			break
-	
-	if sprite_paths.is_empty(): return
-	
-	if !sprite_paths.is_empty():
-		if Settings.theme_settings.enable_trimmer:
-			%ConfirmTrim.popup_centered()
-		else:
-			ImageTextureLoaderManager.trim = false
-			import_objects()
 
 func update_pieces():
 	%ProjectNamePanel.visible = Settings.theme_settings.hide_bottom_bar
@@ -89,7 +68,7 @@ func new_file():
 
 func load_file():
 	#%FileDialog.filters = ["*.pngRemix, *.save"]
-	%FileDialog.filters = ["*.pngRemix"]
+	%FileDialog.filters = ["*.pngRemix, *.save"]
 	$FileDialog.file_mode = 0
 	current_state = State.LoadFile
 	%FileDialog.show()
@@ -223,9 +202,9 @@ func _on_confirmation_dialog_confirmed():
 	Global.save_path = ""
 	Global.new_file.emit()
 	clear_sprites()
-	Global.settings_dict.max_fps = 60
+	Global.settings_dict.max_fps = 241
 	Global.settings_dict.should_delta = true
-	%TopUI.update_fps(60)
+	%TopUI.update_fps(241)
 	Global.main.get_node("%Marker").current_screen = Monitor.ALL_SCREENS
 	Global.settings_dict.monitor = Monitor.ALL_SCREENS
 	%ConfirmationDialog.hide()
@@ -249,15 +228,13 @@ func clear_sprites():
 	%CamPos.global_position = Vector2(0, 0)
 	Global.settings_dict.zoom = Vector2(1,1)
 	Global.settings_dict.pan = Vector2(0, 0)
-	UndoRedoManager.undo_data.clear()
-	UndoRedoManager.redo_data.clear()
 
 func set_zoom(new_zoom: Vector2) -> void:
 	var mouse_pos := %Node2D.get_local_mouse_position() as Vector2
 	var cam_pos := %Node2D.to_local(%Camera2D.get_screen_center_position()) as Vector2
 	var last_zoom: float = %Camera2D.zoom.x
 	
-	%Camera2D.zoom = new_zoom.clampf(0.001, 10.0)
+	%Camera2D.zoom = new_zoom.clampf(0.01, 5.)
 	Global.settings_dict.zoom = %Camera2D.zoom
 	
 	var change: float = %Camera2D.zoom.x / last_zoom
@@ -271,7 +248,7 @@ func _input(event):
 			if Input.is_action_pressed("alt"):
 				set_zoom(%Camera2D.zoom*1.1)
 			else:
-				var val = min(%Camera2D.zoom.x*1.1, 15.0)
+				var val = min(%Camera2D.zoom.x*1.1, 5.0)
 				%Camera2D.zoom = Vector2(val, val)
 				Global.settings_dict.zoom = %Camera2D.zoom
 
@@ -300,6 +277,12 @@ func _on_sub_viewport_container_mouse_entered():
 
 func _on_sub_viewport_container_mouse_exited():
 	can_scroll = false
+
+func _notification(what):
+	if what == MainLoop.NOTIFICATION_APPLICATION_FOCUS_IN:
+		rec_inp = false
+	elif what == MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT:
+		rec_inp = true
 
 func _on_confirmation_dialog_canceled() -> void:
 	%ConfirmationDialog.hide()

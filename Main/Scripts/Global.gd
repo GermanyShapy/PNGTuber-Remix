@@ -7,6 +7,7 @@ enum Mouth {
 }
 
 signal key_pressed
+
 signal blink
 
 signal reinfo
@@ -17,7 +18,7 @@ signal light_info
 signal speaking
 signal not_speaking
 
-signal update_anim
+signal reinfoanim
 signal remake_layers
 signal update_layers
 signal update_layer_visib
@@ -50,9 +51,6 @@ signal image_replaced
 signal add_new_image
 signal delete_image
 signal remake_image_manager
-signal show_model_warning
-
-signal dev_mode
 
 # Remix version
 @onready var version: String = ProjectSettings.get_setting("application/config/version")
@@ -86,17 +84,19 @@ var settings_dict : Dictionary = {
 	dim_color = Color.DIM_GRAY,
 	auto_save = false,
 	auto_save_timer = 1.0,
-
+	
 	saved_inputs = [],
 	zoom = Vector2(1,1),
 	pan = Vector2(0, 0),
-
+	
 	should_delta = true,
 	max_fps = 60,
 	monitor = Monitor.ALL_SCREENS,
 	snap_out_of_bounds = true,
 	cycles = [],
 
+	language = "automatic",
+	preferred_language = null,
 	trimmed = false,
 }
 
@@ -104,30 +104,12 @@ var image_manager_data : Array = []
 
 var mode: int = 0: set = set_mode
 
-var show_warning: bool = false:
-	set(n_mode):
-		show_model_warning.emit(n_mode)
-		show_warning = n_mode
-
 var new_rot = 0
 var static_view : bool = false
 var spinbox_held : bool = false
 
 var main = null
 var sprite_container = null
-
-var grid_visible: bool = false
-var grid_snap: bool = false
-var grid_size: float = 1.0
-var grid_overlay: Node2D = null
-
-func snap_position(pos: Vector2) -> Vector2:
-	if !grid_snap or grid_size <= 0.0:
-		return pos
-	return Vector2(
-		round(pos.x / grid_size) * grid_size,
-		round(pos.y / grid_size) * grid_size
-	)
 var viewer = null
 var viewport = null
 var top_ui = null
@@ -136,8 +118,6 @@ var light = null
 var camera : Camera2D = null
 var camera_pos : Node2D = null
 var mesh_pointer : Node2D = null
-
-var throwable_spawner : Node2D = null
 
 var frame_counter : int = 0
 const FRAME_INTERVAL : int = 3  # Run every 5 frames
@@ -151,7 +131,7 @@ var mesh_text_node : Node = null
 var save_path : String = ""
 var is_editor : bool = true:
 	set(x):
-		if x == is_editor:
+		if x == is_editor: 
 			is_editor = x
 			return
 		is_editor = x
@@ -159,24 +139,15 @@ var is_editor : bool = true:
 
 var image_data = ImageData.new()
 var image_data_normal = ImageData.new()
-var selected_mesh_inx : int = 1
-var folder_texture : Texture2D = null
 
-var obj : Object = Object.new()
-
+# Called when the node enters the scene tree for the first time.
 func _ready():
-	DisplayServer.register_additional_output(obj)
-	var img = Image.create_empty(32,32, false, Image.FORMAT_RGBA8)
-	folder_texture = ImageTexture.create_from_image(img)
 	create_placeholders()
 	get_window().min_size = Vector2(720,720)
 	add_child(blink_timer)
 	blinking()
 	get_window().title = "PNGTuber-Remix V" + version
 	current_state = 0
-
-func _exit_tree() -> void:
-	DisplayServer.unregister_additional_output(obj)
 
 func create_placeholders():
 	image_data.runtime_texture = preload("res://Misc/TestAssets/Placeholder.png")
@@ -185,18 +156,13 @@ func create_placeholders():
 func set_mode(new_mode) -> void:
 	if new_mode == mode: return
 	mode = new_mode
-
+	
 	match mode:
 		0:
 			get_viewport().transparent_bg = false
 			RenderingServer.set_default_clear_color(Color.SLATE_GRAY)
 			if main.has_node("%Control"):
 				main.get_node("%Control").show()
-				var control = main.get_node("%Control")
-				control.get_node("%RightPanel").show()
-				control.get_node("%MeshPanel").hide()
-				control.get_node("%BrushesPanel").hide()
-				control.get_node("%BrushData").hide()
 			is_editor = true
 		1:
 			RenderingServer.set_default_clear_color(settings_dict.bg_color)
@@ -208,21 +174,7 @@ func set_mode(new_mode) -> void:
 				light.get_node("Grab").hide()
 			deselect.emit()
 			static_view = false
-		2:
-			get_viewport().transparent_bg = false
-			RenderingServer.set_default_clear_color(Color.SLATE_GRAY)
-			if main.has_node("%Control"):
-				main.get_node("%Control").show()
-				var control = main.get_node("%Control")
-				control.get_node("%RightPanel").hide()
-				control.get_node("%MeshPanel").show()
-				control.get_node("%BrushesPanel").show()
-				control.get_node("%BrushData").show()
-			is_editor = true
-
-	for i in Global.get_tree().get_nodes_in_group("Meshes"):
-		i.get_node("%MeshEditor").queue_redraw()
-
+	
 	Settings.theme_settings.mode = mode
 	Settings.save()
 	mode_changed.emit(mode)
@@ -240,26 +192,26 @@ func load_sprite_states(state):
 	current_state = state
 	for i in get_tree().get_nodes_in_group("Sprites"):
 		i.get_state(current_state)
-
+		
 	reinfo.emit()
 	animation_state.emit(current_state)
 	light_info.emit(current_state)
-	update_anim.emit()
+	reinfoanim.emit()
 
 func get_sprite_states(state):
 	if state != current_state:
 		for i in get_tree().get_nodes_in_group("Sprites"):
 			i.save_state(current_state)
-
+	
 	current_state = state
 	for i in get_tree().get_nodes_in_group("Sprites"):
 		i.get_state(current_state)
-
+	
 	reinfo.emit()
 	animation_state.emit(current_state)
 	light_info.emit(current_state)
 	update_layer_visib.emit()
-	update_anim.emit()
+	reinfoanim.emit()
 
 func _input(_event : InputEvent):
 	for i in held_sprites:
@@ -272,6 +224,7 @@ func _input(_event : InputEvent):
 				elif Input.is_action_pressed("scrolldown"):
 					i.sprite_data.rotation += 0.05
 					rot(i)
+
 
 func offset(i):
 	i.get_node("%Grab").anchors_preset = Control.LayoutPreset.PRESET_FULL_RECT
@@ -311,13 +264,13 @@ func moving_origin(delta):
 				i.global_position.x += 10 * delta
 
 				offset(i)
-
-
+			
+			
 		if main.can_scroll:
 			if Input.is_action_pressed("ctrl"):
 				if Input.is_action_just_pressed("lmb"):
-					var of = i.get_parent().get_global_mouse_position() - i.global_position
-					i.global_position += of
+					var of = i.get_parent().to_local(i.get_parent().get_global_mouse_position()) - i.position
+					i.position += of
 					i.get_node("%Sprite2D").global_position -= of
 
 					offset(i)
@@ -338,12 +291,12 @@ func moving_sprite(delta):
 				i.position.y += 10 * delta
 				i.sprite_data.position.y += 10 * delta
 				update_spins()
-
+				
 			if Input.is_action_pressed("a"):
 				i.position.x -= 10 * delta
 				i.sprite_data.position.x -= 10 * delta
 				update_spins()
-
+				
 			elif Input.is_action_pressed("d"):
 				i.position.x += 10 * delta
 				i.sprite_data.position.x += 10 * delta
@@ -359,6 +312,7 @@ func _physics_process(_delta: float) -> void:
 	mouse_delay()
 	if Input.is_action_just_pressed("debug_rep"):
 		print_orphan_nodes()
+	
 
 func mouse_delay():
 	frame_counter += 1
@@ -366,6 +320,16 @@ func mouse_delay():
 		update_mouse_vel_pos.emit()
 		frame_counter = 0
 
+
 func update_camera_smoothing() -> void:
 	if !is_instance_valid(camera): return
 	camera.position_smoothing_enabled = Settings.theme_settings.floaty_panning
+
+func set_language(language: String) -> void:
+	var locale = Util.get_locale(language)
+	Settings.theme_settings.language = language
+	Settings.save()
+	if locale == "automatic":
+		TranslationServer.set_locale(OS.get_locale_language())
+	else:
+		TranslationServer.set_locale(locale)

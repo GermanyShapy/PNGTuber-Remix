@@ -6,9 +6,7 @@ extends SpriteObject
 func get_default_object_data() -> Dictionary:
 	return {
 		move_with_wobble = true,
-		move_with_follow= true,
-		flip_sprite_h = false,
-		flip_sprite_v = false,
+		move_with_follow= true
 	}
 
 func _init() -> void:
@@ -17,6 +15,7 @@ func _init() -> void:
 	sprite_data = cached_defaults.duplicate(true)
 
 func _ready():
+	sprite_type = "Sprite2D"
 	Global.image_replaced.connect(image_replaced)
 	Global.reparent_objects.connect(reparent_obj)
 	og_glob = get_value("position")
@@ -24,17 +23,6 @@ func _ready():
 	Global.deselect.connect(desel)
 	grab_object.button_down.connect(_on_grab_button_down)
 	grab_object.button_up.connect(_on_grab_button_up)
-	await get_tree().create_timer(0.1).timeout
-	if sprite_object == null or static_collision == null: return
-	static_collision.shape.radius = 500
-	static_collision.shape.height = 500
-	if sprite_object.texture:
-		var w : float = float(sprite_object.texture.get_width())
-		var h : float = float(sprite_object.texture.get_height())
-		if w > 0 && h > 0:
-			var r : float = min(w, h)
-			static_collision.shape.height = h
-			static_collision.shape.radius = Vector2(r, r).length()*0.5
 
 func sel():
 	if self in Global.held_sprites:
@@ -52,7 +40,6 @@ func sel():
 
 func desel():
 	%Sprite2D.editable = false
-	%MeshEditor.queue_redraw()
 	%Origin.hide()
 	selected = false
 
@@ -108,25 +95,12 @@ func get_state(id):
 		position = get_value("position")
 		%Sprite2D.position = get_value("offset") 
 		%Sprite2D.scale = Vector2(1,1)
-		static_collision.disabled = !get_value("can_be_hit")
-		%HitDetection.set_collision_layer_value(2, get_value("can_be_hit"))
-		if get_value("flip_sprite_h"):
-			%Sprite2D.scale.x = -1
-		else:
-			%Sprite2D.scale.x = 1
-		
-		if get_value("flip_sprite_v"):
-			%Sprite2D.scale.y = -1
-		else:
-			%Sprite2D.scale.y = 1
 		
 		%Modifier1.z_index = get_value("z_index")
 		modulate = get_value("colored")
-		%Sprite2D.self_modulate = get_value("tint")
 		scale = get_value("scale")
 		if (global_position - old_glob).length() > get_value("drag_snap") && get_value("drag_snap") != 999999.0:
 			%Modifier.global_position = %Modifier1.global_position
-			%Dragger.global_position = %Modifier.global_position
 		%Sprite2D.set_clip_children_mode(get_value("clip"))
 		
 		rotation = get_value("rotation")
@@ -138,18 +112,12 @@ func get_state(id):
 		if get_value("fade"):
 			trigger_fade(visible)
 		else:
-			modulate.a = get_value("colored").a
+			modulate.a = 1.0
 			visible = get_value("visible")
-		
-		if !get_value("should_blink"):
-			%Modifier1.modulate.a = 1
-			%Modifier1.show()
-		
 		
 	elif states[id].is_empty():
 		states[id] = sprite_data.duplicate(true)
-	
-	mesh.queue_redraw()
+
 
 func check_talk():
 	if get_value("should_talk"):
@@ -160,13 +128,17 @@ func check_talk():
 	else:
 		%Rotation.show()
 
+func zazaza(parent):
+	for i in parent:
+		if i.sprite_id == parent_id:
+			sprite_data.position -= i.get_value("offset")
+			if is_plus_first_import:
+				for state in states:
+					if !state.is_empty():
+						global = global_position
+						state.position = get_value("position")
+
+
 func _on_sprite_2d_text_changed() -> void:
 	sprite_data.text_data = %Sprite2D.text
 	save_state(Global.current_state)
-
-func update_mesh_data():
-	if mesh.get_layer_count() < Global.selected_mesh_inx:
-		return
-	
-	var _layer = mesh.get_layer(Global.selected_mesh_inx)
-	pass

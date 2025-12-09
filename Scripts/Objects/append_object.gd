@@ -35,7 +35,6 @@ func get_default_object_data() -> Dictionary:
 		max_anchor_stretch = 999999.0,
 		mirror_anchor_movement_h = false,
 		mirror_anchor_movement_v = false,
-		sync_appendage = null
 	}
 
 func _init() -> void:
@@ -51,17 +50,6 @@ func _ready():
 	Global.deselect.connect(desel)
 	grab_object.button_down.connect(_on_grab_button_down)
 	grab_object.button_up.connect(_on_grab_button_up)
-	Global.reinfo.connect(update_wiggle_parts)
-	await get_tree().create_timer(0.1).timeout
-	if sprite_object == null or static_collision == null: return
-	static_collision.shape.radius = 250
-	if sprite_object.texture:
-		var w : float = float(sprite_object.texture.get_width())
-		var h : float = float(sprite_object.texture.get_height())
-		if w > 0 && h > 0:
-			var r : float = min(w, h)
-			static_collision.shape.radius = Vector2(r, r).length()*0.5
-
 
 func sel():
 	if self in Global.held_sprites:
@@ -136,7 +124,6 @@ func get_state(id):
 		sprite_data.merge(dict, true)
 		%Modifier1.z_index = get_value("z_index")
 		modulate = get_value("colored")
-		%Sprite2D.self_modulate = get_value("tint")
 		scale = get_value("scale")
 	#	global_position = get_value("global_position")
 		if get_value("should_reset_state"):
@@ -146,7 +133,6 @@ func get_state(id):
 		position = get_value("position")
 		if (global_position - old_glob).length() > get_value("drag_snap") && get_value("drag_snap") != 999999.0:
 			%Modifier.global_position = %Modifier1.global_position
-			%Dragger.global_position = %Modifier.global_position
 		
 		
 		%Sprite2D.position = get_value("offset") 
@@ -154,19 +140,9 @@ func get_state(id):
 		
 		%Sprite2D.closed = get_value("wiggle_closed_loop")
 		%Sprite2D.gravity = get_value("wiggle_gravity")
+		
 		%Sprite2D.texture_mode = get_value("tile")
-		
-		match get_value("tile"):
-			0:
-				%Sprite2D.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
-			1:
-				%Sprite2D.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
-			2:
-				%Sprite2D.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
-		
 		%Sprite2D.keep_length = get_value("keep_length_anchor")
-		static_collision.disabled = !get_value("can_be_hit")
-		%HitDetection.set_collision_layer_value(2, get_value("can_be_hit"))
 		
 		
 		%Sprite2D.set_clip_children_mode(get_value("clip"))
@@ -189,7 +165,7 @@ func get_state(id):
 		if get_value("fade"):
 			trigger_fade(visible)
 		else:
-			modulate.a = get_value("colored").a
+			modulate.a = 1.0
 			visible = get_value("visible")
 			
 		update_wiggle_parts()
@@ -199,15 +175,10 @@ func get_state(id):
 			if referenced_data.is_apng:
 				%AnimatedSpriteTexture.index = 0
 				%AnimatedSpriteTexture.proper_apng_one_shot()
-			
+				
 		if !get_value("cycle") in range(Global.settings_dict.cycles.size() + 1):
 			sprite_data.cycle = 0
-			
-		if !get_value("should_blink"):
-			%Modifier1.modulate.a = 1
-			%Modifier1.show()
-			
-			
+				
 	elif states[id].is_empty():
 		states[id] = sprite_data.duplicate(true)
 
@@ -221,19 +192,6 @@ func set_anchor_sprite(_placeholder = null):
 				return
 			else:
 				%Sprite2D.anchor_target = null
-				
-	if get_value("sync_appendage") == null:
-		%Sprite2D.sync_appendage = null
-	else:
-		for i in Global.get_tree().get_nodes_in_group("Sprites"):
-			if i.sprite_id == get_value("sync_appendage"):
-				if i.get_node("%Sprite2D") is WigglyAppendage2D:
-					%Sprite2D.sync_appendage = i.get_node("%Sprite2D")
-				else:
-					%Sprite2D.sync_appendage = null
-				return
-			else:
-				%Sprite2D.sync_appendage = null
 
 func update_wiggle_parts():
 	if %Sprite2D.segment_count != get_value("wiggle_segm"):
@@ -273,17 +231,6 @@ func update_wiggle_parts():
 	if %Sprite2D.mirror_anchor_movement_v!= get_value("mirror_anchor_movement_v"):
 		%Sprite2D.mirror_anchor_movement_v = get_value("mirror_anchor_movement_v")
 
-	if %Sprite2D.keep_length!= get_value("keep_length_anchor"):
-		%Sprite2D.keep_length = get_value("keep_length_anchor")
-		
-	if %Sprite2D.closed!= get_value("wiggle_closed_loop"):
-		%Sprite2D.closed = get_value("wiggle_closed_loop")
-
-	if %Sprite2D.texture_mode!= get_value("tile"):
-		%Sprite2D.texture_mode = get_value("tile")
-	if %Sprite2D.gravity!= get_value("wiggle_gravity"):
-		%Sprite2D.gravity = get_value("wiggle_gravity")
-
 func check_talk():
 	if get_value("should_talk"):
 		if get_value("open_mouth"):
@@ -299,6 +246,7 @@ func _on_grab_button_down():
 			var mouse_pos = get_parent().to_local(get_global_mouse_position())
 			for s in Global.held_sprites:
 				drag_offsets[s] = mouse_pos - s.position
+
 
 func _on_grab_button_up():
 	if selected:

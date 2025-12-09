@@ -5,6 +5,7 @@ signal file_error
 
 var top_bar = null
 var ui_theme
+var popup = preload("res://UI/EditorUI/TopUI/Components/popup_panel.tscn").instantiate()
 var save_timer : Timer = Timer.new()
 var current_theme : Theme = preload("res://Themes/PurpleTheme/GUITheme.tres")
 const SAVED_LAYOUT_PATH := "user://layout.tres"
@@ -30,8 +31,8 @@ const SAVED_LAYOUT_PATH := "user://layout.tres"
 	file_manager = 0,
 	lipsync_file_path = path_helper(OS.get_executable_path().get_base_dir(), "/DefaultTraining.tres"),
 	microphone = null,
-	enable_trimmer = true,
-	save_raw_sprite = false, #save the original sprite even when trimmed
+	enable_trimmer = false,
+	save_raw_sprite = true, #save the original sprite even when trimmed
 	always_on_top = false,
 	menu_popup = true,
 	software_mode = 0,
@@ -47,29 +48,24 @@ const SAVED_LAYOUT_PATH := "user://layout.tres"
 	hide_sprite_view = true,
 	hide_bottom_bar = true,
 	use_threading = false,
-	language = "auto",
+	language = "automatic",
 	save_unused_files = false,
 	backend_type = "default",
 	audio_capturer = 2,
-	osf_pos_stren = 10,
-	osf_pos_stren_y = 10,
-	osf_mouth_strength = -0.05,
-	osf_eye = 0.5,
-	osf_eye2 =  0.5,
-	phys_tick_per_frame = 60,
-	phys_steps = 10,
-	phys_jitter = 0.5,
-	dev_mode = false,
-	use_glob_input = false,
 }
 var save_location = ""
 var autosave_location = ""
 var websocket_api = ""
 
+
 func _enter_tree() -> void:
 	save_location = path_helper(OS.get_executable_path().get_base_dir(), "/Preferences.pRDat")
 	autosave_location = path_helper(OS.get_executable_path().get_base_dir(), "/autosaves")
 	websocket_api = path_helper(OS.get_executable_path().get_base_dir(), "/WebsocketDocumentation.txt")
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		popup.popup_centered()
 
 func save_before_closing():
 	if theme_settings.save_on_exit:
@@ -80,14 +76,11 @@ func save_before_closing():
 			SaveAndLoad.save_file(autosave_location + "/" + str(randi()))
 		window_size_changed()
 	save()
+	await get_tree().create_timer(0.1).timeout
 	get_tree().quit()
 
-func save() -> void:
-	var save_file := FileAccess.open(save_location, FileAccess.WRITE)
-	if not save_file:
-		push_error("Settings: failed to open file for writing: %s" % FileAccess.get_open_error())
-		file_error.emit("SAVE_FAILED", FileAccess.get_open_error())
-		return
+func save():
+	var save_file = FileAccess.open(save_location, FileAccess.WRITE)
 	save_file.store_var(theme_settings.duplicate(true))
 	save_file.close()
 
@@ -102,13 +95,6 @@ func auto_save():
 	if Global.settings_dict.auto_save:
 		save_timer.start()
 
-func setup_auto_save():
-	save_timer.wait_time = Global.settings_dict.auto_save_timer * 60
-	if Global.settings_dict.auto_save:
-		save_timer.start()
-	else:
-		save_timer.stop()
-
 func _ready():
 	save_timer.timeout.connect(auto_save)
 	save_timer.one_shot = true
@@ -116,18 +102,17 @@ func _ready():
 	await  get_tree().create_timer(0.1).timeout
 	if get_tree().get_root().has_node("Main/%TopUI"):
 		top_bar = get_tree().get_root().get_node("Main/%TopUI")
-		
 	if !FileAccess.file_exists(websocket_api):
 		var save_data = FileAccess.open(websocket_api, FileAccess.WRITE)
-		if save_data != null:
-			save_data.store_string(WebsocketDoc.doc)
-			save_data.close()
+		save_data.store_string(WebsocketDoc.doc)
+		save_data.close()
 
 	if FileAccess.file_exists(save_location):
 		var load_file = FileAccess.open(save_location, FileAccess.READ)
 		var info = load_file.get_var()
 		if info is Dictionary:
 			theme_settings.merge(info, true)
+			
 			theme_settings.theme_id = info.theme_id
 			loaded_UI(theme_settings.theme_id)
 			
@@ -138,14 +123,16 @@ func _ready():
 			elif theme_settings.screen_window == 2:
 				get_window().mode = get_window().MODE_MINIMIZED
 			
+			
 			if theme_settings.borders:
 				get_window().borderless = false
 			elif !theme_settings.borders:
 				get_window().borderless = true
 			get_window().always_on_top = theme_settings.always_on_top
+			
 			get_window().position = theme_settings.screen_pos
 			
-			update_tracking_backend()
+			
 		load_file.close()
 		
 	else:
@@ -158,7 +145,6 @@ func _ready():
 			push_error(FileAccess.get_open_error())
 			file_error.emit("INITIAL_SAVE_ERROR", FileAccess.get_open_error())
 		loaded_UI(theme_settings.theme_id)
-		set_backed_default()
 	
 	get_window().size_changed.connect(window_size_changed)
 	
@@ -166,35 +152,44 @@ func _ready():
 	get_window().size = Settings.theme_settings.screen_size
 	check_ui()
 #	top_bar.check_data()
+
 	if top_bar != null && is_instance_valid(top_bar):
 		top_bar.sliders_revalue(Global.settings_dict)
+	add_child(popup)
+	popup.hide()
 	scale_window()
 	lipsync_set_up()
 	if theme_settings.microphone != null:
-		
-		if GlobalMicAudio.mic_input.get_device_names().has(theme_settings.microphone):
-			var index_mic = GlobalMicAudio.mic_input.get_device_names().find(theme_settings.microphone)
-			GlobalMicAudio.mic_input.set_microphone(index_mic)
-			GlobalMicAudio.mic_input.start_audio()
-		else:
-			GlobalMicAudio.mic_input.set_microphone(0)
-			GlobalMicAudio.mic_input.start_audio()
-
-	change_cursor()
-	Engine.physics_jitter_fix = theme_settings.phys_jitter
-	Engine.physics_ticks_per_second = theme_settings.phys_tick_per_frame
-	Engine.max_physics_steps_per_frame = theme_settings.phys_steps
-	Global.dev_mode.emit(theme_settings.dev_mode)
+		if AudioServer.get_input_device_list().has(theme_settings.microphone):
+			AudioServer.input_device = theme_settings.microphone
 	
-	LanguageManager.language_changed.connect(_on_language_changed)
-	LanguageManager.initialize(theme_settings.language)
-
-func _on_language_changed(locale_code: String) -> void:
-	theme_settings.language = locale_code
-	save()
+	change_cursor()
+	
+	update_tracking_backend()
+	# Load language
+	var locale = Util.get_locale(theme_settings.language)
+	if locale == "automatic":
+		TranslationServer.set_locale(OS.get_locale_language())
+	else:
+		TranslationServer.set_locale(locale)
+	
+	GlobalAudioStreamPlayer.record_effect = AudioServer.get_bus_effect(GlobalAudioStreamPlayer.record_bus_index, theme_settings.get("audio_capturer", 2))
+	match theme_settings.audio_capturer:
+		0:
+			AudioServer.set_bus_effect_enabled(GlobalAudioStreamPlayer.record_bus_index, 0, true)
+			AudioServer.set_bus_effect_enabled(GlobalAudioStreamPlayer.record_bus_index, 2, false)
+			GlobalAudioStreamPlayer.mic_restart_timer_timeout()
+		2:
+			AudioServer.set_bus_effect_enabled(GlobalAudioStreamPlayer.record_bus_index, 0, false)
+			AudioServer.set_bus_effect_enabled(GlobalAudioStreamPlayer.record_bus_index, 2, true)
+			GlobalAudioStreamPlayer.mic_restart_timer_timeout()
 
 func update_tracking_backend():
 	match theme_settings.backend_type:
+		"default":
+			set_backed_default()
+		"uiohook":
+			GlobInput.backend = "uiohook"
 		"windows":
 			if OS.has_feature("windows"):
 				GlobInput.backend = "windows"
@@ -205,10 +200,6 @@ func update_tracking_backend():
 				GlobInput.backend = "x11"
 			else:
 				set_backed_default()
-		"dummy":
-			GlobInput.backend = "dummy"
-		_:
-			set_backed_default()
 
 func set_backed_default():
 	if OS.has_feature("windows"):
@@ -216,7 +207,7 @@ func set_backed_default():
 	elif OS.has_feature("linux"):
 		GlobInput.backend = "x11"
 	else:
-		GlobInput.backend = "dummy"
+		GlobInput.backend = "uiohook"
 
 func lipsync_set_up():
 	var parent_path = Util.get_parent_path(save_location);
@@ -227,12 +218,13 @@ func lipsync_set_up():
 	if !FileAccess.file_exists(theme_settings.lipsync_file_path):
 		LipSyncGlobals.file_data = preload("res://UI/Lipsync stuff/DefaultTraining.tres")
 		LipSyncGlobals.save_file_as(theme_settings.lipsync_file_path)
+		
 		save()
 	else:
 		LipSyncGlobals.load_file(theme_settings.lipsync_file_path)
 
 func scale_window():
-	get_tree().get_root().get_window().content_scale_factor = theme_settings.ui_scaling
+	get_tree().root.content_scale_factor = theme_settings.ui_scaling
 
 func window_size_changed():
 	Settings.theme_settings.screen_size = get_window().size
@@ -246,7 +238,7 @@ func window_size_changed():
 		
 	if Global.main != null && is_instance_valid(Global.main):
 		if Global.main.has_node("%WindowSize"):
-			Global.main.get_node("%WindowSize").text = tr("TR_WINDOW_SIZE") + " " + str(Settings.theme_settings.screen_size)
+			Global.main.get_node("%WindowSize").text = "Window Size " + str(Settings.theme_settings.screen_size)
 	save()
 
 func check_ui():
@@ -277,9 +269,8 @@ func _on_ui_theme_button_item_selected(index):
 			current_theme = preload("res://Themes/FunkyTheme/Funkytheme.tres")
 		7:
 			current_theme = preload("res://Themes/FrutigerAeroTheme/FrutigerAero.tres")
-		8:
-			current_theme = null
 	
+	popup.theme = current_theme
 	Settings.theme_settings.theme_id = index
 	Global.theme_update.emit(current_theme)
 	save()
@@ -298,7 +289,7 @@ func toggle_borders():
 	if Settings.theme_settings.borders:
 		get_window().borderless = false
 		get_window().size = s
-	else:
+	elif !Settings.theme_settings.borders:
 		get_window().borderless = true
 		get_window().size = s
 	save()
@@ -306,6 +297,7 @@ func toggle_borders():
 func _input(_event: InputEvent) -> void:
 	if Input.is_action_just_pressed("toggle_borders"):
 		toggle_borders()
+	
 	if Input.is_action_just_pressed("center_screen"):
 		center_window()
 
@@ -348,16 +340,16 @@ func set_ui_pieces(val : int, id : int):
 		theme_settings.hide_mini_view = val
 	elif id == 6:
 		theme_settings.hide_sprite_view = val
-	elif id == 7:
+	elif 7:
 		theme_settings.hide_bottom_bar = val
 	save()
 
-func path_helper(path: String, dir: String = "") -> String:
+func path_helper(path, dir: String = "") -> String:
 	var target = ""
 	var current = DirAccess.open(path)
 	if current == null:
-		target = OS.get_user_data_dir()
-		
+		target = OS.get_user_data_dir() + dir
 	else:
 		target = path + dir
+	
 	return target

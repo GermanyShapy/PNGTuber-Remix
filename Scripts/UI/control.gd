@@ -4,10 +4,12 @@ extends Control
 func _ready() -> void:
 	Global.update_ui_pieces.connect(ui_pieces)
 
+
 func ui_pieces():
 	%VSplit.split_offset = Settings.theme_settings.properties
 	%MainSplit.split_offset = Settings.theme_settings.left
 	%SecondarySplit.split_offset = Settings.theme_settings.right
+
 
 func _on_v_split_dragged(offset: int) -> void:
 	Settings.theme_settings.properties = offset
@@ -20,9 +22,3 @@ func _on_main_split_dragged(offset: int) -> void:
 func _on_secondary_split_dragged(offset: int) -> void:
 	Settings.theme_settings.right = offset
 	Settings.save()
-
-func _on_inspector_tab_changed(tab: int) -> void:
-	if tab == 7:
-		ThrowablesSpawner.show_pointer_origin = true
-	else:
-		ThrowablesSpawner.show_pointer_origin = false

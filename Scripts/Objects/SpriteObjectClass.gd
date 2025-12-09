@@ -32,30 +32,6 @@ const DEFAULT_DATA := {
 	index_change = 0,
 	index_change_y = 0,
 	
-	pos_x_min = 0,
-	pos_x_max = 0,
-	pos_y_min = 0,
-	pos_y_max = 0,
-
-	rot_min = 0,
-	rot_max = 0,
-
-	scale_x_min = 0,
-	scale_x_max = 0,
-	scale_y_min = 0,
-	scale_y_max = 0,
-
-	pos_swap_x = false,
-	pos_swap_y = false,
-	scale_swap_x = false,
-	scale_swap_y = false,
-	
-	pos_invert_x = false,
-	pos_invert_y = false,
-	scale_invert_x = false,
-	scale_invert_y = false,
-	
-	
 	# Movement when mouth open
 	mo_xAmp = 0,
 	mo_xFrq = 0,
@@ -80,30 +56,6 @@ const DEFAULT_DATA := {
 	mo_index_change = 0,
 	mo_index_change_y = 0,
 	
-	mo_pos_x_min = 0,
-	mo_pos_x_max = 0,
-	mo_pos_y_min = 0,
-	mo_pos_y_max = 0,
-
-	mo_rot_min = 0,
-	mo_rot_max = 0,
-
-	mo_scale_x_min = 0,
-	mo_scale_x_max = 0,
-	mo_scale_y_min = 0,
-	mo_scale_y_max = 0,
-
-	mo_pos_swap_x = false,
-	mo_pos_swap_y = false,
-	mo_scale_swap_x = false,
-	mo_scale_swap_y = false,
-
-	mo_pos_invert_x = false,
-	mo_pos_invert_y = false,
-	mo_scale_invert_x = false,
-	mo_scale_invert_y = false,
-
-
 	# Movement when screaming
 	scream_xAmp = 0,
 	scream_xFrq = 0,
@@ -127,36 +79,6 @@ const DEFAULT_DATA := {
 	scream_drag_snap = 0.0,
 	scream_index_change = 0,
 	scream_index_change_y = 0,
-	
-	scream_mouse_pos_min = 0,
-	scream_mouse_pos_max = 0,
-	scream_mouse_pos_y_min = 0,
-	scream_mouse_pos_y_max = 0,
-	
-	
-	scream_pos_x_min = 0,
-	scream_pos_x_max = 0,
-	scream_pos_y_min = 0,
-	scream_pos_y_max = 0,
-
-	scream_rot_min = 0,
-	scream_rot_max = 0,
-
-	scream_scale_x_min = 0,
-	scream_scale_x_max = 0,
-	scream_scale_y_min = 0,
-	scream_scale_y_max = 0,
-
-	scream_pos_swap_x = false,
-	scream_pos_swap_y = false,
-	scream_scale_swap_x = false,
-	scream_scale_swap_y = false,
-	
-	
-	scream_pos_invert_x = false,
-	scream_pos_invert_y = false,
-	scream_scale_invert_x = false,
-	scream_scale_invert_y = false,
 	
 	
 	# Other stuff idk
@@ -187,6 +109,7 @@ const DEFAULT_DATA := {
 	should_reset = false,
 	should_reset_state = false,
 	one_shot = false,
+ 	never_reset = false,
 	rainbow = false,
 	rainbow_self = false,
 	rainbow_speed = 0.01,
@@ -210,38 +133,11 @@ const DEFAULT_DATA := {
 	follow_strength = 0.155,
 	rotation_threshold = 0.01,
 	hidden_item = false,
-	
-	
-	follow_eye = 0,
-	gaze_eye = 0,
-	style_eye = 0,
-	
-	udp_pos = 0,
-	udp_rot = 0,
-	udp_scale = 0,
-	follow_mouth = 0,
-	
-	
-	chain_softness = 5,
-	chain_rot_min = -3.14,
-	chain_rot_max = 3.14,
-	bone_length = 50,
-	
-	mesh_phys_x = 75,
-	mesh_phys_y = 75,
-	
-	use_object_pos = false,
-	phys_eff = 25.0,
-	
-	can_be_hit = false,
-	hit_physics = false,
-	reaction_strength = 0.5,
-	
 	}
+
 
 @export var sprite_object : Node2D
 @export var grab_object : BaseButton
-@export var static_collision : CollisionShape2D
 var used_image_id : int = 0
 var used_image_id_normal : int = 0
 var referenced_data : ImageData  = null
@@ -287,9 +183,10 @@ var was_active_before : bool = true
 var show_only : bool = false
 var should_disappear : bool = false
 var hold_to_show : bool = false
+var min_duration : float = 0.0
 var saved_keys : Array = []
 var disappear_keys : String = str(sprite_id) + "Disappear"
-var rest_mode : int = 0
+var rest_mode : int = 1
 
 var last_mouse_position : Vector2 = Vector2(0,0)
 var last_dist : Vector2 = Vector2(0,0)
@@ -300,12 +197,11 @@ var selected : bool = false
 
 var drag_offsets = {} 
 
-var target_ik : SpriteObject = null
-
-var hidden_target_id_check : float = -1
 
 func get_default_object_data() -> Dictionary:
 	return {}
+
+
 
 func does_value_match_default(value: Variant, key: String) -> bool:
 	if value is float:
@@ -392,27 +288,19 @@ func set_blend(blend):
 			sprite_object.material.set_shader_parameter("enabled", true)
 			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/test1.png"))
 
-func reparent_obj(parent, no_global : bool = false):
+func reparent_obj(parent):
 	for i in parent:
 		if i.parent_id == sprite_id:
-			if no_global:
-				i.get_parent().remove_child(i)
-				%Sprite2D.add_child(i)
-			else:
-				var og_pos = i.global_position
-				i.get_parent().remove_child(i)
-				%Sprite2D.add_child(i)
-				i.global_position = og_pos
+			var og_pos = i.global_position
+			i.get_parent().remove_child(i)
+			%Sprite2D.add_child(i)
+			i.global_position = og_pos
 
 func image_replaced(image_date : ImageData):
 	if !get_value("folder"):
 		if image_date == referenced_data:
 			var texture = ImageTextureLoaderManager.check_flips(image_date.runtime_texture, self)
-			if sprite_object is CustomMesh:
-				sprite_object.texture = texture
-			else:
-				sprite_object.texture.diffuse_texture = texture
-			
+			sprite_object.texture.diffuse_texture = texture
 			ImageTrimmer.set_thumbnail(treeitem)
 		if image_date == referenced_data_normal:
 			var texture = ImageTextureLoaderManager.check_flips(image_date.runtime_texture, self)
@@ -420,7 +308,9 @@ func image_replaced(image_date : ImageData):
 	else:
 		return
 
-func reposition(parent):
+
+
+func zazaza_reposition(parent):
 	for i in parent:
 		if i.sprite_id == parent_id:
 			for state in states:
@@ -430,6 +320,7 @@ func reposition(parent):
 					var desired_local = contain.to_local(desired_global)
 					state.position = get_parent().to_local(desired_local)
 			break
+
 
 func old_reposition():
 	var parent = get_parent().owner
@@ -451,10 +342,10 @@ func trigger_fade(was_visible: bool):
 		if !was_visible:
 			modulate.a = 0.0
 		tween = get_tree().create_tween()
-		tween.tween_property(self, "modulate:a", get_value("colored").a, get_value("fade_speed"))
+		tween.tween_property(self, "modulate:a", 1.0, get_value("fade_speed"))
 	else:
 		if was_visible:
-			modulate.a = get_value("colored").a
+			modulate.a = 1.0
 		tween = get_tree().create_tween()
 		tween.tween_property(self, "modulate:a", 0.0, get_value("fade_speed"))
 		await tween.finished
@@ -468,20 +359,14 @@ func fade_asset(was_visible: bool, node: Node, node_hide: Node) -> bool:
 	if target:
 		node.modulate.a = 0.0
 		tween = get_tree().create_tween()
-		tween.tween_property(node, "modulate:a", get_value("colored").a, get_value("fade_speed_asset"))
+		tween.tween_property(node, "modulate:a", 1.0, get_value("fade_speed_asset"))
 		await tween.finished
-		node.modulate.a = get_value("colored").a
+		node.modulate.a = 1.0
 		return true
 	else:
-		node.modulate.a = get_value("colored").a
+		node.modulate.a = 1.0
 		tween = get_tree().create_tween()
 		tween.tween_property(node, "modulate:a", 0.0, get_value("fade_speed_asset"))
 		await tween.finished
 		node_hide.visible = false
 		return false
-
-func reference_ik_target():
-	for i in get_tree().get_nodes_in_group("Sprites"):
-		if i.sprite_id == hidden_target_id_check:
-			target_ik = i
-			break

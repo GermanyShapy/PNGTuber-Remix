@@ -7,11 +7,8 @@ func _ready() -> void:
 	select.get_popup().id_pressed.connect(_on_selected)
 	Global.reinfo.connect(enable)
 	Global.deselect.connect(nullify)
-	Global.dev_mode.connect(check_dev_mode)
 	nullify()
 
-func check_dev_mode(check : bool = false):
-	%OSFFold.visible = check
 
 func enable() -> void:
 	var sp: SpriteObject = null
