@@ -1,4 +1,5 @@
 extends Node
+class_name TopBarInput
 
 @onready var files = %FilesButton
 @onready var mode = %ModeButton
@@ -36,15 +37,15 @@ func _ready():
 func update_window_button() -> void:
 	var menu := %WindowButton.get_popup() as PopupMenu
 	menu.set_item_checked(2, Settings.theme_settings.always_on_top)
-	menu.set_item_checked(5, Settings.theme_settings.hide_mini_view)
-	menu.set_item_checked(6, Settings.theme_settings.hide_sprite_view)
-	menu.set_item_checked(7, Settings.theme_settings.hide_bottom_bar)
+	menu.set_item_checked(6, Settings.theme_settings.hide_mini_view)
+	menu.set_item_checked(7, Settings.theme_settings.hide_sprite_view)
+	menu.set_item_checked(8, Settings.theme_settings.hide_bottom_bar)
 	var i := menu.get_item_index(100)
 	if i >= 0: menu.remove_item(i)
 	
 	for window in WindowHandler.windows:
 		if !window.borderless: continue
-		menu.add_item("Edit Windows", 100)
+		menu.add_item("TR_EDIT_WINDOWS", 100)
 		break
 
 func check_auto_saves():
@@ -66,11 +67,11 @@ func choosing_window(id):
 		3:
 			Settings.center_window()
 		4:
-			Global.add_window.emit()
+			get_window().size = Vector2i(1152, 648)
+			Settings.center_window()
+			Settings.window_size_changed()
 		5:
-			%WindowButton.get_popup().toggle_item_checked(5)
-			Settings.set_ui_pieces(%WindowButton.get_popup().is_item_checked(5), 5)
-			Global.update_ui_pieces.emit()
+			Global.add_window.emit()
 		6:
 			%WindowButton.get_popup().toggle_item_checked(6)
 			Settings.set_ui_pieces(%WindowButton.get_popup().is_item_checked(6), 6)
@@ -80,10 +81,10 @@ func choosing_window(id):
 			Settings.set_ui_pieces(%WindowButton.get_popup().is_item_checked(7), 7)
 			Global.update_ui_pieces.emit()
 		8:
-			get_window().size = Vector2i(1152, 648)
-			Settings.center_window()
-			Settings.window_size_changed()
-			
+			%WindowButton.get_popup().toggle_item_checked(8)
+			Settings.set_ui_pieces(%WindowButton.get_popup().is_item_checked(8), 8)
+			Global.update_ui_pieces.emit()
+
 		100:
 			Global.edit_windows.emit()
 
@@ -250,7 +251,7 @@ func _on_asset_temp_button_pressed():
 func _on_deselect_button_pressed():
 	desel_everything()
 
-func desel_everything():
+static func desel_everything():
 	if Global.held_sprite != null && is_instance_valid(Global.held_sprite):
 		if Global.held_sprite.has_node("%Origin"):
 			Global.held_sprite.get_node("%Origin").hide()

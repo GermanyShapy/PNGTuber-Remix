@@ -196,6 +196,10 @@ func _copy_common(src, dst):
 	dst.show_only = src.show_only
 	dst.hold_to_show = src.hold_to_show
 	dst.min_duration = src.min_duration
+	dst.cast_time = src.cast_time
+	dst.inclusive_key_check = src.inclusive_key_check
+	dst.ignore_if_rest = src.ignore_if_rest
+	dst.auto_show = src.auto_show
 	dst.is_asset = src.is_asset
 	dst.saved_event = src.saved_event
 	dst.was_active_before = src.was_active_before

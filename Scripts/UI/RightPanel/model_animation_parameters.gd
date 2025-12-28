@@ -62,36 +62,36 @@ func _on_gravity_amount_slider_value_changed(value):
 func _on_x_freq_wobble_slider_value_changed(value):
 	if type == ModelAnimationType.MouthClosed:
 		Global.sprite_container.state_param_mc.xFrq = value
-		%XFreqWobbleLabel.text = "X-Frequency Wobble : " + str(value)
+		%XFreqWobbleLabel.text = tr("TR_X_FREQUENCY_WOBBLE") + str(value)
 	if type == ModelAnimationType.MouthOpen:
 		Global.sprite_container.state_param_mo.xFrq = value
-		%XFreqWobbleLabel.text = "X-Frequency Wobble : " + str(value)
+		%XFreqWobbleLabel.text = tr("TR_X_FREQUENCY_WOBBLE") + str(value)
 	Global.sprite_container.save_state(Global.current_state)
 
 
 func _on_x_amp_wobble_slider_value_changed(value):
 	if type == ModelAnimationType.MouthClosed:
 		Global.sprite_container.state_param_mc.xAmp = value
-		%XAmpWobbleLabel.text = "X-Amplitude Wobble : " + str(value)
+		%XAmpWobbleLabel.text = tr("TR_X_AMPLITUDE_WOBBLE") + str(value)
 	if type == ModelAnimationType.MouthOpen:
 		Global.sprite_container.state_param_mo.xAmp = value
-		%XAmpWobbleLabel.text = "X-Amplitude Wobble : " + str(value)
+		%XAmpWobbleLabel.text = tr("TR_X_AMPLITUDE_WOBBLE") + str(value)
 	Global.sprite_container.save_state(Global.current_state)
 
 func _on_y_freq_wobble_slider_value_changed(value):
 	if type == ModelAnimationType.MouthClosed:
 		Global.sprite_container.state_param_mc.yFrq = value
-		%YFreqWobbleLabel.text = "Y-Frequency Wobble : " + str(value)
+		%YFreqWobbleLabel.text = tr("TR_Y_FREQUENCY_WOBBLE") + str(value)
 	if type == ModelAnimationType.MouthOpen:
 		Global.sprite_container.state_param_mo.yFrq = value
-		%YFreqWobbleLabel.text = "Y-Frequency Wobble : " + str(value)
+		%YFreqWobbleLabel.text = tr("TR_Y_FREQUENCY_WOBBLE") + str(value)
 	Global.sprite_container.save_state(Global.current_state)
 
 func _on_y_amp_wobble_slider_value_changed(value):
 	if type == ModelAnimationType.MouthClosed:
 		Global.sprite_container.state_param_mc.yAmp = value
-		%YAmpWobbleLabel.text = "Y-Amplitude Wobble : " + str(value)
+		%YAmpWobbleLabel.text = tr("TR_Y_AMPLITUDE_WOBBLE") + str(value)
 	if type == ModelAnimationType.MouthOpen:
 		Global.sprite_container.state_param_mo.yAmp = value
-		%YAmpWobbleLabel.text = "Y-Amplitude Wobble : " + str(value)
+		%YAmpWobbleLabel.text = tr("TR_Y_AMPLITUDE_WOBBLE") + str(value)
 	Global.sprite_container.save_state(Global.current_state)

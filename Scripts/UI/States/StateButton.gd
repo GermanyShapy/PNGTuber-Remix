@@ -5,6 +5,9 @@ class_name StateButton
 @export var input_key : String = str(randi())
 var saved_event : InputEvent
 var state_name : String 
+var state_hold_to_show : bool = false
+var state_inclusive_key_check : bool = false
+var edit_protection : bool = false
 static var selected_state : StateButton = null
 static var other_states : Array[StateButton] = []
 
@@ -46,6 +49,7 @@ func _on_pressed():
 		other_states.clear()
 		select_state()
 		Global.get_sprite_states(state)
+		edit_protection = true
 
 func initial_update():
 	Global.get_sprite_states(state)
@@ -59,11 +63,39 @@ func select_state():
 func _physics_process(_delta: float) -> void:
 	if Global.settings_dict.checkinput != true:
 		return
+		
+	if StateUI.is_showing_state_remap_popup:
+		return
 	
 	if input_key != "Null" or input_key != "":
-		if GlobInput.is_action_just_pressed(input_key):
+		if GlobInput.is_action_input_just_pressed(input_key, state_inclusive_key_check):
 			select_state()
 			Global.get_sprite_states(state)
+			edit_protection = false
+			#print("switch normal")
+			
+		if state_hold_to_show and GlobInput.is_action_input_pressed(input_key, state_inclusive_key_check):
+			if Global.current_state == state:
+				pass
+			elif GlobInput.is_action_input_pressed(selected_state.input_key, state_inclusive_key_check):
+				pass
+			else:
+				select_state()
+				Global.get_sprite_states(state)
+				#print("switch on")
+		if state_hold_to_show and !GlobInput.is_action_input_pressed(input_key, state_inclusive_key_check) and Global.current_state == state:
+			if edit_protection:
+				return
+				
+			var target_btn : StateButton = (get_parent().get_child(0) as StateButton)
+			
+			for btn in get_parent().get_children():
+				if btn.state_hold_to_show and GlobInput.is_action_input_pressed(btn.input_key, state_inclusive_key_check):
+					target_btn = btn
+				
+			target_btn.select_state()
+			Global.get_sprite_states(target_btn.state)
+			#print("switch off")
 
 func update_stuff():
 	if saved_event != null && InputMap.has_action(input_key):

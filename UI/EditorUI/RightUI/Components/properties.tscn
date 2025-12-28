@@ -27,7 +27,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="Scroll"]
 layout_mode = 2
@@ -167,6 +166,7 @@ size_flags_horizontal = 3
 min_value = -99999.0
 max_value = 99999.0
 step = 0.1
+script = ExtResource("1_tcd20")
 
 [node name="HBox8" type="HBoxContainer" parent="Scroll/MarginContainer/VBoxContainer/Layouts"]
 layout_mode = 2
@@ -196,7 +196,7 @@ custom_minimum_size = Vector2(74, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_font_sizes/font_size = 15
-text = "TR_SIZE_X"
+text = "TR_SIZE_Y"
 
 [node name="SizeSpinYBox" type="SpinBox" parent="Scroll/MarginContainer/VBoxContainer/Layouts/HBox7"]
 unique_name_in_owner = true
@@ -205,6 +205,48 @@ size_flags_horizontal = 3
 min_value = 0.1
 step = 0.1
 value = 1.0
+script = ExtResource("1_tcd20")
+
+[node name="HBox9" type="HBoxContainer" parent="Scroll/MarginContainer/VBoxContainer/Layouts"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SkewXLabel" type="Label" parent="Scroll/MarginContainer/VBoxContainer/Layouts/HBox9"]
+custom_minimum_size = Vector2(74, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 15
+text = "TR_SKEW_X"
+
+[node name="SkewSpinXBox" type="SpinBox" parent="Scroll/MarginContainer/VBoxContainer/Layouts/HBox9"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -89.9
+max_value = 89.9
+step = 0.1
+value = 0.1
+script = ExtResource("1_tcd20")
+
+[node name="HBox10" type="HBoxContainer" parent="Scroll/MarginContainer/VBoxContainer/Layouts"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SkewYLabel" type="Label" parent="Scroll/MarginContainer/VBoxContainer/Layouts/HBox10"]
+custom_minimum_size = Vector2(74, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 15
+text = "TR_SKEW_Y"
+
+[node name="SkewSpinYBox" type="SpinBox" parent="Scroll/MarginContainer/VBoxContainer/Layouts/HBox10"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -89.9
+max_value = 89.9
+step = 0.1
+value = 0.1
 script = ExtResource("1_tcd20")
 
 [node name="HBox2" type="HBoxContainer" parent="Scroll/MarginContainer/VBoxContainer/Layouts"]
@@ -282,6 +324,7 @@ text = "TR_BLEND_LABEL"
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+tooltip_text = "TR_BLEND_TOOLTIP"
 theme_override_font_sizes/font_size = 16
 selected = 0
 item_count = 7
@@ -448,6 +491,7 @@ custom_minimum_size = Vector2(52, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 tooltip_text = "TR_REST_MODE_TOOLTIP"
+mouse_filter = 1
 theme_override_font_sizes/font_size = 16
 text = "TR_REST_MODE"
 
@@ -458,7 +502,7 @@ size_flags_horizontal = 3
 tooltip_text = "TR_REST_MODE_TOOLTIP"
 theme_override_font_sizes/font_size = 16
 selected = 0
-item_count = 6
+item_count = 7
 popup/item_0/text = "TR_DISABLED"
 popup/item_0/id = 0
 popup/item_1/text = "TR_REST_FOLLOW"
@@ -467,10 +511,12 @@ popup/item_2/text = "TR_REST_MOVE"
 popup/item_2/id = 2
 popup/item_3/text = "TR_REST_BOTH"
 popup/item_3/id = 3
-popup/item_4/text = "TR_DISABLE_MOVE"
+popup/item_4/text = "TR_DISABLE_FOLLOW"
 popup/item_4/id = 4
-popup/item_5/text = "TR_DISABLE_FOLLOW"
+popup/item_5/text = "TR_DISABLE_MOVE"
 popup/item_5/id = 5
+popup/item_6/text = "TR_REST_MOVE_AND_RESET"
+popup/item_6/id = 6
 
 [connection signal="value_changed" from="Scroll/MarginContainer/VBoxContainer/Layouts/HBox3/PosXSpinBox" to="PropertiesScript" method="_on_pos_x_spin_box_value_changed"]
 [connection signal="value_changed" from="Scroll/MarginContainer/VBoxContainer/Layouts/HBox/PosYSpinBox" to="PropertiesScript" method="_on_pos_y_spin_box_value_changed"]
@@ -480,6 +526,8 @@ popup/item_5/id = 5
 [connection signal="value_changed" from="Scroll/MarginContainer/VBoxContainer/Layouts/HBox6/OffsetYSpinBox" to="PropertiesScript" method="_on_offset_y_spin_box_value_changed"]
 [connection signal="value_changed" from="Scroll/MarginContainer/VBoxContainer/Layouts/HBox8/SizeSpinBox" to="PropertiesScript" method="_on_size_spin_box_value_changed"]
 [connection signal="value_changed" from="Scroll/MarginContainer/VBoxContainer/Layouts/HBox7/SizeSpinYBox" to="PropertiesScript" method="_on_size_spin_y_box_value_changed"]
+[connection signal="value_changed" from="Scroll/MarginContainer/VBoxContainer/Layouts/HBox9/SkewSpinXBox" to="PropertiesScript" method="_on_skew_spin_x_box_value_changed"]
+[connection signal="value_changed" from="Scroll/MarginContainer/VBoxContainer/Layouts/HBox10/SkewSpinYBox" to="PropertiesScript" method="_on_skew_spin_y_box_value_changed"]
 [connection signal="color_changed" from="Scroll/MarginContainer/VBoxContainer/Visibilty/Hbox/ColorPickerButton" to="PropertiesScript" method="_on_color_picker_button_color_changed"]
 [connection signal="focus_entered" from="Scroll/MarginContainer/VBoxContainer/Visibilty/Hbox/ColorPickerButton" to="PropertiesScript" method="_on_color_picker_button_focus_entered"]
 [connection signal="focus_exited" from="Scroll/MarginContainer/VBoxContainer/Visibilty/Hbox/ColorPickerButton" to="PropertiesScript" method="_on_color_picker_button_focus_exited"]

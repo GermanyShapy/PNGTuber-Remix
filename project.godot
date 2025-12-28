@@ -63,7 +63,7 @@ window/enable_file_logging=false
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/Double_HSlider_gd/plugin.cfg", "res://addons/aimg_io/plugin.cfg", "res://addons/wiggly_appendage_2d/plugin.cfg")
+enabled=PackedStringArray("res://addons/aimg_io/plugin.cfg", "res://addons/wiggly_appendage_2d/plugin.cfg")
 
 [global_group]
 
@@ -328,7 +328,7 @@ buffering/agile_event_flushing=true
 
 [internationalization]
 
-locale/translations=PackedStringArray("res://Localization/en/us/en_us.en.translation")
+locale/translations=PackedStringArray("res://Localization/en/us/en_us.en.translation", "res://Localization/zh/cn/zh_cn.zh_CN.translation")
 
 [rendering]
 

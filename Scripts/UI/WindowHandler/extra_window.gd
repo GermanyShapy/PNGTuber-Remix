@@ -9,20 +9,26 @@ var offset := Vector2i.ZERO
 
 var viewport_container := SubViewportContainer.new()
 var viewport := SubViewport.new()
+var effects := TextureRect.new()
 var camera := WindowCamera.new()
 var button := Button.new()
 var control := Control.new()
 
-func _init(world: World2D, remove_window: Callable, lock_window: Callable, other_camera: Camera2D) -> void:
+func _init(world: World2D, remove_window: Callable, lock_window: Callable, other_camera: Camera2D, container_material: ShaderMaterial, effects_material: ShaderMaterial) -> void:
 	add_child(viewport_container)
 	viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	viewport_container.add_child(viewport)
 	viewport_container.stretch = true
+	viewport_container.material = container_material
 	viewport.transparent_bg = true
 	viewport.world_2d = world
 	viewport.add_child(camera)
 	camera.global_position = other_camera.global_position
 	camera.zoom = other_camera.zoom
+	viewport_container.add_child(effects)
+	effects.texture = viewport.get_texture()
+	effects.material = effects_material
+	effects.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	
 	hide()
 	size = WINDOW_SIZE
@@ -40,7 +46,7 @@ func _init(world: World2D, remove_window: Callable, lock_window: Callable, other
 	
 	control.add_child(button)
 	button.theme = Settings.current_theme
-	button.text = "Lock Size"
+	button.text = tr("TR_LOCK_SIZE")
 	button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	button.position -= Vector2.ONE * BUTTON_MARGIN
 	button.pressed.connect(lock_window.bind(self))

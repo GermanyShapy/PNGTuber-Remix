@@ -82,7 +82,7 @@ const DEFAULT_DATA := {
 	
 	
 	# Other stuff idk
-	blend_mode = "Normal",
+	blend_mode = "TR_BLEND_NORMAL",
 	visible = true,
 	colored = Color.WHITE,
 	tint = Color.WHITE,
@@ -98,6 +98,7 @@ const DEFAULT_DATA := {
 	position = Vector2.ZERO,
 	rotation = 0.0,
 	offset = Vector2(0,0),
+	skew = Vector2(0,0),
 	ignore_bounce = false,
 	clip = 0,
 	fade = false,
@@ -184,9 +185,13 @@ var show_only : bool = false
 var should_disappear : bool = false
 var hold_to_show : bool = false
 var min_duration : float = 0.0
+var cast_time : float = 0.0
+var inclusive_key_check : bool = false
 var saved_keys : Array = []
 var disappear_keys : String = str(sprite_id) + "Disappear"
 var rest_mode : int = 1
+var ignore_if_rest : bool = false
+var auto_show : bool = false
 
 var last_mouse_position : Vector2 = Vector2(0,0)
 var last_dist : Vector2 = Vector2(0,0)
@@ -266,25 +271,47 @@ func get_value(key: String) -> Variant:
 	return default
 
 func set_blend(blend):
+	(sprite_object.material as ShaderMaterial).shader = preload("res://Scripts/Shaders/SpriteShader.gdshader")
 	match  blend:
+		#TEST TODO Completely upgrade other blend mode(SpriteShader)： Burn, HardMix, Cursed
 		"Normal":
-			sprite_object.material.set_shader_parameter("enabled", false)
+			if material is CanvasItemMaterial:
+				sprite_object.use_parent_material = true
+				(material as CanvasItemMaterial).blend_mode = CanvasItemMaterial.BLEND_MODE_MIX
+			else:
+				sprite_object.use_parent_material = false
+				sprite_object.material.set_shader_parameter("enabled", false)
 		"Add":
-			sprite_object.material.set_shader_parameter("enabled", true)
-			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/add.png"))
+			if material is CanvasItemMaterial:
+				sprite_object.use_parent_material = true
+				(material as CanvasItemMaterial).blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+			else:
+				sprite_object.use_parent_material = false
+				sprite_object.material.set_shader_parameter("enabled", true)
+				sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/add.png"))
 		"Subtract":
-			sprite_object.material.set_shader_parameter("enabled", true)
-			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/exclusion.png"))
+			if material is CanvasItemMaterial:
+				sprite_object.use_parent_material = true
+				(material as CanvasItemMaterial).blend_mode = CanvasItemMaterial.BLEND_MODE_SUB
+			else:
+				sprite_object.use_parent_material = false
+				sprite_object.material.set_shader_parameter("enabled", true)
+				sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/exclusion.png"))
 		"Multiply":
+			sprite_object.use_parent_material = false
+			(sprite_object.material as ShaderMaterial).shader = preload("res://Scripts/Shaders/SpriteMultiplyShader.gdshader")
 			sprite_object.material.set_shader_parameter("enabled", true)
 			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/multiply.png"))
 		"Burn":
+			sprite_object.use_parent_material = false
 			sprite_object.material.set_shader_parameter("enabled", true)
 			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/burn.png"))
 		"HardMix":
+			sprite_object.use_parent_material = false
 			sprite_object.material.set_shader_parameter("enabled", true)
 			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/hardmix.png"))
 		"Cursed":
+			sprite_object.use_parent_material = false
 			sprite_object.material.set_shader_parameter("enabled", true)
 			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/test1.png"))
 
@@ -295,6 +322,7 @@ func reparent_obj(parent):
 			i.get_parent().remove_child(i)
 			%Sprite2D.add_child(i)
 			i.global_position = og_pos
+			i.visibility_changed.emit()
 
 func image_replaced(image_date : ImageData):
 	if !get_value("folder"):
@@ -352,21 +380,31 @@ func trigger_fade(was_visible: bool):
 		visible = false
 
 func fade_asset(was_visible: bool, node: Node, node_hide: Node) -> bool:
+	var start_a = node.modulate.a
 	if tween:
 		tween.kill()
 	var target = !was_visible
 	node_hide.visible = true  
 	if target:
-		node.modulate.a = 0.0
+		if start_a == 1.0:
+			return true
+		node.modulate.a = start_a
 		tween = get_tree().create_tween()
-		tween.tween_property(node, "modulate:a", 1.0, get_value("fade_speed_asset"))
+		tween.tween_property(node, "modulate:a", 1.0, get_value("fade_speed_asset") * (1.0 - start_a))
 		await tween.finished
 		node.modulate.a = 1.0
 		return true
 	else:
-		node.modulate.a = 1.0
+		if start_a == 0.0:
+			return false
+		node.modulate.a = start_a
 		tween = get_tree().create_tween()
-		tween.tween_property(node, "modulate:a", 0.0, get_value("fade_speed_asset"))
+		tween.tween_property(node, "modulate:a", 0.0, get_value("fade_speed_asset") * start_a)
 		await tween.finished
 		node_hide.visible = false
 		return false
+
+func fade_reset():
+	if tween:
+		tween.kill()
+	modulate.a = 1.0

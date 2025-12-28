@@ -52,7 +52,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "TR_BLIND_KEY"
+text = "TR_BIND_KEY"
 script = ExtResource("2_dpute")
 
 [node name="RemoveAssetButton" type="Button" parent="Buttons/HBoxAsset"]
@@ -73,13 +73,12 @@ size_flags_horizontal = 3
 tooltip_text = "TR_DONT_HIDE_ON_TOGGLE_TOOLTIP"
 text = "TR_DONT_HIDE"
 
-[node name="ShouldDisappearCheck" type="CheckBox" parent="Buttons"]
+[node name="InclusiveKeyCheck" type="CheckBox" parent="Buttons"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 size_flags_horizontal = 3
-tooltip_text = "TR_SHOULD_DISAPPEAR_TOOLTIP"
-text = "TR_DISAPPEAR_KEYS"
+tooltip_text = "TR_INCLUSIVE_KEY_CHECK_TOOLTIP"
+text = "TR_INCLUSIVE_KEY_CHECK"
 
 [node name="HoldToShowCheck" type="CheckBox" parent="Buttons"]
 unique_name_in_owner = true
@@ -96,6 +95,8 @@ size_flags_horizontal = 3
 [node name="MinDurationLabel" type="Label" parent="Buttons/HBoxMinDuration"]
 custom_minimum_size = Vector2(74, 0)
 layout_mode = 2
+tooltip_text = "TR_MIN_DURATION_TOOLTIP"
+mouse_filter = 1
 theme_override_font_sizes/font_size = 15
 text = "TR_MIN_DURATION"
 
@@ -106,6 +107,50 @@ size_flags_horizontal = 3
 max_value = 1000.0
 step = 0.01
 script = ExtResource("4_olugq")
+
+[node name="IgnoreIfRestCheck" type="CheckBox" parent="Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "TR_IGNORE_IF_REST_TOOLTIP"
+text = "TR_IGNORE_IF_REST"
+
+[node name="HBoxCastTime" type="HBoxContainer" parent="Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CastTimeLabel" type="Label" parent="Buttons/HBoxCastTime"]
+custom_minimum_size = Vector2(74, 0)
+layout_mode = 2
+tooltip_text = "TR_CAST_TIME_TOOLTIP"
+mouse_filter = 1
+theme_override_font_sizes/font_size = 15
+text = "TR_CAST_TIME"
+
+[node name="CastTimeSpinBox" type="SpinBox" parent="Buttons/HBoxCastTime"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1000.0
+step = 0.01
+script = ExtResource("4_olugq")
+
+[node name="AutoShowCheck" type="CheckBox" parent="Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "TR_AUTO_SHOW_TOOLTIP"
+text = "TR_AUTO_SHOW"
+
+[node name="ShouldDisappearCheck" type="CheckBox" parent="Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "TR_SHOULD_DISAPPEAR_TOOLTIP"
+text = "TR_DISAPPEAR_KEYS"
 
 [node name="ShouldDisListContainer" type="VBoxContainer" parent="."]
 unique_name_in_owner = true
@@ -353,15 +398,20 @@ expand_icon = true
 [connection signal="toggled" from="Buttons/IsAssetCheck" to="Buttons/HBoxAsset/IsAssetButton" method="_on_is_asset_check_toggled"]
 [connection signal="pressed" from="Buttons/HBoxAsset/RemoveAssetButton" to="Buttons/HBoxAsset/IsAssetButton" method="_on_remove_asset_button_pressed"]
 [connection signal="toggled" from="Buttons/DontHideOnToggleCheck" to="Buttons/HBoxAsset/IsAssetButton" method="_on_dont_hide_on_toggle_check_toggled"]
-[connection signal="toggled" from="Buttons/ShouldDisappearCheck" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_disappear_check_toggled"]
+[connection signal="toggled" from="Buttons/InclusiveKeyCheck" to="Buttons/HBoxAsset/IsAssetButton" method="_on_inclusive_key_check_on_toggle_check_toggled"]
 [connection signal="toggled" from="Buttons/HoldToShowCheck" to="Buttons/HBoxAsset/IsAssetButton" method="_on_hold_to_show_on_toggle_check_toggled"]
 [connection signal="value_changed" from="Buttons/HBoxMinDuration/MinDurationSpinBox" to="Buttons/HBoxAsset/IsAssetButton" method="_on_min_duration_spin_box_value_changed"]
+[connection signal="toggled" from="Buttons/IgnoreIfRestCheck" to="Buttons/HBoxAsset/IsAssetButton" method="_on_ignore_if_rest_on_toggle_check_toggled"]
+[connection signal="value_changed" from="Buttons/HBoxCastTime/CastTimeSpinBox" to="Buttons/HBoxAsset/IsAssetButton" method="_on_cast_time_spin_box_value_changed"]
+[connection signal="toggled" from="Buttons/AutoShowCheck" to="Buttons/HBoxAsset/IsAssetButton" method="_on_auto_show_on_toggle_check_toggled"]
+[connection signal="toggled" from="Buttons/ShouldDisappearCheck" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_disappear_check_toggled"]
 [connection signal="pressed" from="ShouldDisListContainer/HBoxContainer/ShouldDisAddButton" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_dis_add_button_pressed"]
 [connection signal="pressed" from="ShouldDisListContainer/HBoxContainer/ShouldDisDelButton" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_dis_del_button_pressed"]
 [connection signal="toggled" from="ShouldDisListContainer/HBoxContainer/ShouldDisRemapButton" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_dis_remap_button_toggled"]
 [connection signal="empty_clicked" from="ShouldDisListContainer/ShouldDisList" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_dis_list_empty_clicked"]
 [connection signal="focus_exited" from="ShouldDisListContainer/ShouldDisList" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_dis_list_focus_exited"]
 [connection signal="item_selected" from="ShouldDisListContainer/ShouldDisList" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_dis_list_item_selected"]
+[connection signal="changed" from="CycleGrid/CheckBox" to="." method="_on_is_cycle_checkbox_changed"]
 [connection signal="item_selected" from="CycleGrid/CycleChoiceSprite" to="." method="_on_cycle_choice_sprite_item_selected"]
 [connection signal="item_selected" from="HBoxContainer/HBox/CycleChoice" to="." method="_on_cycle_choice_item_selected"]
 [connection signal="pressed" from="HBoxContainer/HBox/AddCycle" to="." method="_on_add_cycle_pressed"]

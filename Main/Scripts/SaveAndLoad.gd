@@ -41,6 +41,8 @@ func save_data():
 		input_array.append({
 			"state_name": input.state_name,
 			"hot_key": input.saved_event,
+			"state_hold_to_show": input.state_hold_to_show,
+			"state_inclusive_key_check": input.state_inclusive_key_check
 		})
 	for sprt in sprites:
 		sprt.save_state(Global.current_state)
@@ -87,6 +89,10 @@ func save_data():
 				"saved_disappear": saved_events,
 				"hold_to_show":sprt.hold_to_show,
 				"min_duration":sprt.min_duration,
+				"cast_time":sprt.cast_time,
+				"inclusive_key_check":sprt.inclusive_key_check,
+				"ignore_if_rest":sprt.ignore_if_rest,
+				"auto_show":sprt.auto_show,
 				"is_collapsed": sprt.is_collapsed,
 				"is_premultiplied": true,
 				"layer_color": sprt.layer_color,
@@ -113,6 +119,10 @@ func save_data():
 				"saved_disappear": saved_events,
 				"hold_to_show":sprt.hold_to_show,
 				"min_duration":sprt.min_duration,
+				"cast_time":sprt.cast_time,
+				"inclusive_key_check":sprt.inclusive_key_check,
+				"ignore_if_rest":sprt.ignore_if_rest,
+				"auto_show":sprt.auto_show,
 				"is_collapsed": sprt.is_collapsed,
 				"is_premultiplied": true,
 				"layer_color": sprt.layer_color,
@@ -210,6 +220,8 @@ func load_model(path: String) -> void:
 			if typeof(data) == TYPE_DICTIONARY:
 				btn.saved_event = data.get("hot_key")
 				btn.state_name = data.get("state_name", "")
+				btn.state_hold_to_show = data.get("state_hold_to_show", false)
+				btn.state_inclusive_key_check = data.get("state_inclusive_key_check", false)
 				btn.text = data.get("state_name", "")
 				btn.update_stuff()
 			else:
@@ -378,6 +390,14 @@ func set_common_data(sprite, sprite_obj):
 			sprite_obj.hold_to_show = sprite.hold_to_show
 		if sprite.has("min_duration"):
 			sprite_obj.min_duration = sprite.min_duration
+		if sprite.has("cast_time"):
+			sprite_obj.cast_time = sprite.cast_time
+		if sprite.has("inclusive_key_check"):
+			sprite_obj.inclusive_key_check = sprite.inclusive_key_check
+		if sprite.has("ignore_if_rest"):
+			sprite_obj.ignore_if_rest = sprite.ignore_if_rest
+		if sprite.has("auto_show"):
+			sprite_obj.auto_show = sprite.auto_show
 		sprite_obj.get_node("%Sprite2D").visible = sprite.was_active_before
 		sprite_obj.was_active_before = sprite.was_active_before
 
