@@ -98,6 +98,8 @@ var settings_dict : Dictionary = {
 	language = "automatic",
 	preferred_language = null,
 	trimmed = false,
+	
+	custom_hotkeys = {}
 }
 
 var image_manager_data : Array = []

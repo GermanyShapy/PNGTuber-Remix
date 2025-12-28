@@ -56,7 +56,12 @@ func _physics_process(delta: float) -> void:
 	applied_pos = %Modifier1.global_position
 	
 	if !Global.static_view and actor.rest_mode != 5:
-		if (actor.rest_mode == 2 or actor.rest_mode == 3) and rest:
+		# ADD:  actor.rest_mode == 6 is "rest move and reset"
+		if (actor.rest_mode == 2 or actor.rest_mode == 3 or actor.rest_mode == 6) and rest:
+			if actor.rest_mode == 6:
+				last_wobble_pos = Vector2.ZERO
+				paused_wobble = Vector2.ZERO
+				should_rot_rotation = 0.0
 			rest_mode_movements(delta)
 		else:
 			if actor.get_value("should_rotate"):
@@ -78,7 +83,10 @@ func _physics_process(delta: float) -> void:
 		modifier_node.global_position = GlobalCalculations.is_nan_or_inf(applied_pos)
 	
 	shadow_target = modifier_node.global_position + %FollowComponent.target_pos
-	var test = (shadow_target - actor.global_position).normalized()
+	var test = (shadow_target - actor.global_position)
+	if !test.is_zero_approx():
+		test = test.normalized()
+		
 	var signed_len_x = (test.x)
 	var signed_len_y = (test.y)
 	index_change_len = lerp(index_change_len, signed_len_x, 0.95)
@@ -143,6 +151,7 @@ func rest_mode_movements(delta):
 		return
 	glob =  shadow_dragger
 	drag(delta)
+	applied_pos += last_wobble_pos #Stay the last time(before rest) position
 	
 	if !actor.get_value("ignore_bounce"):
 		glob -= Vector2(Global.sprite_container.bounceChange, Global.sprite_container.bounceChange)
@@ -170,11 +179,17 @@ func drag(_delta):
 
 func wobble(_delta: float) -> void:
 	if actor.get_value("pause_movement"):
-		last_wobble_pos = Vector2.ZERO
+		pass
+		#last_wobble_pos = Vector2.ZERO
 	else:
 		var tick = Global.tick
-		last_wobble_pos.x = sin((tick - paused_wobble.x) * actor.get_value("xFrq")) * actor.get_value("xAmp")
-		last_wobble_pos.y = sin((tick - paused_wobble.y) * actor.get_value("yFrq")) * actor.get_value("yAmp")
+		var offset = _delta if Global.settings_dict.should_delta else 1.
+		#last_wobble_pos.x = sin((tick - paused_wobble.x) * actor.get_value("xFrq")) * actor.get_value("xAmp")
+		#last_wobble_pos.y = sin((tick - paused_wobble.y) * actor.get_value("yFrq")) * actor.get_value("yAmp")
+		paused_wobble.x += offset
+		paused_wobble.y += offset
+		last_wobble_pos.x = sin(paused_wobble.x * actor.get_value("xFrq")) * actor.get_value("xAmp")
+		last_wobble_pos.y = sin(paused_wobble.y * actor.get_value("yFrq")) * actor.get_value("yAmp")
 
 	var final = applied_pos + last_wobble_pos
 	if actor.sprite_type == "Mesh" and mesh != null:
@@ -294,4 +309,11 @@ func _frame_lerp(delta: float, base_t := 0.15) -> float:
 	return clamp(1.0 - exp(-per_second_k * clamp(delta, 0.0, 1.0)), 0.0, 1.0)
 
 func _on_sprite_object_visibility_changed() -> void:
-	rest = !actor.is_visible_in_tree()
+	rest = !actor.is_visible_in_tree() if !(actor == null) else false
+	
+	if rest and actor.tween != null:
+		actor.tween.kill()
+		if actor.was_active_before:
+			actor.modulate.a = 1.0
+		else:
+			actor.modulate.a = 0.0

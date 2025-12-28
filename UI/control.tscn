@@ -241,6 +241,7 @@ visible = false
 layout_mode = 2
 
 [node name="Wiggle" parent="MainSplit/SecondarySplit/RightPanel/Margin/VBoxContainer/VSplit/Inspector" instance=ExtResource("6_63lps")]
+visible = false
 layout_mode = 2
 
 [node name="Animation" parent="MainSplit/SecondarySplit/RightPanel/Margin/VBoxContainer/VSplit/Inspector" instance=ExtResource("7_1r6xj")]
@@ -332,6 +333,13 @@ size_flags_vertical = 1
 [node name="StatePanel" parent="MainSplit/SecondarySplit/RightPanel/Margin/VBoxContainer/VSplit" instance=ExtResource("10_1r6xj")]
 layout_mode = 2
 size_flags_vertical = 1
+
+[node name="LabelMouseInputArea" type="Button" parent="MainSplit/SecondarySplit/RightPanel/Margin/VBoxContainer/VSplit/StatePanel"]
+custom_minimum_size = Vector2(350, 30)
+layout_mode = 2
+mouse_filter = 2
+button_mask = 0
+text = "TR_MOUSE_INPUT_AREA"
 
 [connection signal="dragged" from="MainSplit" to="." method="_on_main_split_dragged"]
 [connection signal="dragged" from="MainSplit/SecondarySplit" to="." method="_on_secondary_split_dragged"]

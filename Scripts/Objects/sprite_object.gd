@@ -78,6 +78,22 @@ func animation():
 		$Animation.wait_time = 1.0/get_value("animation_speed") 
 		$Animation.start()
 
+func animation_reset():
+	if not get_value("non_animated_sheet"):
+		if not get_value("advanced_lipsync"):
+			%Sprite2D.frame = 0
+	
+	elif get_value("non_animated_sheet"):
+		%Sprite2D.hframes = get_value("hframes")
+		%Sprite2D.vframes = get_value("vframes")
+		if (get_value("hframes")*get_value("vframes")) - 1 > 1:
+			if !get_value("animate_to_mouse"):
+				%Sprite2D.frame = get_value("frame")
+	
+	if is_inside_tree():
+		$Animation.wait_time = 1.0/get_value("animation_speed") 
+		$Animation.start()
+
 func _process(_delta):
 	if selected:
 		%Grab.mouse_filter = Control.MouseFilter.MOUSE_FILTER_PASS
@@ -151,8 +167,8 @@ func wiggle_sprite():
 		if (get_parent() is Sprite2D  or get_parent() is WigglyAppendage2D) && is_instance_valid(get_parent()):
 			var c_parent = get_parent().owner
 			if c_parent != null && is_instance_valid(c_parent):
-				var c_parrent_length = (c_parent.get_node("Movements").glob.y - c_parent.get_node("%Drag").global_position.y)
-				var c_parrent_length2 = (c_parent.get_node("%Movements").glob.x - c_parent.get_node("%Drag").global_position.x)
+				var c_parrent_length = (c_parent.get_node("Movements").glob.y - c_parent.get_node("%Sprite2D").global_position.y)
+				var c_parrent_length2 = (c_parent.get_node("%Movements").glob.x - c_parent.get_node("%Sprite2D").global_position.x)
 				length +=((c_parrent_length + c_parrent_length2)/50)
 	
 	
@@ -198,6 +214,8 @@ func get_state(id):
 		%Modifier1.z_index = get_value("z_index")
 		modulate = get_value("colored")
 		scale = get_value("scale")
+		(%Sprite2D as Node2D).transform.x = Vector2.from_angle(deg_to_rad(get_value("skew").x) )
+		(%Sprite2D as Node2D).transform.y = Vector2.from_angle(deg_to_rad(get_value("skew").y + 90.0) )
 	#	global_position = get_value("global_position")
 		
 		
@@ -234,12 +252,9 @@ func get_state(id):
 			visible = get_value("visible")
 		
 			
-		animation()
+		#animation()
 		set_blend(get_value("blend_mode"))
 		advanced_lipsyc()
-			
-		if !get_value("cycle") in range(Global.settings_dict.cycles.size() + 1):
-			sprite_data.cycle = 0
 		
 		
 	elif states[id].is_empty():

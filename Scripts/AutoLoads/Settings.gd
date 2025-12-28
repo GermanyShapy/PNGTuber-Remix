@@ -336,11 +336,11 @@ func change_cursor():
 		Input.set_custom_mouse_cursor(null)
 
 func set_ui_pieces(val : int, id : int):
-	if id == 5:
+	if id == 6:
 		theme_settings.hide_mini_view = val
-	elif id == 6:
+	elif id == 7:
 		theme_settings.hide_sprite_view = val
-	elif 7:
+	elif 8:
 		theme_settings.hide_bottom_bar = val
 	save()
 

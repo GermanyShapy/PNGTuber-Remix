@@ -12,6 +12,7 @@ func nullfy():
 	%AnimationReset.disabled = true
 	%AnimationOneShot.disabled = true
 	%ResetonStateChange.disabled = true
+	%NeverReset.disabled = true
 	%RSSlider.editable = false
 	%NonAnimatedSheetCheck.disabled = true
 	%FrameSpinbox.editable = false
@@ -27,10 +28,12 @@ func enable():
 				%AnimationOneShot.disabled = false
 				%AnimationReset.disabled = false
 				%ResetonStateChange.disabled = false
+				%NeverReset.disabled = false
 			else:
 				%AnimationOneShot.disabled = true
 				%AnimationReset.disabled = true
 				%ResetonStateChange.disabled = true
+				%NeverReset.disabled = true
 				
 			%RSSlider.editable = true
 			if i.sprite_type == "Sprite2D":
@@ -97,7 +100,7 @@ func _on_rs_slider_value_changed(value):
 	if should_change:
 		for i in Global.held_sprites:
 			if i != null && is_instance_valid(i):
-				%RSLabel.text = "Rainbow Speed : " + str(snapped(value*10, 0.001))
+				%RSLabel.text = tr("TR_EFFECT_RAINBOW_SPEED") + str(snapped(value*10, 0.001))
 				i.sprite_data.rainbow_speed = value
 				StateButton.multi_edit(value, "rainbow_speed", i, i.states)
 				i.save_state(Global.current_state)
@@ -116,6 +119,7 @@ func _on_non_animated_sheet_check_toggled(toggled_on: bool) -> void:
 						%FrameHBox.hide()
 				else:
 					%FrameHBox.hide()
+				i.save_state(Global.current_state)
 
 func _on_frame_spinbox_value_changed(value: float) -> void:
 	if should_change:

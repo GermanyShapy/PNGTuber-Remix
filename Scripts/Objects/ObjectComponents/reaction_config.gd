@@ -1,4 +1,5 @@
 extends Node
+class_name ReactionConfig
 
 @export var actor : Node
 @export var animation_handler : Node
@@ -6,6 +7,9 @@ var currently_speaking : bool = false
 var blinking : bool = false
 var tween : Tween
 var min_duration_timer : float = 0.0
+var cast_timer : float = 0.0
+var was_rest_before :bool = false
+var fading_lock : bool = false
 
 func _ready() -> void:
 	Global.speaking.connect(speaking)
@@ -18,86 +22,103 @@ func _ready() -> void:
 	not_speaking()
 
 func _physics_process(_delta: float) -> void:
+	if min_duration_timer > 0.0:
+		min_duration_timer -= _delta
+			
 	if Global.settings_dict.checkinput != true:
 		return
-		
+	
 	var is_trying_to_appear = false
 	var is_trying_to_disappear = false
-	if GlobInput.is_action_just_pressed(str(actor.sprite_id)):
-		if actor.show_only:
-			%Sprite2D.visible = true
-
+	var cycle = null
+	var cycle_sprite_pos = 0
+	
+	#Rest Check
+	var is_rest = !actor.is_visible_in_tree()
+	
+	if !is_rest and was_rest_before:	# Awaken
+		if actor.auto_show:
+			is_trying_to_appear = true
+			cast_timer = 0.0
+	
+	was_rest_before = is_rest
+	
+	if is_rest and actor.ignore_if_rest:
+		if actor.hold_to_show and actor.was_active_before: #one last disapperance
+			is_trying_to_disappear = true
+			min_duration_timer = 0.0
 		else:
-			if actor.get_value("fade_asset"):
-				var new_vis = await actor.fade_asset(actor.was_active_before, actor, %Sprite2D)
-				actor.was_active_before = new_vis
-				%Sprite2D.visible = new_vis
-			else:
-				%Sprite2D.visible = !%Sprite2D.visible
-				actor.was_active_before = %Sprite2D.visible
+			return
+	if actor.sprite_id == 5070712231532:
+		pass
 
-
-	if GlobInput.is_action_pressed(str(actor.sprite_id)) and actor.hold_to_show and !actor.was_active_before:
+	# Conditions
+	if GlobInput.is_action_input_just_pressed(str(actor.sprite_id), actor.inclusive_key_check):
+		if actor.show_only:
+			is_trying_to_appear = true
+		else:
+			if !actor.was_active_before:
+				is_trying_to_appear = true
+			elif actor.was_active_before:
+				is_trying_to_disappear = true
+	
+	if actor.cast_time > 0.0 and cast_timer <= 0.0: #For "just_pressed" to show during cast time
+		if !actor.hold_to_show and !actor.was_active_before and GlobInput.is_action_input_pressed(str(actor.sprite_id), actor.inclusive_key_check):
+			is_trying_to_appear = true
+	
+	if actor.hold_to_show and !actor.was_active_before and GlobInput.is_action_input_pressed(str(actor.sprite_id), actor.inclusive_key_check):
 		is_trying_to_appear = true
-	if GlobInput.is_action_just_pressed(actor.disappear_keys):
+	if GlobInput.is_action_input_just_pressed(actor.disappear_keys, actor.inclusive_key_check):
 		is_trying_to_disappear = true
-	if !GlobInput.is_action_pressed(str(actor.sprite_id)) and actor.hold_to_show and actor.was_active_before:
+	if actor.hold_to_show and actor.was_active_before and !GlobInput.is_action_input_pressed(str(actor.sprite_id), actor.inclusive_key_check):
 		is_trying_to_disappear = true
-	#the minimal duration for sprite to show, avoiding disappearance
+	#Timer Tick
 	if min_duration_timer > 0.0:
 		is_trying_to_disappear = false
-		min_duration_timer -= _delta
-	
-	if is_trying_to_appear:
-		%Sprite2D.visible = true
-		if actor.min_duration > 0.00001:
-			min_duration_timer = actor.min_duration	# start the duration protect
-	if is_trying_to_disappear:
-		if actor.get_value("fade_asset"):
-			var new_visibility = await actor.fade_asset(false, actor, %Sprite2D)
-			%Sprite2D.visible = new_visibility
-			actor.was_active_before = new_visibility
-		else:
-			%Sprite2D.visible = false
-			actor.was_active_before = %Sprite2D.visible
-		if !actor.is_asset && !%Sprite2D.visible:
-			%Sprite2D.visible = true
-	
-	'''
+			
+	if cast_timer > 0.0:
+		cast_timer -= _delta
+		is_trying_to_appear = false
+		
+	if 0.0 == actor.cast_time:
+		cast_timer = 0.0
+	elif !GlobInput.is_action_input_pressed(str(actor.sprite_id)):
+		cast_timer = actor.cast_time
+
+	#Cycle Check
 	if actor.sprite_data.is_cycle and actor.sprite_data.cycle > 0:
-		var cycle = Global.settings_dict.cycles[actor.sprite_data.cycle - 1]
-		var sprite_pos = cycle.sprites.find(actor.sprite_id)
+		cycle = Global.settings_dict.cycles[actor.sprite_data.cycle - 1]
+		cycle_sprite_pos = cycle.sprites.find(actor.sprite_id)
 		
-		if is_trying_to_appear:
-			cycle.active = true
-			cycle.pos = sprite_pos
-			cycle.last_sprite = actor.sprite_id
-			
+		if !actor.hold_to_show:
 			for sprite in get_tree().get_nodes_in_group("Sprites"):
-				if sprite.sprite_id in cycle.sprites and sprite.get_value("is_cycle"):
-					sprite.get_node("%Sprite2D").hide()
-					sprite.was_active_before = sprite.get_node("%Sprite2D").visible
-				if sprite.sprite_id == cycle.last_sprite and sprite.get_value("is_cycle"):
-					sprite.get_node("%Sprite2D").show()
-					sprite.was_active_before = sprite.get_node("%Sprite2D").visible
-					
-		if is_trying_to_disappear:
-			cycle.active = true
-			cycle.pos = 0
-			cycle.last_sprite = cycle.sprites[0]
-			
-			for sprite in get_tree().get_nodes_in_group("Sprites"):
-				if sprite.sprite_id in cycle.sprites and sprite.get_value("is_cycle"):
-					sprite.get_node("%Sprite2D").hide()
-					sprite.was_active_before = sprite.get_node("%Sprite2D").visible
-				if sprite.sprite_id == cycle.last_sprite and sprite.get_value("is_cycle"):
-					sprite.get_node("%Sprite2D").show()
-					sprite.was_active_before = sprite.get_node("%Sprite2D").visible
+				if sprite.sprite_id == cycle.last_sprite and sprite.get_value("is_cycle") and sprite.hold_to_show and sprite.was_active_before:
+					is_trying_to_appear = false
+					break
+	
+	#Finally, Show or Hide
+	if is_trying_to_appear:
+		if cycle != null and !actor.was_active_before:
+			if cycle_sprite_pos == 0 and cycle_sprite_pos == cycle.pos:
+				sprite_show(actor, %Sprite2D)
+			else:
+				GlobInput.get_node("Cycle").toggle_to(cycle, cycle_sprite_pos)
 		
-		actor.was_active_before = false
+		if !actor.was_active_before:
+			sprite_show(actor, %Sprite2D)
+			
+	if is_trying_to_disappear:
+		if cycle != null and actor.was_active_before:
+			if cycle_sprite_pos != 0 and cycle_sprite_pos == cycle.pos:
+				GlobInput.get_node("Cycle").toggle_to(cycle, 0)
+			
+		if actor.was_active_before:
+			sprite_hide(actor, %Sprite2D)
+			
 		if !actor.is_asset && !%Sprite2D.visible:
 			%Sprite2D.visible = true
-			actor.was_active_before = true'''
+			actor.was_active_before = %Sprite2D.visible
+			
 
 func update_to_mode_change(mode : int):
 	match mode:
@@ -239,6 +260,9 @@ func speaking():
 	currently_speaking = true
 
 func reset_animations(_place_holder : int = 0):
+	if actor.get_value("never_reset"):
+		return
+	
 	if actor.get_value("one_shot"):
 		reset_anim()
 	
@@ -253,8 +277,7 @@ func reset_anim():
 		animation_handler.proper_apng_one_shot()
 	animation_handler.played_once = false
 	if actor.sprite_type == "Sprite2D":
-		%Sprite2D.frame = 0
-		actor.animation()
+		actor.animation_reset()
 
 func not_speaking():
 	if Global.mode != 0:
@@ -280,3 +303,31 @@ func not_speaking():
 			%Modifier.modulate.a = 1
 			
 	currently_speaking = false
+
+static func sprite_show(actor : Node, sprite2d : Node):
+	if actor.min_duration > 0.00001:
+		actor.get_node("ReactionConfig").min_duration_timer = actor.min_duration # start the duration protect
+	if actor.get_value("fade_asset"):
+		actor.fade_asset(actor.was_active_before, actor, sprite2d)
+		actor.was_active_before = true
+		#var new_visibility = await actor.fade_asset(actor.was_active_before, actor, %Sprite2D)
+		#%Sprite2D.visible = new_visibility
+		#actor.was_active_before = new_visibility
+	else:
+		actor.fade_reset()
+		sprite2d.visible = true
+		actor.was_active_before = sprite2d.visible
+	actor.get_node("ReactionConfig").reset_animations()
+		
+static func sprite_hide(actor : Node, sprite2d : Node):
+	if actor.get_value("fade_asset"):
+		actor.fade_asset(actor.was_active_before, actor, sprite2d)
+		actor.was_active_before = false
+		#var new_visibility = await actor.fade_asset(actor.was_active_before, actor, %Sprite2D)
+		#%Sprite2D.visible = new_visibility
+		#actor.was_active_before = new_visibility
+	else:
+		actor.fade_reset()
+		sprite2d.visible = false
+		actor.was_active_before = sprite2d.visible
+	

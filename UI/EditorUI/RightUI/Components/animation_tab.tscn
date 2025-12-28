@@ -25,7 +25,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="Scroll"]
 layout_mode = 2
@@ -91,15 +90,15 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "TR_RESET_ON_STATE_CHANGE_TOOLTIP"
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 16
 text = "TR_RESET_ON_STATE_CHANGE"
 
 [node name="NeverReset" type="CheckBox" parent="Scroll/MarginContainer/VBoxContainer/GridContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-tooltip_text = "TR_RESET_ON_STATE_CHANGE_TOOLTIP"
-theme_override_font_sizes/font_size = 14
+tooltip_text = "TR_NEVER_RESET_TOOLTIP"
+theme_override_font_sizes/font_size = 16
 text = "TR_NEVER_RESET"
 
 [node name="Sp4" type="HSeparator" parent="Scroll/MarginContainer/VBoxContainer"]
@@ -155,6 +154,7 @@ min_value = -1.0
 max_value = 1.0
 step = 0.001
 value = 0.001
+scrollable = false
 
 [node name="Sp6" type="HSeparator" parent="Scroll/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -228,8 +228,8 @@ columns = 2
 [node name="Fade" type="CheckBox" parent="Scroll/MarginContainer/VBoxContainer/GridContainer3"]
 layout_mode = 2
 size_flags_horizontal = 3
-tooltip_text = "TR_MOVE_WITH_MOUSE_TOOLTIP"
-text = "Fade"
+tooltip_text = "TR_FADE_TOOLTIP"
+text = "TR_FADE"
 script = ExtResource("4_ryas8")
 sp_type = ""
 value_to_update = "fade"
@@ -237,8 +237,8 @@ value_to_update = "fade"
 [node name="Fade2" type="CheckBox" parent="Scroll/MarginContainer/VBoxContainer/GridContainer3"]
 layout_mode = 2
 size_flags_horizontal = 3
-tooltip_text = "TR_MOVE_WITH_MOUSE_TOOLTIP"
-text = "Fade Asset "
+tooltip_text = "TR_ASSET_FADE_TOOLTIP"
+text = "TR_ASSET_FADE"
 script = ExtResource("4_ryas8")
 sp_type = ""
 value_to_update = "fade_asset"
@@ -246,7 +246,7 @@ value_to_update = "fade_asset"
 [node name="BetterSlider2" parent="Scroll/MarginContainer/VBoxContainer" instance=ExtResource("4_3iye5")]
 layout_mode = 2
 sp_type = ""
-label_text = "Fade :"
+label_text = "TR_FADE"
 mini_value = 0.01
 max_value = 10.0
 step = 0.01
@@ -256,7 +256,7 @@ value_to_update = "fade_speed"
 [node name="BetterSlider3" parent="Scroll/MarginContainer/VBoxContainer" instance=ExtResource("4_3iye5")]
 layout_mode = 2
 sp_type = ""
-label_text = "Asset Fade :"
+label_text = "TR_ASSET_FADE"
 mini_value = 0.01
 max_value = 10.0
 step = 0.01

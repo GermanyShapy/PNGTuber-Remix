@@ -251,6 +251,7 @@ func update_rotation(_dir: Vector2, delta: float) -> void:
 	var follow_type2 = actor.get_value("follow_type2")
 	var target_rot = 0.0
 	var keyboard_axis := Vector2.ZERO
+	var normalized_axis_x = 0
 
 	if follow_type2 in [3,4,5,6,7,8]:
 		keyboard_axis = GlobalCalculations.some_keyboard_calc_wasd("follow_type2", actor)
@@ -272,11 +273,8 @@ func update_rotation(_dir: Vector2, delta: float) -> void:
 			var screen_width = screen_size.x
 			var normalized_mouse = (mouse_x) / (screen_width / 2)
 			normalized_mouse = clamp(normalized_mouse, -1.0, 1.0)
-			var safe_rot_min = clamp(actor.sprite_data.rLimitMin, -360, 360)
-			var safe_rot_max = clamp(actor.sprite_data.rLimitMax, -360, 360)
-			var rotation_factor = lerp(actor.sprite_data.mouse_rotation, actor.sprite_data.mouse_rotation_max, max((normalized_mouse + 1) / 2, 0.001))
-			target_rot = GlobalCalculations.is_nan_or_inf(clamp(rotation_factor, deg_to_rad(safe_rot_min), deg_to_rad(safe_rot_max)))
-
+			target_rot = normalized_mouse
+			
 	elif follow_type2 == 1: target_rot = axis_left.x
 	elif follow_type2 == 2: target_rot = axis_right.x
 	elif follow_type2 == 10: target_rot = axis_shoulderl.x
@@ -284,6 +282,12 @@ func update_rotation(_dir: Vector2, delta: float) -> void:
 	elif follow_type2 == 12: target_rot = axis_lr_3.x
 	elif follow_type2 in [3,4,5,6,7,8]:
 		target_rot = target_rotation.x
+
+	var safe_rot_min = clamp(actor.sprite_data.rLimitMin, -360, 360)
+	var safe_rot_max = clamp(actor.sprite_data.rLimitMax, -360, 360)
+	var rotation_factor = lerp(actor.sprite_data.mouse_rotation, actor.sprite_data.mouse_rotation_max, max((target_rot + 1) / 2, 0.001))
+	target_rot = GlobalCalculations.is_nan_or_inf(clamp(rotation_factor, deg_to_rad(safe_rot_min), deg_to_rad(safe_rot_max)))
+
 
 	var t = actor.get_value("mouse_delay") * delta * 60.0
 	t = clamp(t, 0.0, 1.0)

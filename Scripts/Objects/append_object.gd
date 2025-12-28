@@ -176,8 +176,6 @@ func get_state(id):
 				%AnimatedSpriteTexture.index = 0
 				%AnimatedSpriteTexture.proper_apng_one_shot()
 				
-		if !get_value("cycle") in range(Global.settings_dict.cycles.size() + 1):
-			sprite_data.cycle = 0
 				
 	elif states[id].is_empty():
 		states[id] = sprite_data.duplicate(true)

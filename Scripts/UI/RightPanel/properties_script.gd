@@ -27,6 +27,8 @@ func nullfy():
 	%MouthOption.disabled = true
 	%SizeSpinBox.editable = false
 	%SizeSpinYBox.editable = false
+	%SkewSpinXBox.editable = false
+	%SkewSpinYBox.editable = false
 
 	%PosXSpinBox.editable = false
 	%PosYSpinBox.editable = false
@@ -56,6 +58,8 @@ func enable():
 			%MouthOption.disabled = false
 			%SizeSpinBox.editable = true
 			%SizeSpinYBox.editable = true
+			%SkewSpinXBox.editable = true
+			%SkewSpinYBox.editable = true
 
 			%PosXSpinBox.editable = true
 			%PosYSpinBox.editable = true
@@ -89,13 +93,16 @@ func set_data():
 		%ZOrderSpinbox.value = i.get_value("z_index")
 		%SizeSpinBox.value = i.get_value("scale").x
 		%SizeSpinYBox.value = i.get_value("scale").y
+		%SkewSpinXBox.value = i.get_value("skew").x
+		%SkewSpinYBox.value = i.get_value("skew").y
 		
 		if i.get_node("%Sprite2D").get_clip_children_mode() == 0:
 			%ClipChildren.button_pressed = false
 		else:
 			%ClipChildren.button_pressed = true
-			
-		%BlendMode.text = i.get_value("blend_mode")
+		
+		%BlendMode.selected = get_item_id_by_blend_mode(i.get_value("blend_mode"))
+		
 		%OffsetXSpinBox.value = i.get_value("offset").x
 		%OffsetYSpinBox.value = i.get_value("offset").y
 		
@@ -137,28 +144,49 @@ func set_data():
 		
 	should_change = true
 
+func get_item_id_by_blend_mode(blend_mode: String) -> int:
+	match blend_mode:
+		"Normal":
+			return 0
+		"Add":
+			return 1
+		"Subtract":
+			return 2
+		"Multiply":
+			return 3
+		"Burn":
+			return 4
+		"HardMix":
+			return 5
+		"Cursed":
+			return 6
+	return 0
+
+func get_blend_mode_by_id(id) -> String:
+	match id:
+		0:
+			return "Normal"
+		1:
+			return "Add"
+		2:
+			return "Subtract"
+		3:
+			return "Multiply"
+		4:
+			return "Burn"
+		5:
+			return "HardMix"
+		6:
+			return "Cursed"
+			
+	return "Normal"
+
 func _on_blend_state_pressed(id):
 	for i in Global.held_sprites:
-		match id:
-			0:
-				i.sprite_data.blend_mode = "Normal"
-			1:
-				i.sprite_data.blend_mode = "Add"
-			2:
-				i.sprite_data.blend_mode = "Subtract"
-			3:
-				i.sprite_data.blend_mode = "Multiply"
-				
-			4:
-				i.sprite_data.blend_mode = "Burn"
-				
-			5:
-				i.sprite_data.blend_mode = "HardMix"
-				
-			6:
-				i.sprite_data.blend_mode = "Cursed"
+		
+		i.sprite_data.blend_mode = get_blend_mode_by_id(id)
 		StateButton.multi_edit(i.sprite_data.blend_mode, "blend_mode", i, i.states)
-		%BlendMode.text = i.get_value("blend_mode")
+		
 		i.set_blend(i.get_value("blend_mode"))
 		i.save_state(Global.current_state)
 
@@ -517,3 +545,41 @@ func _on_mouth_option_item_selected(index: int) -> void:
 func _on_rest_mode_option_item_selected(index: int) -> void:
 	for i in Global.held_sprites:
 		i.rest_mode = index
+
+
+func _on_skew_spin_x_box_value_changed(value: float) -> void:
+	if %SkewSpinXBox.get_line_edit().has_focus():
+		if should_change:
+			var undo_redo_data : Array = []
+			for i in Global.held_sprites:
+				var og_val = i.sprite_data.duplicate()
+				i.sprite_data.skew.x = value
+				###i.skew.x = value
+				(i.get_node("%Sprite2D") as Node2D).transform.x = Vector2.from_angle(deg_to_rad(i.sprite_data.skew.x))
+				###
+				StateButton.multi_edit(value, "skew", i, i.states, true, "x")
+				i.save_state(Global.current_state)
+				undo_redo_data.append({sprite_object = i, 
+				data = i.sprite_data.duplicate(), 
+				og_data = og_val,
+				data_type = "sprite_data", 
+				state = Global.current_state})
+
+
+func _on_skew_spin_y_box_value_changed(value: float) -> void:
+	if %SkewSpinYBox.get_line_edit().has_focus():
+		if should_change:
+			var undo_redo_data : Array = []
+			for i in Global.held_sprites:
+				var og_val = i.sprite_data.duplicate()
+				i.sprite_data.skew.y = value
+				###i.skew.x = value
+				(i.get_node("%Sprite2D") as Node2D).transform.y = Vector2.from_angle(deg_to_rad(i.sprite_data.skew.y + 90.0))
+				###
+				StateButton.multi_edit(value, "skew", i, i.states, true, "y")
+				i.save_state(Global.current_state)
+				undo_redo_data.append({sprite_object = i, 
+				data = i.sprite_data.duplicate(), 
+				og_data = og_val,
+				data_type = "sprite_data", 
+				state = Global.current_state})

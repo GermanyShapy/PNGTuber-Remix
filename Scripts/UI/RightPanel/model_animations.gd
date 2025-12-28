@@ -51,24 +51,25 @@ func _on_mc_anim_state_pressed(id):
 	match id:
 		0:
 			Global.sprite_container.current_mc_anim = "Idle"
+			%MouthClosedAnim.text = tr("TR_IDLE")
 		1:
 			Global.sprite_container.current_mc_anim = "Bouncy"
+			%MouthClosedAnim.text = tr("TR_ANIMATION_BOUNCY")
 		2:
 			Global.sprite_container.current_mc_anim = "Wavy"
-			
 		3:
 			Global.sprite_container.current_mc_anim = "One Bounce"
-			
+			%MouthClosedAnim.text = tr("TR_ANIMATION_ONE_BOUNCE")
 		4:
 			Global.sprite_container.current_mc_anim = "Wobble"
-			
+			%MouthClosedAnim.text = tr("TR_ANIMATION_WOBBLE")
 		5:
 			Global.sprite_container.current_mc_anim = "Squish"
-			
+			%MouthClosedAnim.text = tr("TR_ANIMATION_SQUISH")
 		6:
 			Global.sprite_container.current_mc_anim = "Float"
+			%MouthClosedAnim.text = tr("TR_FLOAT")
 			
-	%MouthClosedAnim.text = Global.sprite_container.current_mc_anim
 	Global.sprite_container.save_state(Global.current_state)
 
 func _on_squish_amount_changed(value : float):
@@ -79,11 +80,11 @@ func _on_squish_amount_changed(value : float):
 func _on_blink_speed_slider_drag_ended(value_changed: bool) -> void:
 	if value_changed:
 		Global.settings_dict.blink_speed = %BlinkSpeedSlider.value
-		%BlinkSpeedLabel.text = "Blink Speed : " + str(snappedf(%BlinkSpeedSlider.value, 0.1))
+		%BlinkSpeedLabel.text = tr("TR_BLINK_SPEED") + str(snappedf(%BlinkSpeedSlider.value, 0.1))
 
 
 func _on_blink_speed_slider_value_changed(value):
-	%BlinkSpeedLabel.text = "Blink Speed : " + str(snappedf(value, 0.1))
+	%BlinkSpeedLabel.text = tr("TR_BLINK_SPEED") + str(snappedf(value, 0.1))
 	Global.settings_dict.blink_speed = value
 
 func _on_should_squish_toggled(toggled_on: bool) -> void:
@@ -92,7 +93,7 @@ func _on_should_squish_toggled(toggled_on: bool) -> void:
 
 
 func _on_blink_chance_slider_value_changed(value: float) -> void:
-	%BlinkChanceLabel.text = "Blink Chance : " + str(value)
+	%BlinkChanceLabel.text = tr("TR_BLINK_CHANCE") + str(value)
 	Global.settings_dict.blink_chance = value
 
 

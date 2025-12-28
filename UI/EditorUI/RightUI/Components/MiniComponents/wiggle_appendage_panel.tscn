@@ -16,7 +16,6 @@ script = ExtResource("1_txqgg")
 
 [node name="WiggleAppStuff" type="VBoxContainer" parent="."]
 unique_name_in_owner = true
-visible = false
 layout_mode = 2
 theme_override_constants/separation = 6
 
@@ -114,7 +113,7 @@ layout_mode = 2
 sp_type = "WiggleApp"
 label_text = "TR_MAX_ANGLE_LABEL"
 max_value = 180.0
-step = 0.1
+step = 0.02
 value_to_update = "wiggle_max_angle"
 
 [node name="WiggleAppsPhysStiffBSlider" parent="WiggleAppStuff" instance=ExtResource("2_cimjc")]
@@ -333,7 +332,6 @@ popup/item_1/id = 1
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-tooltip_text = "Keeps its length when linked to an anchor."
 theme_override_font_sizes/font_size = 14
 text = "TR_MIRROR_REACTION_H"
 

@@ -9,7 +9,7 @@ func _ready():
 func _toggled(toggle):
 	set_process_unhandled_input(toggle)
 	if toggle:
-		text = "... Awaiting Input ..."
+		text = tr("TR_AWAITING_INPUT")
 		grab_focus()
 		
 	else:
@@ -31,10 +31,10 @@ func update_key_text():
 		if Global.settings_dict.cycles[%CycleChoice.get_selected_id()-1].backward != null:
 			self.text = Global.settings_dict.cycles[%CycleChoice.get_selected_id()-1].backward.as_text()
 		else:
-			self.text = "Bind Key"
+			self.text = tr("TR_BIND_KEY")
 
 	else:
-		self.text = "Bind Key"
+		self.text = tr("TR_BIND_KEY")
 
 func _on_cycle_del_pressed() -> void:
 	if %CycleChoice.get_selected_id() > 0:

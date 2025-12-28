@@ -10,7 +10,7 @@ func _ready() -> void:
 	Global.add_window.connect(new_window)
 	Global.edit_windows.connect(unlock_windows)
 
-func dont_reset_mode() -> void:
+func dont_reset_mode(new_mode = -1) -> void:
 	last_mode = -1
 
 func new_window() -> void:
@@ -19,7 +19,7 @@ func new_window() -> void:
 		Global.mode = 1
 		Global.mode_changed.connect(dont_reset_mode, CONNECT_ONE_SHOT)
 	
-	var window := ExtraWindow.new(%SubViewport.world_2d, remove_window, lock_window, %Camera2D)
+	var window := ExtraWindow.new(%SubViewport.world_2d, remove_window, lock_window, %Camera2D, %SubViewportContainer.material, %Effects.material)
 	windows.append(window)
 	add_child(window)
 	window.popup_centered()
