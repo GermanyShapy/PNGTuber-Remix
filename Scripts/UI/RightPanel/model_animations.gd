@@ -20,8 +20,8 @@ func set_slider_data(data):
 func reinfoanim():
 	should_change = false
 	%BounceStateCheck.button_pressed = Global.sprite_container.bounce_state
-	%MouthClosedAnim.text = Global.sprite_container.current_mc_anim
-	%MouthOpenAnim.text = Global.sprite_container.current_mo_anim
+	%MouthClosedAnim.text = get_translation_for_model_anim(Global.sprite_container.current_mc_anim)
+	%MouthOpenAnim.text = get_translation_for_model_anim(Global.sprite_container.current_mo_anim)
 	%ShouldSquish.button_pressed = Global.sprite_container.should_squish
 	%SquishAmount.get_node("%SliderValue").value = Global.sprite_container.squish_amount
 	should_change = true
@@ -46,8 +46,7 @@ func _on_mo_anim_state_pressed(id):
 			Global.sprite_container.current_mo_anim = "Float"
 			
 	add_to_undo("current_mo_anim", old_state, Global.sprite_container.current_mo_anim)
-	%MouthOpenAnim.text = Global.sprite_container.current_mo_anim
-	
+	%MouthOpenAnim.text = get_translation_for_model_anim(Global.sprite_container.current_mo_anim)
 	Global.sprite_container.save_state(Global.current_state)
 
 func _on_mc_anim_state_pressed(id):
@@ -56,25 +55,21 @@ func _on_mc_anim_state_pressed(id):
 	match id:
 		0:
 			Global.sprite_container.current_mc_anim = "Idle"
-			%MouthClosedAnim.text = tr("TR_IDLE")
 		1:
 			Global.sprite_container.current_mc_anim = "Bouncy"
-			%MouthClosedAnim.text = tr("TR_ANIMATION_BOUNCY")
 		2:
 			Global.sprite_container.current_mc_anim = "Wavy"
 		3:
 			Global.sprite_container.current_mc_anim = "One Bounce"
-			%MouthClosedAnim.text = tr("TR_ANIMATION_ONE_BOUNCE")
 		4:
 			Global.sprite_container.current_mc_anim = "Wobble"
-			%MouthClosedAnim.text = tr("TR_ANIMATION_WOBBLE")
 		5:
 			Global.sprite_container.current_mc_anim = "Squish"
-			%MouthClosedAnim.text = tr("TR_ANIMATION_SQUISH")
 		6:
 			Global.sprite_container.current_mc_anim = "Float"
-			%MouthClosedAnim.text = tr("TR_FLOAT")
+	
 	add_to_undo("current_mc_anim", old_state, Global.sprite_container.current_mc_anim)
+	%MouthClosedAnim.text = get_translation_for_model_anim(Global.sprite_container.current_mc_anim)
 	Global.sprite_container.save_state(Global.current_state)
 
 func _on_squish_amount_changed(value : float):
@@ -117,3 +112,22 @@ func add_to_undo(action, value, new_value):
 		new_val = new_value
 		}
 		UndoRedoManager.push_data(d)
+
+func get_translation_for_model_anim(code_string) -> String:
+	match code_string:
+		"Idle":
+			return tr("TR_IDLE")
+		"Bouncy":
+			return tr("TR_ANIMATION_BOUNCY")
+		"Wavy":
+			return tr("TR_WAVY")
+		"One Bounce":
+			return tr("TR_ANIMATION_ONE_BOUNCE")
+		"Wobble":
+			return ("TR_ANIMATION_WOBBLE")
+		"Squish":
+			return tr("TR_ANIMATION_SQUISH")
+		"Float":
+			return tr("TR_FLOAT")
+			
+	return "UNDEFINED"

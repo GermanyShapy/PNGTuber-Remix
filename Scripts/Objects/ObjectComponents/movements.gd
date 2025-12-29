@@ -80,7 +80,8 @@ func _physics_process(delta: float) -> void:
 	if not Global.static_view:
 		var final_rot = applied_rotation + rot_drag + follow_point_rot + should_rot_rotation
 		modifier_node.rotation = GlobalCalculations.is_nan_or_inf(final_rot)
-		%Modifier1.global_position = GlobalCalculations.is_nan_or_inf(applied_pos)
+		#1.4.1 %Modifier1.global_position = GlobalCalculations.is_nan_or_inf(applied_pos)
+		modifier_node.global_position = GlobalCalculations.is_nan_or_inf(applied_pos)
 	
 	shadow_target = modifier_node.global_position + %FollowComponent.target_pos
 	var test = (shadow_target - actor.global_position)
@@ -133,9 +134,9 @@ func static_prev():
 func movements(delta):
 	if Global.static_view:
 		return
-	glob = %Modifier.global_position
-	wobble(delta)
+	glob = shadow_dragger
 	drag(delta)
+	wobble(delta)
 	if !actor.get_value("ignore_bounce"):
 		glob -= Vector2(Global.sprite_container.bounceChange, Global.sprite_container.bounceChange)
 	var length = (glob.x - shadow_dragger.x) + (glob.y - shadow_dragger.y)
@@ -181,31 +182,22 @@ func drag(_delta):
 		shadow_dragger =  shadow_dragger.lerp(target, 0.95)
 
 func wobble(delta: float) -> void:
-	if actor.is_default("xFrq"):
-		if actor.get_value("pause_movement"):
-			if actor.is_all_default("xFrq"):
-				last_wobble_pos.x = 0
-			else:
-				paused_wobble.x += delta if Global.settings_dict.should_delta else 1.
-		else:
-			last_wobble_pos.x = sin((Global.tick-paused_wobble.x)*actor.get_value("xFrq"))*actor.get_value("xAmp")
+	if actor.get_value("pause_movement"):
+		if actor.is_all_default("xFrq"):
+			last_wobble_pos.x = 0
+		if actor.is_all_default("yFrq"):
+			last_wobble_pos.y = 0
 	else:
-		last_wobble_pos.x = sin((Global.tick-paused_wobble.x)*actor.get_value("xFrq"))*actor.get_value("xAmp")
-	
-	if actor.is_default("yFrq"):
-		if actor.get_value("pause_movement"):
-			if actor.is_all_default("yFrq"):
-				last_wobble_pos.y = 0
-			else:
-				paused_wobble.y += delta if Global.settings_dict.should_delta else 1.
-		else:
-			last_wobble_pos.y = sin((Global.tick-paused_wobble.y)*actor.get_value("yFrq"))*actor.get_value("yAmp")
-	else:
-		last_wobble_pos.y = sin((Global.tick-paused_wobble.y)*actor.get_value("yFrq"))*actor.get_value("yAmp")
+		var offset = delta if Global.settings_dict.should_delta else 1.0
+		paused_wobble.x += offset
+		paused_wobble.y += offset
+		last_wobble_pos.x = actor.get_value("xAmp") * sin(paused_wobble.x * actor.get_value("xFrq"))
+		last_wobble_pos.y = actor.get_value("yAmp") * sin(paused_wobble.y * actor.get_value("yFrq"))
 		
 	if actor.sprite_type == "Mesh" and mesh != null && is_instance_valid(mesh):
 		if !actor.get_value("move_with_wobble"):
 			return
+	
 	applied_pos += last_wobble_pos
 
 func rotationalDrag(length, delta: float):

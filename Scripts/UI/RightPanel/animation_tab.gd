@@ -33,23 +33,17 @@ func enable():
 func set_data():
 	should_change = false
 	for i in Global.held_sprites:
-		%NeverReset.button_pressed = i.get_value("never_reset")
 		%RSSlider.value = i.get_value("rainbow_speed")
 		if i.sprite_type == "Sprite2D":
 			%NonAnimatedSheetCheck.button_pressed = i.get_value("non_animated_sheet")
 			%FrameSpinbox.value = i.get_value("frame")
 			%FrameSpinbox.max_value = (i.get_node("%Sprite2D").hframes * i.get_node("%Sprite2D").vframes) - 1
-
+		else:
+			%NonAnimatedSheetCheck.button_pressed = false
+			%AnimateToMouse.disabled = true
+			%AnimateToMouse2.disabled = true
+			
 	should_change = true
-
-
-func _on_never_reset_toggled(toggled_on: bool) -> void:
-	if should_change:
-		for i in Global.held_sprites:
-			if i != null && is_instance_valid(i):
-				i.sprite_data.never_reset = toggled_on
-				StateButton.multi_edit(toggled_on, "never_reset", i, i.states)
-				i.save_state(Global.current_state)
 
 func _on_rs_slider_value_changed(value):
 	if should_change:

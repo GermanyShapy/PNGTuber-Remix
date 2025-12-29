@@ -112,6 +112,10 @@ size_flags_horizontal = 3
 tooltip_text = "TR_NEVER_RESET_TOOLTIP"
 theme_override_font_sizes/font_size = 16
 text = "TR_NEVER_RESET"
+script = ExtResource("4_ryas8")
+sp_type = ""
+seen_type = "Comment"
+value_to_update = "never_reset"
 
 [node name="Sp4" type="HSeparator" parent="Scroll/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -174,7 +178,7 @@ theme_override_constants/separation = 5
 
 [node name="SheetControls" type="Label" parent="Scroll/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "SpriteSheet"
+text = "TR_SPRITE_SHEET"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -191,6 +195,7 @@ value_to_update = "non_animated_sheet"
 
 [node name="FrameHBox" type="HBoxContainer" parent="Scroll/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 
 [node name="FrameLabel" type="Label" parent="Scroll/MarginContainer/VBoxContainer/FrameHBox"]
@@ -209,6 +214,7 @@ layout_mode = 2
 columns = 2
 
 [node name="AnimateToMouse" type="CheckBox" parent="Scroll/MarginContainer/VBoxContainer/GridContainer2"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "TR_ANIMATE_TO_MOUSE_TOOLTIP"
@@ -218,6 +224,7 @@ sp_type = "Sprite2D"
 value_to_update = "animate_to_mouse"
 
 [node name="AnimateToMouse2" type="CheckBox" parent="Scroll/MarginContainer/VBoxContainer/GridContainer2"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "TR_MOVE_WITH_MOUSE_TOOLTIP"
@@ -288,7 +295,6 @@ step = 0.01
 value = 1.0
 value_to_update = "fade_speed_asset"
 
-[connection signal="toggled" from="Scroll/MarginContainer/VBoxContainer/GridContainer/NeverReset" to="." method="_on_never_reset_toggled"]
 [connection signal="value_changed" from="Scroll/MarginContainer/VBoxContainer/EffectsGrid/RSSlider" to="." method="_on_rs_slider_value_changed"]
 [connection signal="toggled" from="Scroll/MarginContainer/VBoxContainer/NonAnimatedSheetCheck" to="." method="_on_non_animated_sheet_check_toggled"]
 [connection signal="mouse_entered" from="Scroll/MarginContainer/VBoxContainer/FrameHBox/FrameSpinbox" to="." method="_on_frame_spinbox_mouse_entered"]
