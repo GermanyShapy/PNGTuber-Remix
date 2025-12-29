@@ -31,6 +31,15 @@ func _physics_process(delta: float) -> void:
 	#if !just_released_details.is_empty():
 		#print("  just_released: " + str(just_released_details))
 	
+func get_stand_key_string(keycode):
+	if KEY_QUOTELEFT == keycode:
+		return OS.get_keycode_string(KEY_ASCIITILDE)
+	elif KEY_EQUAL == keycode:
+		return OS.get_keycode_string(KEY_PLUS)
+	elif KEY_APOSTROPHE == keycode:
+		return OS.get_keycode_string(KEY_QUOTEDBL)
+	
+	return OS.get_keycode_string(keycode)
 
 func check_input(input: InputEvent, details: Dictionary, is_inclusive_mode = false) -> bool:
 	var keycode = 0
@@ -38,14 +47,7 @@ func check_input(input: InputEvent, details: Dictionary, is_inclusive_mode = fal
 	
 	if input is InputEventKey:
 		keycode = input.keycode
-		key = OS.get_keycode_string(input.keycode)
-		
-		if KEY_QUOTELEFT == keycode:
-			key = OS.get_keycode_string(KEY_ASCIITILDE)
-		elif KEY_EQUAL == keycode:
-			key = OS.get_keycode_string(KEY_PLUS)
-		elif KEY_APOSTROPHE == keycode:
-			key = OS.get_keycode_string(KEY_QUOTEDBL)
+		key = get_stand_key_string(input.keycode)
 			
 	elif input is InputEventMouseButton:
 		keycode = input.button_index
@@ -105,7 +107,7 @@ func check_input_just_released(input: InputEvent, is_inclusive_mode = false) -> 
 	
 	if input is InputEventKey:
 		keycode = input.keycode
-		key = OS.get_keycode_string(input.keycode)
+		key = get_stand_key_string(input.keycode)
 	elif input is InputEventMouseButton:
 		keycode = input.button_index
 		key = input.button_index
