@@ -1,61 +1,241 @@
-extends Node
+extends RefCounted
+class_name UndoRedoManager
 
-var undo_redo_data : Array = []
-var undo_redo_id : int = 0
+static var undo_data : Array = []
+static var redo_data : Array = []
 
-func _input(event: InputEvent) -> void:
-	if Global.mode == 0:
-		if event.is_action_pressed("ui_undo"):
-			undo_info()
-		if event.is_action_pressed("ui_redo"):
-			redo_info()
+static func push_data(data : Variant = null):
+	if data == null: return
+	undo_data.append(data)
+	print(data)
 
-func undo_info():
-	undo_redo_id = max(0, undo_redo_id - 1)
-	#printt("undo id : ", undo_redo_id)
-	if undo_redo_data.size() > 0:
-		match_data_type(undo_redo_data[max(undo_redo_id - 1, 0)], "undo")
-
-func redo_info():
-	undo_redo_id = min(undo_redo_data.size(), undo_redo_id+1)
-	#printt("redo id : ", undo_redo_id)
-	if undo_redo_data.size() > 0:
-		match_data_type(undo_redo_data[max(undo_redo_id - 1, 0)], "redo")
-
-func add_data_to_manager(data : Array):
-	if undo_redo_id != undo_redo_data.size():
-		undo_redo_data.resize(undo_redo_id)
-	undo_redo_data.append(data)
-	undo_redo_id = undo_redo_data.size()
-	#printt("undo redo data : ", undo_redo_data.size())
-
-func match_data_type(data, un_re):
-	if data is Array:
-		for i in data:
-			match_object_data_type(i, un_re)
-		
-	elif data is Dictionary:
-		pass
-
-func match_object_data_type(object, un_re):
-	match object.data_type:
-		"sprite_data":
-			if un_re == "undo":
-				update_sprite_data(object.sprite_object, object.og_data, object.state)
-			if un_re == "redo":
-				update_sprite_data(object.sprite_object, object.data, object.state)
-
-func update_sprite_data(object ,sprite_data, state):
-	object.states[state] = sprite_data.duplicate()
+static func undo():
+	if undo_data.size() == 0:
+		print("no data to undo")
+		return
 	
-	if Global.current_state == state:
-		object.get_state(Global.current_state)
-		Global.reinfo.emit()
+	var data = undo_data.pop_back()
+	if data is Array:
+		if data[0].has("node"):
+			undo_action_object(data)
+	elif data is Dictionary:
+		if data.has("tree"):
+			undo_tree(data)
+		elif data.has("sprite_container"):
+			undo_sprite_container(data)
 
+static func redo():
+	if redo_data.size() == 0:
+		print("no data to redo")
+		return
+	
+	var data = redo_data.pop_back() 
+	if data is Array:
+		if data[0].has("node"):
+			redo_action_object(data)
+	elif data is Dictionary:
+		if data.has("tree"):
+			redo_tree(data)
+		elif data.has("sprite_container"):
+			redo_sprite_container(data)
 
-'''
-undo_redo_data.append({sprite_object = i, 
-data = i.sprite_data, 
-og_data = og_val,
-data_type = "sprite_data", 
-state = Global.current_state})'''
+static func undo_action_object(data):
+	for dt in data:
+		if dt.node == null or !is_instance_valid(dt.node): continue
+		if dt.node.get_value(dt.action) == null: continue
+		if  dt.node.states.size() >  dt.state:
+			if Global.current_state ==  dt.state:
+				dt.node.sprite_data[ dt.action] = dt.value
+				dt.node.save_state( dt.state)
+				dt.get_state(dt.state)
+				Global.reinfo.emit()
+			else:
+				dt.node.states[dt.state][dt.action] = dt.value
+	redo_data.append(data) 
+
+static func redo_action_object(data):
+	for dt in data:
+		if dt.node == null or !is_instance_valid(dt.node): continue
+		if dt.node.get_value(dt.action) == null: continue
+		if  dt.node.states.size() >  dt.state:
+			if Global.current_state ==  dt.state:
+				dt.node.sprite_data[ dt.action] = dt.new_val
+				dt.node.save_state( dt.state)
+				dt.get_state(dt.state)
+				Global.reinfo.emit()
+			else:
+				dt.node.states[dt.state][dt.action] = dt.new_val
+	undo_data.append(data) 
+
+static func undo_tree(data):
+	var item = data.item
+	var old_parent = data.old_parent
+	var old_index = data.old_index
+
+	if not is_instance_valid(item) or not is_instance_valid(old_parent):
+		return
+
+	if item.get_parent():
+		item.get_parent().remove_child(item)
+
+	old_parent.add_child(item)
+	item.move_after(old_parent.get_child(old_index))
+
+	if old_parent == data.tree.get_root():
+		item.get_metadata(0).sprite_object.parent_id = 0
+		if item.get_metadata(0).sprite_object.get_parent() != Global.sprite_container:
+			item.get_metadata(0).sprite_object.get_parent().remove_child(item.get_metadata(0).sprite_object)
+			Global.sprite_container.add_child(item.get_metadata(0).sprite_object)
+	else:
+		if item.get_metadata(0).sprite_object.get_parent() != old_parent.get_metadata(0).sprite_object.get_node("%Sprite2D"):
+			item.get_metadata(0).sprite_object.get_parent().remove_child(item.get_metadata(0).sprite_object)
+			old_parent.get_metadata(0).sprite_object.get_node("%Sprite2D").add_child(item.get_metadata(0).sprite_object)
+			item.get_metadata(0).sprite_object.parent_id = old_parent.get_metadata(0).sprite_object.sprite_id
+	redo_data.append(data)
+	Global.reinfo.emit()
+
+static func redo_tree(data):
+	var item = data.item
+	var new_parent = data.new_parent
+	var new_index = data.new_index
+	if not is_instance_valid(item) or not is_instance_valid(new_parent):
+		return
+	if item.get_parent():
+		item.get_parent().remove_child(item)
+	new_parent.add_child(item)
+	item.move_after(new_parent.get_child(new_index))
+	if new_parent == data.tree.get_root():
+		item.get_metadata(0).sprite_object.parent_id = 0
+		if item.get_metadata(0).sprite_object.get_parent() != Global.sprite_container:
+			item.get_metadata(0).sprite_object.get_parent().remove_child(item.get_metadata(0).sprite_object)
+			Global.sprite_container.add_child(item.get_metadata(0).sprite_object)
+	else:
+		if item.get_metadata(0).sprite_object.get_parent() != new_parent.get_metadata(0).sprite_object.get_node("%Sprite2D"):
+			item.get_metadata(0).sprite_object.get_parent().remove_child(item.get_metadata(0).sprite_object)
+			new_parent.get_metadata(0).sprite_object.get_node("%Sprite2D").add_child(item.get_metadata(0).sprite_object)
+			item.get_metadata(0).sprite_object.parent_id = new_parent.get_metadata(0).sprite_object.sprite_id
+		
+	undo_data.append(data)
+	Global.reinfo.emit()
+
+static func undo_sprite_container(data):
+	match data.action:
+		"bounce_state":
+			if Global.current_state == data.state:
+				data.sprite_container.bounce_state = data.value
+				Global.sprite_container.save_state(Global.current_state)
+				Global.reinfoanim.emit()
+			else:
+				if !Global.settings_dict.states.is_empty():
+					if Global.settings_dict.states.size() > data.state:
+						Global.settings_dict.states[data.state].bounce_state =  data.value
+			
+		"blink_chance":
+			if Global.current_state == data.state:
+				data.sprite_container.blink_chance = data.value
+				Global.sprite_container.save_state(Global.current_state)
+				Global.reinfoanim.emit()
+			else:
+				if !Global.settings_dict.states.is_empty():
+					if Global.settings_dict.states.size() > data.state:
+						Global.settings_dict.states[data.state].blink_chance =  data.value
+			
+		"should_squish":
+			if Global.current_state == data.state:
+				data.sprite_container.should_squish = data.value
+				Global.sprite_container.save_state(Global.current_state)
+				Global.reinfoanim.emit()
+			else:
+				if !Global.settings_dict.states.is_empty():
+					if Global.settings_dict.states.size() > data.state:
+						Global.settings_dict.states[data.state].should_squish =  data.value
+		"blink_speed":
+			Global.settings_dict.blink_speed = data.value
+		"squish_amount":
+			if Global.current_state == data.state:
+				data.sprite_container.squish_amount = data.value
+				Global.sprite_container.save_state(Global.current_state)
+				Global.reinfoanim.emit()
+			else:
+				if !Global.settings_dict.states.is_empty():
+					if Global.settings_dict.states.size() > data.state:
+						Global.settings_dict.states[data.state].squish_amount =  data.value
+		"current_mc_anim":
+			if Global.current_state == data.state:
+				data.sprite_container.current_mc_anim = data.value
+				Global.sprite_container.save_state(Global.current_state)
+				Global.reinfoanim.emit()
+			else:
+				if !Global.settings_dict.states.is_empty():
+					if Global.settings_dict.states.size() > data.state:
+						Global.settings_dict.states[data.state].current_mc_anim =  data.value
+		"current_mo_anim":
+			if Global.current_state == data.state:
+				data.sprite_container.current_mo_anim = data.value
+				Global.sprite_container.save_state(Global.current_state)
+				Global.reinfoanim.emit()
+			else:
+				if !Global.settings_dict.states.is_empty():
+					if Global.settings_dict.states.size() > data.state:
+						Global.settings_dict.states[data.state].current_mo_anim =  data.value
+
+static func redo_sprite_container(data):
+	match data.action:
+		"bounce_state":
+			if Global.current_state == data.state:
+				data.sprite_container.bounce_state = data.new_val
+				Global.sprite_container.save_state(Global.current_state)
+				Global.reinfoanim.emit()
+			else:
+				if !Global.settings_dict.states.is_empty():
+					if Global.settings_dict.states.size() > data.state:
+						Global.settings_dict.states[data.state].bounce_state =  data.new_val
+			
+		"blink_chance":
+			if Global.current_state == data.state:
+				data.sprite_container.blink_chance = data.new_val
+				Global.sprite_container.save_state(Global.current_state)
+				Global.reinfoanim.emit()
+			else:
+				if !Global.settings_dict.states.is_empty():
+					if Global.settings_dict.states.size() > data.state:
+						Global.settings_dict.states[data.state].blink_chance =  data.new_val
+			
+		"should_squish":
+			if Global.current_state == data.state:
+				data.sprite_container.should_squish = data.new_val
+				Global.sprite_container.save_state(Global.current_state)
+				Global.reinfoanim.emit()
+			else:
+				if !Global.settings_dict.states.is_empty():
+					if Global.settings_dict.states.size() > data.state:
+						Global.settings_dict.states[data.state].should_squish =  data.new_val
+		"blink_speed":
+			Global.settings_dict.blink_speed = data.new_val
+		"squish_amount":
+			if Global.current_state == data.state:
+				data.sprite_container.squish_amount = data.new_val
+				Global.sprite_container.save_state(Global.current_state)
+				Global.reinfoanim.emit()
+			else:
+				if !Global.settings_dict.states.is_empty():
+					if Global.settings_dict.states.size() > data.state:
+						Global.settings_dict.states[data.state].squish_amount =  data.new_val
+		"current_mc_anim":
+			if Global.current_state == data.state:
+				data.sprite_container.current_mc_anim = data.new_val
+				Global.sprite_container.save_state(Global.current_state)
+				Global.reinfoanim.emit()
+			else:
+				if !Global.settings_dict.states.is_empty():
+					if Global.settings_dict.states.size() > data.state:
+						Global.settings_dict.states[data.state].current_mc_anim =  data.new_val
+		"current_mo_anim":
+			if Global.current_state == data.state:
+				data.sprite_container.current_mo_anim = data.new_val
+				Global.sprite_container.save_state(Global.current_state)
+				Global.reinfoanim.emit()
+			else:
+				if !Global.settings_dict.states.is_empty():
+					if Global.settings_dict.states.size() > data.state:
+						Global.settings_dict.states[data.state].current_mo_anim =  data.new_val

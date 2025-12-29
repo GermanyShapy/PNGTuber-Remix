@@ -76,6 +76,10 @@ size_flags_horizontal = 3
 tooltip_text = "TR_RESET_ANIMATION_TOOLTIP"
 theme_override_font_sizes/font_size = 16
 text = "TR_RESET_ANIMATION"
+script = ExtResource("4_ryas8")
+sp_type = ""
+seen_type = "Comment"
+value_to_update = "should_reset"
 
 [node name="AnimationOneShot" type="CheckBox" parent="Scroll/MarginContainer/VBoxContainer/GridContainer"]
 unique_name_in_owner = true
@@ -84,6 +88,10 @@ size_flags_horizontal = 3
 tooltip_text = "TR_ANIMATION_ONE_SHOT_TOOLTIP"
 theme_override_font_sizes/font_size = 16
 text = "TR_ANIMATION_ONE_SHOT"
+script = ExtResource("4_ryas8")
+sp_type = ""
+seen_type = "Comment"
+value_to_update = "one_shot"
 
 [node name="ResetonStateChange" type="CheckBox" parent="Scroll/MarginContainer/VBoxContainer/GridContainer"]
 unique_name_in_owner = true
@@ -92,6 +100,10 @@ size_flags_horizontal = 3
 tooltip_text = "TR_RESET_ON_STATE_CHANGE_TOOLTIP"
 theme_override_font_sizes/font_size = 16
 text = "TR_RESET_ON_STATE_CHANGE"
+script = ExtResource("4_ryas8")
+sp_type = ""
+seen_type = "Comment"
+value_to_update = "should_reset_state"
 
 [node name="NeverReset" type="CheckBox" parent="Scroll/MarginContainer/VBoxContainer/GridContainer"]
 unique_name_in_owner = true
@@ -173,6 +185,9 @@ size_flags_horizontal = 0
 tooltip_text = "TR_NONE_ANIMATED_SHEET_TOOLTIP"
 theme_override_font_sizes/font_size = 16
 text = "TR_NONE_ANIMATED_SHEET"
+script = ExtResource("4_ryas8")
+sp_type = "Sprite2D"
+value_to_update = "non_animated_sheet"
 
 [node name="FrameHBox" type="HBoxContainer" parent="Scroll/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
@@ -221,6 +236,16 @@ step = 0.01
 value = 1.0
 value_to_update = "animate_to_mouse_speed"
 
+[node name="Sp7" type="HSeparator" parent="Scroll/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="SheetControls2" type="Label" parent="Scroll/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "TR_FADES"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="GridContainer3" type="GridContainer" parent="Scroll/MarginContainer/VBoxContainer"]
 layout_mode = 2
 columns = 2
@@ -237,8 +262,8 @@ value_to_update = "fade"
 [node name="Fade2" type="CheckBox" parent="Scroll/MarginContainer/VBoxContainer/GridContainer3"]
 layout_mode = 2
 size_flags_horizontal = 3
-tooltip_text = "TR_ASSET_FADE_TOOLTIP"
-text = "TR_ASSET_FADE"
+tooltip_text = "TR_FADE_ASSET_TOOLTIP"
+text = "TR_FADE_ASSET"
 script = ExtResource("4_ryas8")
 sp_type = ""
 value_to_update = "fade_asset"
@@ -246,7 +271,7 @@ value_to_update = "fade_asset"
 [node name="BetterSlider2" parent="Scroll/MarginContainer/VBoxContainer" instance=ExtResource("4_3iye5")]
 layout_mode = 2
 sp_type = ""
-label_text = "TR_FADE"
+label_text = "TR_FADE_PARAM"
 mini_value = 0.01
 max_value = 10.0
 step = 0.01
@@ -256,16 +281,13 @@ value_to_update = "fade_speed"
 [node name="BetterSlider3" parent="Scroll/MarginContainer/VBoxContainer" instance=ExtResource("4_3iye5")]
 layout_mode = 2
 sp_type = ""
-label_text = "TR_ASSET_FADE"
+label_text = "TR_FADE_ASSET_PARAM"
 mini_value = 0.01
 max_value = 10.0
 step = 0.01
 value = 1.0
 value_to_update = "fade_speed_asset"
 
-[connection signal="toggled" from="Scroll/MarginContainer/VBoxContainer/GridContainer/AnimationReset" to="." method="_on_animation_reset_toggled"]
-[connection signal="toggled" from="Scroll/MarginContainer/VBoxContainer/GridContainer/AnimationOneShot" to="." method="_on_animation_one_shot_toggled"]
-[connection signal="toggled" from="Scroll/MarginContainer/VBoxContainer/GridContainer/ResetonStateChange" to="." method="_on_reseton_state_change_toggled"]
 [connection signal="toggled" from="Scroll/MarginContainer/VBoxContainer/GridContainer/NeverReset" to="." method="_on_never_reset_toggled"]
 [connection signal="value_changed" from="Scroll/MarginContainer/VBoxContainer/EffectsGrid/RSSlider" to="." method="_on_rs_slider_value_changed"]
 [connection signal="toggled" from="Scroll/MarginContainer/VBoxContainer/NonAnimatedSheetCheck" to="." method="_on_non_animated_sheet_check_toggled"]
