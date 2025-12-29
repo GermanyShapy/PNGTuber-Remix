@@ -124,13 +124,13 @@ func get_state(id):
 		sprite_data.merge(dict, true)
 		%Modifier1.z_index = get_value("z_index")
 		modulate = get_value("colored")
-		scale = get_value("scale")
+		
 	#	global_position = get_value("global_position")
 		if get_value("should_reset_state"):
 			%ReactionConfig.reset_anim()
 	
 		var old_glob = global_position
-		position = get_value("position")
+		apply_transform()
 		if (global_position - old_glob).length() > get_value("drag_snap") && get_value("drag_snap") != 999999.0:
 			%Modifier.global_position = %Modifier1.global_position
 		
@@ -146,7 +146,7 @@ func get_state(id):
 		
 		
 		%Sprite2D.set_clip_children_mode(get_value("clip"))
-		rotation = get_value("rotation")
+		
 
 		if get_value("flip_h"):
 			%Sprite2D.scale.x = -1
@@ -256,3 +256,12 @@ func _input(event: InputEvent) -> void:
 		if selected && dragging:
 			save_state(Global.current_state)
 			dragging = false
+
+func apply_transform():
+	transform.x = Vector2.RIGHT
+	transform.y = Vector2.UP
+	position = get_value("position")
+	rotation = get_value("rotation")
+	scale = get_value("scale")
+	transform.x = transform.x.rotated(deg_to_rad(get_value("skew").x) )
+	transform.y = transform.y.rotated(deg_to_rad(get_value("skew").y) )
