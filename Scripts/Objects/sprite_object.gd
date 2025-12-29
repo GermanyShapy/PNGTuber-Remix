@@ -207,15 +207,14 @@ func get_state(id):
 			%ReactionConfig.reset_anim()
 		
 		var old_glob = global_position
-		position = get_value("position")
+		
 		%Sprite2D.position = get_value("offset") 
 		%Sprite2D.scale = Vector2(1,1)
 		
 		%Modifier1.z_index = get_value("z_index")
 		modulate = get_value("colored")
-		scale = get_value("scale")
-		(%Sprite2D as Node2D).transform.x = Vector2.from_angle(deg_to_rad(get_value("skew").x) )
-		(%Sprite2D as Node2D).transform.y = Vector2.from_angle(deg_to_rad(get_value("skew").y + 90.0) )
+		apply_transform()
+
 	#	global_position = get_value("global_position")
 		
 		
@@ -223,7 +222,7 @@ func get_state(id):
 			%Modifier.global_position = %Modifier1.global_position
 		
 		%Sprite2D.set_clip_children_mode(get_value("clip"))
-		rotation = get_value("rotation")
+		
 		%Sprite2D.material.set_shader_parameter("wiggle", get_value("wiggle"))
 		%Sprite2D.material.set_shader_parameter("rotation_offset", get_value("wiggle_rot_offset"))
 		
@@ -278,3 +277,12 @@ func zazaza(parent):
 					if !state.is_empty():
 						global = global_position
 						state.position = get_value("position")
+
+func apply_transform():
+		transform.x = Vector2.RIGHT
+		transform.y = Vector2.UP
+		position = get_value("position")
+		rotation = get_value("rotation")
+		scale = get_value("scale")
+		transform.x = transform.x.rotated(deg_to_rad(get_value("skew").x) )
+		transform.y = transform.y.rotated(deg_to_rad(get_value("skew").y) )

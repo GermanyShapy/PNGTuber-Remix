@@ -272,8 +272,8 @@ func _on_rot_spin_box_value_changed(value):
 			var undo_redo_data : Array = []
 			for i in Global.held_sprites:
 				var og_val = i.sprite_data.duplicate()
-				i.rotation = value * 0.01745
-				i.sprite_data.rotation = value * 0.01745
+				i.sprite_data.rotation = deg_to_rad(value)
+				i.apply_transform()
 				StateButton.multi_edit(i.sprite_data.rotation, "rotation", i, i.states)
 				i.save_state(Global.current_state)
 				undo_redo_data.append({sprite_object = i, 
@@ -333,7 +333,7 @@ func _on_size_spin_y_box_value_changed(value):
 			for i in Global.held_sprites:
 				var og_val = i.sprite_data.duplicate()
 				i.sprite_data.scale.y = value
-				i.scale.y = value
+				i.apply_transform()
 				StateButton.multi_edit(value, "scale", i, i.states, true, "y")
 				i.save_state(Global.current_state)
 				undo_redo_data.append({sprite_object = i, 
@@ -351,7 +351,7 @@ func _on_size_spin_box_value_changed(value):
 			for i in Global.held_sprites:
 				var og_val = i.sprite_data.duplicate()
 				i.sprite_data.scale.x = value
-				i.scale.x = value
+				i.apply_transform()
 				StateButton.multi_edit(value, "scale", i, i.states, true, "x")
 				i.save_state(Global.current_state)
 				undo_redo_data.append({sprite_object = i, 
@@ -555,7 +555,7 @@ func _on_skew_spin_x_box_value_changed(value: float) -> void:
 				var og_val = i.sprite_data.duplicate()
 				i.sprite_data.skew.x = value
 				###i.skew.x = value
-				(i.get_node("%Sprite2D") as Node2D).transform.x = Vector2.from_angle(deg_to_rad(i.sprite_data.skew.x))
+				i.apply_transform()
 				###
 				StateButton.multi_edit(value, "skew", i, i.states, true, "x")
 				i.save_state(Global.current_state)
@@ -573,8 +573,8 @@ func _on_skew_spin_y_box_value_changed(value: float) -> void:
 			for i in Global.held_sprites:
 				var og_val = i.sprite_data.duplicate()
 				i.sprite_data.skew.y = value
-				###i.skew.x = value
-				(i.get_node("%Sprite2D") as Node2D).transform.y = Vector2.from_angle(deg_to_rad(i.sprite_data.skew.y + 90.0))
+				###i.skew.y = value
+				i.apply_transform()
 				###
 				StateButton.multi_edit(value, "skew", i, i.states, true, "y")
 				i.save_state(Global.current_state)
