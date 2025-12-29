@@ -242,7 +242,6 @@ func _process(delta):
 		tick = wrap(tick + delta, 0, 922337203685477630)
 	else:
 		tick = wrap(tick + 1, 0, 922337203685477630)
-	#	print(tick)
 	if !spinbox_held:
 		moving_origin(delta)
 		moving_sprite(delta)
@@ -314,7 +313,8 @@ func update_spins():
 func _physics_process(_delta: float) -> void:
 	mouse_delay()
 	if Input.is_action_just_pressed("debug_rep"):
-		print_orphan_nodes()
+		pass
+		#print_orphan_nodes()
 	
 
 func mouse_delay():

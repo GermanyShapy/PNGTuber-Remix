@@ -7,7 +7,7 @@ static var redo_data : Array = []
 static func push_data(data : Variant = null):
 	if data == null: return
 	undo_data.append(data)
-	print(data)
+	#print(data)
 
 static func undo():
 	if undo_data.size() == 0:

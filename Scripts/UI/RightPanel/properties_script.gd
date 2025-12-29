@@ -201,9 +201,9 @@ func _on_blend_state_pressed(id):
 
 func update_pos_spins():
 	for i in Global.held_sprites:
-		%PosXSpinBox.value = i.position.x
-		%PosYSpinBox.value = i.position.y
-		%RotSpinBox.value = i.rotation / 0.01745
+		%PosXSpinBox.value = i.sprite_data.position.x
+		%PosYSpinBox.value =i.sprite_data.position.y
+		%RotSpinBox.value = rad_to_deg(i.sprite_data.rotation)
 		i.save_state(Global.current_state)
 
 func update_offset():

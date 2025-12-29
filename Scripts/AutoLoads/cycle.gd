@@ -27,7 +27,7 @@ func toggle_cycle(cycle):
 	cycle.active = !cycle.active
 	if cycle.active:
 		var array = cycle.sprites.duplicate()
-		if array.has(cycle.last_sprite):
+		if array.has(cycle.last_sprite) and array.size() > 1:
 			array.remove_at(array.find(cycle.last_sprite))
 		if array.size() > 0:
 			var rand = array.pick_random()
