@@ -2,11 +2,10 @@ extends SpriteObject
 
 @export var mesh : CustomMesh
 
-
 func get_default_object_data() -> Dictionary:
 	return {
 		move_with_wobble = true,
-		move_with_follow= true
+		move_with_follow= true,
 	}
 
 func _init() -> void:
@@ -40,6 +39,7 @@ func sel():
 
 func desel():
 	%Sprite2D.editable = false
+	%MeshEditor.queue_redraw()
 	%Origin.hide()
 	selected = false
 
@@ -119,6 +119,7 @@ func get_state(id):
 		states[id] = sprite_data.duplicate(true)
 
 
+
 func check_talk():
 	if get_value("should_talk"):
 		if get_value("open_mouth"):
@@ -142,3 +143,10 @@ func zazaza(parent):
 func _on_sprite_2d_text_changed() -> void:
 	sprite_data.text_data = %Sprite2D.text
 	save_state(Global.current_state)
+
+func update_mesh_data():
+	if mesh.get_layer_count() < Global.selected_mesh_inx:
+		return
+	
+	var _layer = mesh.get_layer(Global.selected_mesh_inx)
+	pass

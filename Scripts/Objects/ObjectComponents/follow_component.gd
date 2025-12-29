@@ -108,6 +108,9 @@ func update_controller_inputs() -> void:
 	axis_lr_3 = Input.get_vector("L3", "R3", "L3", "R3")
 
 func update_position(dir: Vector2, dist: float, _delta: float) -> void:
+	if actor.get_value("follow_type") == 15:
+		%Modifier1.position = Vector2(0,0)
+		return
 	
 	var follow_type = actor.get_value("follow_type")
 	var keyboard_axis := Vector2.ZERO
@@ -125,14 +128,11 @@ func update_position(dir: Vector2, dist: float, _delta: float) -> void:
 			else:
 				target_pos = target_pos.lerp(last_dist, actor.get_value("mouse_delay")) 
 				current_dir = dir
-		
 		else:
 			target_pos.x = dir.x * min(dist, actor.get_value("look_at_mouse_pos"))
 			target_pos.y = dir.y * min(dist, actor.get_value("look_at_mouse_pos_y"))
 			current_dir = dir
-		
-		
-		
+
 	elif follow_type == 1:
 		if actor.get_value("snap_pos"):
 			if axis_left.x != 0:
@@ -230,16 +230,8 @@ func update_position(dir: Vector2, dist: float, _delta: float) -> void:
 			modifier.position.x = GlobalCalculations.is_nan_or_inf(lerp(modifier.position.x, 0.0, actor.get_value("mouse_delay")))
 			modifier.position.y = GlobalCalculations.is_nan_or_inf(lerp(modifier.position.y, 0.0, actor.get_value("mouse_delay")))
 			return
-	if actor.sprite_type == "Mesh" and mesh != null:
-		var can_deform : bool = false
-		if Global.mesh_text_node != null && is_instance_valid(Global.mesh_text_node):
-			can_deform = Global.mesh_text_node.deform
-		if !mesh.editable && !can_deform:
-			var raw_offset = target_pos
-			var amp = Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y"))
-			var safe_deform_pos = mesh.apply_wobble_to_deformer(raw_offset, _delta, amp, 0.08)
-			if abs((safe_deform_pos - Vector2(mesh.deform_x, mesh.deform_y)).length()) > 0.01:
-				mesh.deformations_3x3(safe_deform_pos.x, safe_deform_pos.y)
+		
+	if actor.sprite_type == "Mesh" and mesh != null && is_instance_valid(mesh):
 		if !actor.get_value("move_with_follow"):
 			modifier.position = modifier.position.lerp(Vector2.ZERO, actor.get_value("mouse_delay"))
 			return
@@ -248,6 +240,8 @@ func update_position(dir: Vector2, dist: float, _delta: float) -> void:
 	modifier.position.y = GlobalCalculations.is_nan_or_inf(lerp(modifier.position.y, target_pos.y, actor.get_value("mouse_delay")))
 
 func update_rotation(_dir: Vector2, delta: float) -> void:
+	if actor.get_value("follow_type2") == 15:
+		return
 	var follow_type2 = actor.get_value("follow_type2")
 	var target_rot = 0.0
 	var keyboard_axis := Vector2.ZERO
@@ -294,6 +288,8 @@ func update_rotation(_dir: Vector2, delta: float) -> void:
 	modifier.rotation = lerp_angle(modifier.rotation, target_rot, t)
 
 func update_scale(dir: Vector2, delta: float) -> void:
+	if actor.get_value("follow_type3") == 15:
+		return
 	var follow_type3 = actor.get_value("follow_type3")
 	var keyboard_axis := Vector2.ZERO
 	if follow_type3 in [3,4,5,6,7,8]:
