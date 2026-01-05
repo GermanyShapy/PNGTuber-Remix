@@ -22,6 +22,43 @@ func _ready() -> void:
 	not_speaking()
 
 func _physics_process(_delta: float) -> void:
+	var gazing_l = Vector2(0, 0)
+	var gazing_r = Vector2(0, 0)
+	if Tracker.working && actor.sprite_data.follow_eye != 0:
+		gazing_l = Tracker.smooth_gaze_left
+		gazing_r = Tracker.smooth_gaze_right
+		%Modifier1.modulate.a = 1
+
+		if actor.sprite_data.should_blink:
+			if actor.sprite_data.style_eye != 0:
+				match actor.sprite_data.follow_eye:
+					0:
+						%Modifier.scale.y = 1
+					1:
+						%Modifier.scale.y = lerp(%Modifier.scale.y, Tracker.track_eye_left, 0.08)
+					2:
+						%Modifier.scale.y = lerp(%Modifier.scale.y, Tracker.track_eye_right, 0.08)
+			else:
+				%Modifier.scale.y = 1
+			if Tracker.is_blink:
+				if !actor.sprite_data.open_eyes:
+					%Modifier1.show()
+				else:
+					%Modifier1.hide()
+			elif !Tracker.is_blink:
+				if !actor.sprite_data.open_eyes:
+					%Modifier1.hide()
+				else:
+					%Modifier1.show()
+	
+	match actor.sprite_data.gaze_eye:
+		1:
+			%Sprite2D.position = %Sprite2D.position.lerp(actor.get_value("offset") + gazing_l, 0.25)
+		2:
+			%Sprite2D.position = %Sprite2D.position.lerp(actor.get_value("offset") + gazing_r, 0.25)
+
+	
+	
 	if min_duration_timer > 0.0:
 		min_duration_timer -= _delta
 			

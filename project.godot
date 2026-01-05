@@ -41,6 +41,7 @@ GlobalMicAudio="*res://Main/Scripts/GlobalMicAudio.gd"
 WebsocketHandler="*res://Main/Scripts/websocket_handler.gd"
 GlobInput="*res://Scripts/AutoLoads/global_input.tscn"
 CommandLine="*res://Scripts/AutoLoads/CommandLine.gd"
+Tracker="*res://Scripts/Trackings/TrackingBackend.gd"
 
 [debug]
 
