@@ -8,6 +8,12 @@ static func get_locale(language: String) -> String:
 			
 		"Español":
 			return "es"
+			
+		"简体中文(zh_CN)":
+			return "zh_CN"
+			
+		"Español":
+			return "es"
 		_:
 			return "automatic"
 

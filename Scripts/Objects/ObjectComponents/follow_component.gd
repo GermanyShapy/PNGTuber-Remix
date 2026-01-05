@@ -336,13 +336,16 @@ func update_scale(dir: Vector2, delta: float) -> void:
 func follow_mouse_vel_rotation():
 	var t = Vector2(-dir_vel_anim.x, 0).normalized()
 	var normalized_mouse = t.x/2
+	if abs(dir_vel_anim.x) < 10.0:
+		normalized_mouse = 0
 	normalized_mouse = clamp(normalized_mouse, -1.0, 1.0)
-	var rotation_factor = lerp(actor.get_value("mouse_rotation_max"), actor.get_value("mouse_rotation"), max(0.01, (normalized_mouse) / 2))
+	var rotation_factor = lerp(actor.get_value("mouse_rotation_max"), actor.get_value("mouse_rotation"), max(0.0, 0.5 + normalized_mouse) )
 	var safe_rot_min = clamp(actor.get_value("rLimitMin"), -360, 360)
 	var safe_rot_max = clamp(actor.get_value("rLimitMax"), -360, 360)
-	var _target_rotation = clamp(normalized_mouse * rotation_factor * deg_to_rad(90), deg_to_rad(safe_rot_min), deg_to_rad(safe_rot_max))
+	var _target_rotation = clamp(rotation_factor * deg_to_rad(90), deg_to_rad(safe_rot_min), deg_to_rad(safe_rot_max))
+	print(rotation_factor * deg_to_rad(90))
 	modifier.rotation = GlobalCalculations.is_nan_or_inf(lerp_angle(modifier.rotation, _target_rotation, actor.get_value("mouse_delay")))
-
+	print(modifier.rotation)
 func follow_mouse_vel_scale():
 	var t = dir_vel_anim.normalized()
 	var normalized_mouse = t/2

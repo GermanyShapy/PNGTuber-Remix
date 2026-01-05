@@ -124,7 +124,7 @@ func get_translation_for_model_anim(code_string) -> String:
 		"One Bounce":
 			return tr("TR_ANIMATION_ONE_BOUNCE")
 		"Wobble":
-			return ("TR_ANIMATION_WOBBLE")
+			return tr("TR_ANIMATION_WOBBLE")
 		"Squish":
 			return tr("TR_ANIMATION_SQUISH")
 		"Float":
