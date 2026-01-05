@@ -148,8 +148,9 @@ func _apply_value_to_selected(nvalue: float, push_undo: bool):
 		UndoRedoManager.push_data(val)
 
 func nullfy():
-	%SpinBoxValue.editable = false
-	%SliderValue.editable = false
+	if sp_type != "Null":
+		%SpinBoxValue.editable = false
+		%SliderValue.editable = false
 
 func enable():
 	should_change = false
@@ -160,4 +161,7 @@ func enable():
 			var _val = sprite.sprite_data[value_to_update]
 			%SpinBoxValue.value = _val
 			%SliderValue.value = _val
+		elif sp_type == "Null":
+			%SpinBoxValue.editable = true
+			%SliderValue.editable = true
 	should_change = true

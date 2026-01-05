@@ -40,6 +40,9 @@ func remove_window(window: ExtraWindow) -> void:
 	
 	if last_mode >= 0:
 		Global.mode = last_mode
+		
+	if window.get_parent() == self:
+		remove_child(window)
 
 func lock_window(window: ExtraWindow) -> void:
 	if !is_instance_valid(window): return

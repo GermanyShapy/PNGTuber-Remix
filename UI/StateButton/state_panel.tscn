@@ -127,7 +127,6 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 size_flags_vertical = 0
-tooltip_text = "TR_HOLD_TO_SHOW_TOOLTIP"
 text = "TR_HOLD_TO_SHOW"
 
 [node name="StateInclusiveKeyCheckCheck" type="CheckBox" parent="StateRemapPopup/Margin/Panel/VBox"]

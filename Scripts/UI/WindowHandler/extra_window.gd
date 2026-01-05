@@ -3,6 +3,7 @@ class_name ExtraWindow
 
 const WINDOW_SIZE := Vector2(512, 512)
 const BUTTON_MARGIN: int = 16
+const BITMAP_SIZE = 128.0
 
 var dragging := false
 var offset := Vector2i.ZERO
@@ -13,6 +14,10 @@ var effects := TextureRect.new()
 var camera := WindowCamera.new()
 var button := Button.new()
 var control := Control.new()
+var was_pressed_before := false
+var mouse_pos :Vector2i = Vector2()
+var updated_image :Image
+var update_buffer_lock :bool = false
 
 func _init(world: World2D, remove_window: Callable, lock_window: Callable, other_camera: Camera2D, container_material: ShaderMaterial, effects_material: ShaderMaterial) -> void:
 	add_child(viewport_container)
@@ -37,6 +42,7 @@ func _init(world: World2D, remove_window: Callable, lock_window: Callable, other
 	transparent = true
 	transparent_bg = true
 	force_native = true
+	
 	close_requested.connect(remove_window.bind(self))
 	
 	add_child(control)
@@ -55,11 +61,44 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("lmb"):
 		offset = get_mouse_position()
 		dragging = true
+		
+		was_pressed_before = true
 	elif event.is_action_released("lmb"):
 		dragging = false
+		was_pressed_before = false
 	
 	viewport.push_input(event)
 
 func _process(_delta: float) -> void:
-	if !dragging: return
-	position = DisplayServer.mouse_get_position() - offset
+	mouse_pos = DisplayServer.mouse_get_position()
+	if dragging:
+		position = mouse_pos - offset
+	
+func _physics_process(delta: float) -> void:
+	
+	if borderless and mouse_pos == mouse_pos.clamp(position, position + size) and !dragging:
+		
+		update_buffer_lock = !update_buffer_lock
+		if !update_buffer_lock:
+			return
+		updated_image = get_texture().get_image()
+		updated_image.resize(BITMAP_SIZE, BITMAP_SIZE)
+		
+		var scale = Vector2(size.x /float(BITMAP_SIZE), size.y /float(BITMAP_SIZE))
+		var bm = BitMap.new()
+		bm.create_from_image_alpha(updated_image)
+		#bm.grow_mask(3,Rect2(Vector2(), bm.get_size()))
+		var array = bm.opaque_to_polygons(Rect2(Vector2(), bm.get_size()),0.5)
+		if !array.is_empty():
+			var polygon = PackedVector2Array()
+			for p in array:
+				polygon.append_array(p)
+			polygon = Geometry2D.offset_polygon(Geometry2D.convex_hull(polygon),1)[0]
+			for index in polygon.size():
+				polygon[index] *= scale
+			mouse_passthrough_polygon = polygon
+		else:
+			mouse_passthrough_polygon = []
+	else:
+		if !mouse_passthrough_polygon.is_empty():
+			mouse_passthrough_polygon = []
