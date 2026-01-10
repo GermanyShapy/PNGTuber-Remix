@@ -56,6 +56,8 @@ func _init(world: World2D, remove_window: Callable, lock_window: Callable, other
 	button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	button.position -= Vector2.ONE * BUTTON_MARGIN
 	button.pressed.connect(lock_window.bind(self))
+	
+	self.focus_entered.connect(on_focus_enter)
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("lmb"):
@@ -102,3 +104,8 @@ func _physics_process(delta: float) -> void:
 	else:
 		if !mouse_passthrough_polygon.is_empty():
 			mouse_passthrough_polygon = []
+
+func on_focus_enter():
+	pass
+	#if GlobInput.rawMouseInput != null:
+		#GlobInput.rawMouseInput.refresh()

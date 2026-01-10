@@ -35,7 +35,6 @@ var axis_lr_3 : Vector2 = Vector2.ZERO
 var current_dir : Vector2 = Vector2.ZERO
 var current_dist : float = 0.0
 
-
 func _physics_process(delta: float) -> void:
 	if Global.static_view or actor.rest_mode == 5:
 		return
@@ -52,12 +51,21 @@ func reset_modifier() -> void:
 	modifier.scale = Vector2.ONE
 
 func mouse_delay():
-	mouse_delta = last_mouse_position - mouse_coords
-	distance = Vector2(tanh(mouse_delta.x), tanh(mouse_delta.y))
+	
+	#TEST get mouse delta with relative movement in mouse inputs
+	if GlobInput.is_mouse_relative_movement:
+		mouse_delta = -GlobInput.mouse_relative_movement
+		#print(str(mouse_delta) + " vs " + str(last_mouse_position - mouse_coords))
+	else:
+		#mouse_delta = last_mouse_position - mouse_coords
+		mouse_delta = Vector2.ZERO
+	#mouse_delta = GlobInput.get_mouse_position()
+	
+	#TEST END
+	distance = Vector2(tanh(mouse_delta.x / actor.get_value("look_at_mouse_pos") * 4), tanh(mouse_delta.y) / actor.get_value("look_at_mouse_pos_y") * 4)
 	if !mouse_delta.is_zero_approx():
 		if distance.length() == NAN:
 			distance = Vector2(0.0, 0.0)
-		last_mouse_position = mouse_coords
 
 func process_follow(delta: float) -> void:
 	if actor.get_value("follow_mouse_velocity"):
@@ -68,20 +76,29 @@ func process_follow(delta: float) -> void:
 		last_dist.y = lerp(last_dist.y, dir_vel_y * (distance.length() * actor.get_value("look_at_mouse_pos_y")), 0.5)
 		vel = mouse_delta
 		dir_vel_anim = mouse_delta 
+		#TEST
+		#print("position: " + str(GlobInput.get_mouse_position()))
+		#TEST END
 	var dir = (mouse_coords - Vector2.ZERO).normalized() if mouse_coords.length() > 0.0001 else Vector2.ZERO
 	var dist = mouse_coords.length()
 	update_controller_inputs()
 	update_position(dir, dist, delta)
 	update_rotation(dir, delta)
 	update_scale(dir, delta)
+	#print("mouse_croods: " + str(mouse_coords))
 
 func follow_calculation(_delta = 0.0):
+	if actor.get_value("follow_type") != 0 and actor.get_value("follow_type2") != 0 and actor.get_value("follow_type3") != 0:
+		return mouse_coords
+		
 	var main_marker = Global.main.get_node("%Marker")
 	
 	if WindowHandler.windows:
 		mouse_coords = Vector2.ZERO
-		if main_marker.current_screen == Monitor.ALL_SCREENS or main_marker.mouse_in_current_screen():
-			mouse_coords = DisplayServer.mouse_get_position()
+		if main_marker.current_screen == Monitor.ALL_SCREENS:
+			mouse_coords = DisplayServer.mouse_get_position() - DisplayServer.screen_get_size() /2
+		elif main_marker.mouse_in_current_screen():
+			mouse_coords = DisplayServer.mouse_get_position() - DisplayServer.screen_get_size(main_marker.current_screen) /2
 	
 	elif main_marker.current_screen != Monitor.ALL_SCREENS:
 		if !main_marker.mouse_in_current_screen():
@@ -129,8 +146,8 @@ func update_position(dir: Vector2, dist: float, _delta: float) -> void:
 				target_pos = target_pos.lerp(last_dist, actor.get_value("mouse_delay")) 
 				current_dir = dir
 		else:
-			target_pos.x = dir.x * min(dist, actor.get_value("look_at_mouse_pos"))
-			target_pos.y = dir.y * min(dist, actor.get_value("look_at_mouse_pos_y"))
+			target_pos.x = lerp(target_pos.x , dir.x * min(dist, actor.get_value("look_at_mouse_pos")), actor.get_value("mouse_delay"))
+			target_pos.y = lerp(target_pos.y , dir.y * min(dist, actor.get_value("look_at_mouse_pos_y")), actor.get_value("mouse_delay"))
 			current_dir = dir
 
 	elif follow_type == 1:
@@ -143,7 +160,7 @@ func update_position(dir: Vector2, dist: float, _delta: float) -> void:
 				current_dir.y = axis_left.y
 			target_pos = Vector2(target_x, target_y)
 		else:
-			target_pos = axis_left * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y"))
+			target_pos = target_pos.lerp(axis_left * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y")), actor.get_value("mouse_delay"))
 			current_dir = axis_left
 			current_dist = target_pos.length()
 	elif follow_type == 2:
@@ -156,7 +173,7 @@ func update_position(dir: Vector2, dist: float, _delta: float) -> void:
 				current_dir.y = axis_right.y
 			target_pos = Vector2(target_x, target_y)
 		else:
-			target_pos = axis_right * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y"))
+			target_pos = target_pos.lerp(axis_right * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y")), actor.get_value("mouse_delay"))
 			current_dir = axis_right
 			current_dist = target_pos.length()
 	elif follow_type == 10:
@@ -169,7 +186,7 @@ func update_position(dir: Vector2, dist: float, _delta: float) -> void:
 				current_dir.y = axis_shoulderl.y
 			target_pos = Vector2(target_x, target_y)
 		else:
-			target_pos = axis_shoulderl * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y"))
+			target_pos = target_pos.lerp(axis_shoulderl * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y")), actor.get_value("mouse_delay"))
 			current_dir = axis_shoulderl
 			current_dist = target_pos.length()
 	elif follow_type == 11:
@@ -182,7 +199,7 @@ func update_position(dir: Vector2, dist: float, _delta: float) -> void:
 				current_dir.y = axis_shoulderr.y
 			target_pos = Vector2(target_x, target_y)
 		else:
-			target_pos = axis_shoulderr * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y"))
+			target_pos = target_pos.lerp(axis_shoulderr * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y")), actor.get_value("mouse_delay"))
 			current_dir = axis_shoulderr
 			current_dist = target_pos.length()
 	elif follow_type == 12:
@@ -195,7 +212,7 @@ func update_position(dir: Vector2, dist: float, _delta: float) -> void:
 				current_dir.y = axis_lr_3.y
 			target_pos = Vector2(target_x, target_y)
 		else:
-			target_pos = axis_lr_3 * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y"))
+			target_pos = target_pos.lerp(axis_lr_3 * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y")), actor.get_value("mouse_delay"))
 			current_dir = axis_lr_3
 			current_dist = target_pos.length()
 	elif follow_type in [3,4,5,6,7,8]:
@@ -208,7 +225,7 @@ func update_position(dir: Vector2, dist: float, _delta: float) -> void:
 				current_dir.y = keyboard_axis.y
 			target_pos = Vector2(target_x, target_y)
 		else:
-			target_pos = keyboard_axis * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y"))
+			target_pos = target_pos.lerp(keyboard_axis * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y")), actor.get_value("mouse_delay"))
 			current_dir = keyboard_axis
 		current_dist = target_pos.length()
 

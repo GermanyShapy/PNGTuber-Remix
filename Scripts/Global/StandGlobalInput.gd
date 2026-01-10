@@ -1,14 +1,40 @@
 class_name StandGlobalInput
 extends GlobalInput
 
+
+signal raw_mouse_updated(guid, usFlags, ulButtons, usButtonFlags, usButtonData, ulRawButtons, dx, dy);
+signal raw_mouse_init();
+
+
 var just_pressed_details:Dictionary = {}
 var just_released_details:Dictionary = {}
 var pressed_details:Dictionary = {}
 var pressed_before_details:Dictionary = {}
 
+#var rawMouseInput : RawMouseInput = null;
+var mouse_relative_movement:Vector2i = Vector2i.ZERO
+var is_mouse_relative_movement:bool = false
+var mouse_relative_movement_buffer:Vector2i = Vector2i.ZERO
+var is_mouse_relative_movement_buffer:bool = false
+
 func _ready() -> void:
 	use_physics_frames = true
+	call_deferred("_rawmouse_init");
 
+func _rawmouse_init():
+	return
+	#if rawMouseInput == null:
+		#print("raw input init start")
+		#rawMouseInput = RawMouseInput.new()
+		#rawMouseInput.connect("raw_mouse", Callable(self, "_on_internal_raw_mouse"));
+		#self.connect("raw_mouse_updated", Callable(self, "_on_raw_mouse_input_updated"))
+		#add_child(rawMouseInput);
+		#emit_signal("raw_mouse_init");
+		#print("raw input init end")
+		
+func _on_internal_raw_mouse(guid, usFlags, ulButtons, usButtonFlags, usButtonData, ulRawButtons, dx, dy):
+	emit_signal("raw_mouse_updated", guid, usFlags, ulButtons, usButtonFlags, usButtonData, ulRawButtons, dx, dy);
+	
 func _physics_process(delta: float) -> void:
 	pressed_before_details = pressed_details
 	pressed_details = get_keys_pressed_detailed()
@@ -24,6 +50,11 @@ func _physics_process(delta: float) -> void:
 		if key != "os" and !pressed_details.has(key):
 			just_released_details[key] = true
 	
+	mouse_relative_movement = mouse_relative_movement_buffer
+	mouse_relative_movement_buffer = Vector2i.ZERO
+	is_mouse_relative_movement = is_mouse_relative_movement_buffer
+	is_mouse_relative_movement_buffer = false
+	#print("Move: " + str(mouse_relative_movement) + " is " + str(is_mouse_relative_movement_buffer))
 	#if !pressed_details.is_empty() or !pressed_before_details.is_empty():
 		#print("pressed: " + str(pressed_details) + "     pressed_before: " + str(pressed_before_details))
 	#if !just_pressed_details.is_empty():
@@ -177,3 +208,22 @@ func is_action_input_pressed(action: String, is_inclusive_mode = false) -> bool:
 			return true
 	
 	return false
+
+# win32/api/winuser/ns-winuser-rawmouse usFlags
+enum Raw_Mouse_Input_Flags {
+	MOUSE_MOVE_RELATIVE = 0x00,
+	MOUSE_MOVE_ABSOLUTE = 0x01,
+	MOUSE_VIRTUAL_DESKTOP = 0x02,
+	MOUSE_ATTRIBUTES_CHANGED = 0x04,
+	MOUSE_MOVE_NOCOALESCE = 0x08,
+}
+
+func _on_raw_mouse_input_updated(guid: String, usFlags: int, ulButtons: int, usButtonFlags: int, usButtonData: int, ulRawButtons: int, lLastX: int, lLastY: int) -> void:
+	mouse_relative_movement_buffer.x += lLastX
+	mouse_relative_movement_buffer.y += lLastY
+	is_mouse_relative_movement_buffer = true
+
+func refresh_raw_mouse_input():
+	pass
+	#if rawMouseInput != null:
+		#rawMouseInput.refresh()

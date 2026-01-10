@@ -160,6 +160,8 @@ func get_item_id_by_blend_mode(blend_mode: String) -> int:
 			return 5
 		"Cursed":
 			return 6
+		"Masking":
+			return 101
 	return 0
 
 func get_blend_mode_by_id(id) -> String:
@@ -178,7 +180,8 @@ func get_blend_mode_by_id(id) -> String:
 			return "HardMix"
 		6:
 			return "Cursed"
-			
+		101:
+			return "Masking"
 	return "Normal"
 
 func _on_blend_state_pressed(id):
@@ -234,7 +237,7 @@ func _on_tint_picker_button_color_changed(ncolor: Color) -> void:
 	if should_change:
 		var undo_redo_data : Array = []
 		for i in Global.held_sprites:
-			var d = submit_to_undo_redo_manager(i, "tint", Global.current_state, i.tint , ncolor)
+			var d = submit_to_undo_redo_manager(i, "tint", Global.current_state, i.get_value("tint") , ncolor)
 			i.sprite_data.tint = ncolor
 			i.get_node("%Sprite2D").self_modulate = ncolor
 			StateButton.multi_edit(ncolor, "tint", i, i.states)
