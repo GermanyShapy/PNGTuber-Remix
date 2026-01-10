@@ -145,6 +145,8 @@ var referenced_data : ImageData  = null
 var referenced_data_normal : ImageData = null
 
 var tween : Tween
+var tween_speaking : Tween
+var tween_blinking : Tween
 #Movement
 var heldTicks = 0
 #Wobble
@@ -314,7 +316,12 @@ func set_blend(blend):
 			sprite_object.use_parent_material = false
 			sprite_object.material.set_shader_parameter("enabled", true)
 			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/test1.png"))
-
+		"Masking":
+			sprite_object.use_parent_material = false
+			(sprite_object.material as ShaderMaterial).shader = preload("res://Scripts/Shaders/SpriteMaskingShader.gdshader")
+			sprite_object.material.set_shader_parameter("enabled", true)
+			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/multiply.png"))
+		
 func reparent_obj(parent):
 	for i in parent:
 		if i.parent_id == sprite_id:
@@ -380,31 +387,47 @@ func trigger_fade(was_visible: bool):
 		visible = false
 
 func fade_asset(was_visible: bool, node: Node, node_hide: Node) -> bool:
+	var tween_name
+	if node == %Modifier:
+		tween_name = "tween_speaking"
+	elif node == %Modifier1:
+		tween_name = "tween_blinking"
+	else:
+		tween_name = "tween"
+		
 	var start_a = node.modulate.a
-	if tween:
-		tween.kill()
+	if self[tween_name]:
+		self[tween_name].kill()
 	var target = !was_visible
 	node_hide.visible = true  
 	if target:
 		if start_a == 1.0:
 			return true
 		node.modulate.a = start_a
-		tween = get_tree().create_tween()
-		tween.tween_property(node, "modulate:a", 1.0, get_value("fade_speed_asset") * (1.0 - start_a))
-		await tween.finished
+		self[tween_name] = get_tree().create_tween()
+		self[tween_name].tween_property(node, "modulate:a", 1.0, get_value("fade_speed_asset") * (1.0 - start_a))
+		await self[tween_name].finished
 		node.modulate.a = 1.0
 		return true
 	else:
 		if start_a == 0.0:
 			return false
 		node.modulate.a = start_a
-		tween = get_tree().create_tween()
-		tween.tween_property(node, "modulate:a", 0.0, get_value("fade_speed_asset") * start_a)
-		await tween.finished
+		self[tween_name] = get_tree().create_tween()
+		self[tween_name].tween_property(node, "modulate:a", 0.0, get_value("fade_speed_asset") * start_a)
+		await self[tween_name].finished
 		node_hide.visible = false
 		return false
 
-func fade_reset():
-	if tween:
-		tween.kill()
-	modulate.a = 1.0
+func fade_reset(node: Node = self):
+	var tween_name
+	if node == %Modifier:
+		tween_name = "tween_speaking"
+	elif node == %Modifier1:
+		tween_name = "tween_blinking"
+	else:
+		tween_name = "tween"
+	
+	if self[tween_name]:
+		self[tween_name].kill()
+	node.modulate.a = 1.0

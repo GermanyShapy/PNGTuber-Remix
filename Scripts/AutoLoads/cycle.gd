@@ -12,15 +12,15 @@ func update_cycles(settings_dict = Global.settings_dict):
 		var backward = cycle.get("backward", null)
 
 		if toggle != null:
-			if GlobInput.is_input_just_pressed(toggle):
+			if GlobInput.is_input_just_pressed(toggle,true):
 				toggle_cycle(cycle)
 
 		if forward != null:
-			if GlobInput.is_input_just_pressed(forward):
+			if GlobInput.is_input_just_pressed(forward,true):
 				toggle_forward(cycle)
 
 		if backward != null:
-			if GlobInput.is_input_just_pressed(backward):
+			if GlobInput.is_input_just_pressed(backward,true):
 				toggle_backward(cycle)
 
 func toggle_cycle(cycle):

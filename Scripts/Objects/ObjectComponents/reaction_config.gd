@@ -139,21 +139,39 @@ func update_to_mode_change(mode : int):
 
 			
 			%Modifier.show()
+			#%Modifier.modulate.a = 1
 			if actor.get_value("should_talk"):
 				if actor.get_value("open_mouth"):
 					if currently_speaking:
-						%Modifier.modulate.a = 1
+						if actor.get_value("fade_asset"):
+							actor.fade_asset(false, %Modifier, %Modifier)
+						else:
+							actor.fade_reset(%Modifier)
+							%Modifier.modulate.a = 1
 					else:
-						%Modifier.modulate.a = 0.2
+						if actor.get_value("fade_asset"):
+							actor.fade_asset(true, %Modifier, %Modifier)
+						else:
+							actor.fade_reset(%Modifier)
+							%Modifier.modulate.a = 0.2
 
 				elif !actor.get_value("open_mouth"):
 					if !currently_speaking:
-						%Modifier.modulate.a = 1
+						if actor.get_value("fade_asset"):
+							actor.fade_asset(false, %Modifier, %Modifier)
+						else:
+							actor.fade_reset(%Modifier)
+							%Modifier.modulate.a = 1
 					else:
-						%Modifier.modulate.a = 0.2
+						if actor.get_value("fade_asset"):
+							actor.fade_asset(true, %Modifier, %Modifier)
+						else:
+							actor.fade_reset(%Modifier)
+							%Modifier.modulate.a = 0.2
 			else:
 				%Modifier.show()
-				%Modifier.modulate.a = 1
+				actor.fade_reset(%Modifier)
+				#%Modifier.modulate.a = 1
 		1:
 			%Modifier1.modulate.a = 1
 			if actor.get_value("should_blink"):
@@ -169,22 +187,39 @@ func update_to_mode_change(mode : int):
 					elif !blinking:
 						%Modifier1.hide()
 
-			%Modifier.modulate.a = 1
+			#%Modifier.modulate.a = 1
 			if actor.get_value("should_talk"):
 				if actor.get_value("open_mouth"):
 					if currently_speaking:
-						%Modifier.show()
+						if actor.get_value("fade_asset"):
+							actor.fade_asset(false, %Modifier, %Modifier)
+						else:
+							actor.fade_reset(%Modifier)
+							%Modifier.show()
 					else:
-						%Modifier.hide()
+						if actor.get_value("fade_asset"):
+							actor.fade_asset(true, %Modifier, %Modifier)
+						else:
+							actor.fade_reset(%Modifier)
+							%Modifier.hide()
 
 				elif !actor.get_value("open_mouth"):
 					if !currently_speaking:
-						%Modifier.show()
+						if actor.get_value("fade_asset"):
+							actor.fade_asset(false, %Modifier, %Modifier)
+						else:
+							actor.fade_reset(%Modifier)
+							%Modifier.show()
 					else:
-						%Modifier.hide()
+						if actor.get_value("fade_asset"):
+							actor.fade_asset(true, %Modifier, %Modifier)
+						else:
+							actor.fade_reset(%Modifier)
+							%Modifier.hide()
 			else:
 				%Modifier.show()
-				%Modifier.modulate.a = 1
+				actor.fade_reset(%Modifier)
+				#%Modifier.modulate.a = 1
 
 func editor_blink():
 	if Global.mode == 0:
@@ -236,34 +271,52 @@ func blink():
 
 func speaking():
 	if Global.mode != 0:
-		%Modifier.modulate.a = 1
+		#%Modifier.modulate.a = 1
 		if actor.get_value("should_talk"):
 			if actor.get_value("open_mouth"):
 				reset_animations()
-				%Modifier.show()
-					
+				if actor.get_value("fade_asset"):
+					actor.fade_asset(false, %Modifier, %Modifier)
+				else:
+					actor.fade_reset(%Modifier)
+					%Modifier.show()
 			else:
-				%Modifier.hide()
+				if actor.get_value("fade_asset"):
+					actor.fade_asset(true, %Modifier, %Modifier)
+				else:
+					actor.fade_reset(%Modifier)
+					%Modifier.hide()
 		else:
 			%Modifier.show()
+			actor.fade_reset(%Modifier)
 			
 	elif Global.mode == 0:
 		%Modifier.show()
+		#%Modifier.modulate.a = 1
 		if actor.get_value("should_talk"):
 			if actor.get_value("open_mouth"):
-				%Modifier.modulate.a = 1
-				reset_animations()
+				if actor.get_value("fade_asset"):
+					actor.fade_asset(false, %Modifier, %Modifier)
+				else:
+					actor.fade_reset(%Modifier)
+					%Modifier.modulate.a = 1
+					reset_animations()
 			else:
-				%Modifier.modulate.a = 0.2
+				if actor.get_value("fade_asset"):
+					actor.fade_asset(true, %Modifier, %Modifier)
+				else:
+					actor.fade_reset(%Modifier)
+					%Modifier.modulate.a = 0.2
 		else:
-			%Modifier.modulate.a = 1
+			actor.fade_reset(%Modifier)
+			#%Modifier.modulate.a = 1
 	currently_speaking = true
 
 func reset_animations(_place_holder : int = 0):
 	if actor.get_value("never_reset"):
 		return
 	
-	if actor.get_value("one_shot"):
+	if actor.get_value("one_shot") and %Sprite2D.frame == (actor.get_value("hframes")*actor.get_value("vframes") -1):
 		reset_anim()
 	
 	if actor.get_value("should_reset"):
@@ -281,26 +334,45 @@ func reset_anim():
 
 func not_speaking():
 	if Global.mode != 0:
-		%Modifier.modulate.a = 1
+		#%Modifier.modulate.a = 1
 		if actor.get_value("should_talk"):
 			if actor.get_value("open_mouth"):
-				%Modifier.hide()
+				if actor.get_value("fade_asset"):
+					actor.fade_asset(true, %Modifier, %Modifier)
+				else:
+					actor.fade_reset(%Modifier)
+					%Modifier.hide()
 			else:
 				reset_animations()
-				%Modifier.show()
+				if actor.get_value("fade_asset"):
+					actor.fade_asset(false, %Modifier, %Modifier)
+				else:
+					actor.fade_reset(%Modifier)
+					%Modifier.show()
 		else:
 			%Modifier.show()
+			actor.fade_reset(%Modifier)
 			
 	elif Global.mode == 0:
 		%Modifier.show()
+		#%Modifier.modulate.a = 1
 		if actor.get_value("should_talk"):
 			if actor.get_value("open_mouth"):
-				%Modifier.modulate.a = 0.2
+				if actor.get_value("fade_asset"):
+					actor.fade_asset(true, %Modifier, %Modifier)
+				else:
+					actor.fade_reset(%Modifier)
+					%Modifier.modulate.a = 0.2
 			else:
 				reset_animations()
-				%Modifier.modulate.a = 1
+				if actor.get_value("fade_asset"):
+					actor.fade_asset(false, %Modifier, %Modifier)
+				else:
+					actor.fade_reset(%Modifier)
+					%Modifier.modulate.a = 1
 		else:
-			%Modifier.modulate.a = 1
+			actor.fade_reset(%Modifier)
+			#%Modifier.modulate.a = 1
 			
 	currently_speaking = false
 
