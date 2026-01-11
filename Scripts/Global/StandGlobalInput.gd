@@ -11,7 +11,7 @@ var just_released_details:Dictionary = {}
 var pressed_details:Dictionary = {}
 var pressed_before_details:Dictionary = {}
 
-#var rawMouseInput : RawMouseInput = null;
+var rawMouseInput : RawMouseInput = null;
 var mouse_relative_movement:Vector2i = Vector2i.ZERO
 var is_mouse_relative_movement:bool = false
 var mouse_relative_movement_buffer:Vector2i = Vector2i.ZERO
@@ -22,15 +22,14 @@ func _ready() -> void:
 	call_deferred("_rawmouse_init");
 
 func _rawmouse_init():
-	return
-	#if rawMouseInput == null:
-		#print("raw input init start")
-		#rawMouseInput = RawMouseInput.new()
-		#rawMouseInput.connect("raw_mouse", Callable(self, "_on_internal_raw_mouse"));
-		#self.connect("raw_mouse_updated", Callable(self, "_on_raw_mouse_input_updated"))
-		#add_child(rawMouseInput);
-		#emit_signal("raw_mouse_init");
-		#print("raw input init end")
+	if rawMouseInput == null:
+		print("raw input init start")
+		rawMouseInput = RawMouseInput.new()
+		rawMouseInput.connect("raw_mouse", Callable(self, "_on_internal_raw_mouse"));
+		self.connect("raw_mouse_updated", Callable(self, "_on_raw_mouse_input_updated"))
+		add_child(rawMouseInput);
+		emit_signal("raw_mouse_init");
+		print("raw input init end")
 		
 func _on_internal_raw_mouse(guid, usFlags, ulButtons, usButtonFlags, usButtonData, ulRawButtons, dx, dy):
 	emit_signal("raw_mouse_updated", guid, usFlags, ulButtons, usButtonFlags, usButtonData, ulRawButtons, dx, dy);
@@ -225,5 +224,5 @@ func _on_raw_mouse_input_updated(guid: String, usFlags: int, ulButtons: int, usB
 
 func refresh_raw_mouse_input():
 	pass
-	#if rawMouseInput != null:
-		#rawMouseInput.refresh()
+	if rawMouseInput != null:
+		rawMouseInput.refresh()

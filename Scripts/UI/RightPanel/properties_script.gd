@@ -101,7 +101,7 @@ func set_data():
 		else:
 			%ClipChildren.button_pressed = true
 		
-		%BlendMode.selected = get_item_id_by_blend_mode(i.get_value("blend_mode"))
+		%BlendMode.selected = %BlendMode.get_item_index(get_item_id_by_blend_mode(i.get_value("blend_mode")))
 		
 		%OffsetXSpinBox.value = i.get_value("offset").x
 		%OffsetYSpinBox.value = i.get_value("offset").y

@@ -130,6 +130,11 @@ func _ready():
 				get_window().borderless = true
 			get_window().always_on_top = theme_settings.always_on_top
 			
+			if theme_settings.screen_pos.x < 0:
+				theme_settings.screen_pos.x = 0
+			if theme_settings.screen_pos.y < 0:
+				theme_settings.screen_pos.y = 0
+				
 			get_window().position = theme_settings.screen_pos
 			
 			
@@ -174,6 +179,8 @@ func _ready():
 		TranslationServer.set_locale(locale)
 	
 	GlobalAudioStreamPlayer.record_effect = AudioServer.get_bus_effect(GlobalAudioStreamPlayer.record_bus_index, theme_settings.get("audio_capturer", 2))
+	
+	await get_tree().create_timer(0.5).timeout
 	match theme_settings.audio_capturer:
 		0:
 			AudioServer.set_bus_effect_enabled(GlobalAudioStreamPlayer.record_bus_index, 0, true)
