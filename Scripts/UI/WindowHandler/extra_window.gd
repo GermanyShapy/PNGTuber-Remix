@@ -107,5 +107,5 @@ func _physics_process(delta: float) -> void:
 
 func on_focus_enter():
 	pass
-	#if GlobInput.rawMouseInput != null:
-		#GlobInput.rawMouseInput.refresh()
+	if GlobInput.rawMouseInput != null:
+		GlobInput.rawMouseInput.refresh()
