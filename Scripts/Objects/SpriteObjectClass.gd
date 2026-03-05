@@ -136,6 +136,11 @@ const DEFAULT_DATA := {
 	hidden_item = false,
 	}
 
+@onready var reaction_config = %ReactionConfig
+@onready var modifier = %Modifier
+@onready var modifier1 = %Modifier1
+@onready var movements = %Movements
+@onready var follow_componet = %FollowComponent
 
 @export var sprite_object : Node2D
 @export var grab_object : BaseButton
@@ -204,6 +209,13 @@ var selected : bool = false
 
 var drag_offsets = {} 
 
+#region shader
+@onready var sprite_normal_shader = (sprite_object.material as ShaderMaterial).shader
+var sprite_add_shader = preload("res://Scripts/Shaders/SpriteAddShader.gdshader")
+var sprite_sub_shader = preload("res://Scripts/Shaders/SpriteSubShader.gdshader")
+var sprite_multiply_shader = preload("res://Scripts/Shaders/SpriteMultiplyShader.gdshader")
+var sprite_masking_shader = preload("res://Scripts/Shaders/SpriteMaskingShader.gdshader")
+#endregion
 
 func get_default_object_data() -> Dictionary:
 	return {}
@@ -260,10 +272,11 @@ func get_value(key: String) -> Variant:
 	var state := Global.editing_for
 	
 	if state == Global.Mouth.Closed:
-		state = Global.mouth
+		return default
+		#state = Global.mouth
 	
 	match state:
-		Global.Mouth.Closed: pass
+		#Global.Mouth.Closed: return default
 		Global.Mouth.Open: key = "mo_" + key
 		Global.Mouth.Screaming: key = "scream_" + key
 	
@@ -273,51 +286,37 @@ func get_value(key: String) -> Variant:
 	return default
 
 func set_blend(blend):
-	(sprite_object.material as ShaderMaterial).shader = preload("res://Scripts/Shaders/SpriteShader.gdshader")
 	match  blend:
-		#TEST TODO Completely upgrade other blend mode(SpriteShader)： Burn, HardMix, Cursed
+		# TODO Completely upgrade other blend mode(SpriteShader)： Burn, HardMix, Cursed
 		"Normal":
-			if material is CanvasItemMaterial:
-				sprite_object.use_parent_material = true
-				(material as CanvasItemMaterial).blend_mode = CanvasItemMaterial.BLEND_MODE_MIX
-			else:
-				sprite_object.use_parent_material = false
-				sprite_object.material.set_shader_parameter("enabled", false)
+			(sprite_object.material as ShaderMaterial).shader = sprite_normal_shader
+			sprite_object.material.set_shader_parameter("enabled", false)
 		"Add":
-			if material is CanvasItemMaterial:
-				sprite_object.use_parent_material = true
-				(material as CanvasItemMaterial).blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-			else:
-				sprite_object.use_parent_material = false
-				sprite_object.material.set_shader_parameter("enabled", true)
-				sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/add.png"))
-		"Subtract":
-			if material is CanvasItemMaterial:
-				sprite_object.use_parent_material = true
-				(material as CanvasItemMaterial).blend_mode = CanvasItemMaterial.BLEND_MODE_SUB
-			else:
-				sprite_object.use_parent_material = false
-				sprite_object.material.set_shader_parameter("enabled", true)
-				sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/exclusion.png"))
-		"Multiply":
-			sprite_object.use_parent_material = false
-			(sprite_object.material as ShaderMaterial).shader = preload("res://Scripts/Shaders/SpriteMultiplyShader.gdshader")
+			(sprite_object.material as ShaderMaterial).shader = sprite_add_shader
 			sprite_object.material.set_shader_parameter("enabled", true)
-			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/multiply.png"))
+			#sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/add.png"))
+		"Subtract":
+			(sprite_object.material as ShaderMaterial).shader = sprite_sub_shader
+			sprite_object.material.set_shader_parameter("enabled", true)
+			#sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/exclusion.png"))
+		"Multiply":
+			(sprite_object.material as ShaderMaterial).shader = sprite_multiply_shader
+			sprite_object.material.set_shader_parameter("enabled", true)
+			#sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/multiply.png"))
 		"Burn":
-			sprite_object.use_parent_material = false
+			(sprite_object.material as ShaderMaterial).shader = sprite_normal_shader
 			sprite_object.material.set_shader_parameter("enabled", true)
 			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/burn.png"))
 		"HardMix":
-			sprite_object.use_parent_material = false
+			(sprite_object.material as ShaderMaterial).shader = sprite_normal_shader
 			sprite_object.material.set_shader_parameter("enabled", true)
 			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/hardmix.png"))
 		"Cursed":
-			sprite_object.use_parent_material = false
+			(sprite_object.material as ShaderMaterial).shader = sprite_normal_shader
 			sprite_object.material.set_shader_parameter("enabled", true)
 			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/test1.png"))
 		"Masking":
-			sprite_object.use_parent_material = false
+			(sprite_object.material as ShaderMaterial).shader = sprite_normal_shader
 			(sprite_object.material as ShaderMaterial).shader = preload("res://Scripts/Shaders/SpriteMaskingShader.gdshader")
 			sprite_object.material.set_shader_parameter("enabled", true)
 			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/multiply.png"))

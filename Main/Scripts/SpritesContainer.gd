@@ -145,6 +145,7 @@ func save_state(id):
 	}
 	if id in range(Global.settings_dict.states.size()):
 		Global.settings_dict.states[id] = dict
+		print("save_current_state_model_stuff: " + str(id))
 	
 	if GlobalMicAudio.has_spoken:
 		speaking()

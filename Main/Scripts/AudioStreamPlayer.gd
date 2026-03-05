@@ -69,8 +69,9 @@ func global_lipsync():
 	for phoneme in Phonemes.PHONEME.COUNT:
 		var deviation: float = _matches[phoneme]
 		var value := 0.0 if deviation < 0.0 else 1.0 - deviation
-		if get_tree().get_root().has_node("Main/LipsyncConfigurationPopup"):
-			get_tree().get_root().get_node("Main/LipsyncConfigurationPopup/%PhBox").get_child(phoneme).value = value
+		var lipsync_PhBox = get_tree().get_root().get_node_or_null("Main/LipsyncConfigurationPopup/%PhBox")
+		if lipsync_PhBox != null:
+			lipsync_PhBox.get_child(phoneme).value = value
 			
 			
 		if value > t.value:
@@ -79,4 +80,4 @@ func global_lipsync():
 			t.actual_value = actual_value
 			
 	await get_tree().create_timer(0.1).timeout
-	call_deferred("global_lipsync")
+	global_lipsync.call_deferred()

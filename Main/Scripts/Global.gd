@@ -178,6 +178,10 @@ func set_mode(new_mode) -> void:
 			deselect.emit()
 			static_view = false
 	
+	#save current change
+	for i in get_tree().get_nodes_in_group("Sprites"):
+		i.save_state(current_state)
+	
 	Settings.theme_settings.mode = mode
 	Settings.save()
 	mode_changed.emit(mode)
@@ -202,19 +206,24 @@ func load_sprite_states(state):
 	reinfoanim.emit()
 
 func get_sprite_states(state):
-	if state != current_state:
-		for i in get_tree().get_nodes_in_group("Sprites"):
+	var group_sprites: Array[Node] = get_tree().get_nodes_in_group("Sprites")
+	if state != current_state and is_editor:
+		for i in group_sprites:
 			i.save_state(current_state)
+		print("save_current_state: " + str(state))
 	
 	current_state = state
-	for i in get_tree().get_nodes_in_group("Sprites"):
+
+	for i in group_sprites:
 		i.get_state(current_state)
 	
-	reinfo.emit()
+	#Sprite Update Signal
 	animation_state.emit(current_state)
-	light_info.emit(current_state)
-	update_layer_visib.emit()
-	reinfoanim.emit()
+	#UI Update Signal
+	light_info.emit.call_deferred(current_state)
+	reinfo.emit.call_deferred()
+	update_layer_visib.emit.call_deferred()
+	reinfoanim.emit.call_deferred()
 
 func _input(_event : InputEvent):
 	for i in held_sprites:

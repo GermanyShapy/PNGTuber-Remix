@@ -12,6 +12,7 @@ var import_percent : float = 50.0
 
 func save_file(path : String):
 	save_model(path)
+	print("save_file")
 
 func save_data():
 	var sprites = get_tree().get_nodes_in_group("Sprites")
@@ -159,6 +160,8 @@ func save_data():
 		"input_array": input_array,
 		"image_manager_data": image_array,
 	}
+	
+	print("create_save_dict")
 
 func save_model(path):
 	Global.save_path = path

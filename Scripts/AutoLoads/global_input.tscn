@@ -8,4 +8,5 @@ use_physics_frames = true
 script = ExtResource("1_jwel8")
 
 [node name="Cycle" type="Node" parent="."]
+unique_name_in_owner = true
 script = ExtResource("1_13c7p")
