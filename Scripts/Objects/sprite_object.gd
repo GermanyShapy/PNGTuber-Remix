@@ -58,21 +58,21 @@ func desel():
 func animation():
 	if not get_value("non_animated_sheet"):
 		if not get_value("advanced_lipsync"):
-			%Sprite2D.hframes = get_value("hframes")
-			%Sprite2D.vframes = get_value("vframes")
+			sprite_object.hframes = get_value("hframes")
+			sprite_object.vframes = get_value("vframes")
 			if get_value("hframes") > 1 or get_value("vframes") > 1:
-				if get_value("one_shot") &&  %Sprite2D.frame == (get_value("hframes")*get_value("vframes")) - 1:
+				if get_value("one_shot") && sprite_object.frame == (get_value("hframes")*get_value("vframes")) - 1:
 					return
-				%Sprite2D.frame = wrapi(%Sprite2D.frame + 1, 0, (get_value("hframes")*get_value("vframes")))
+				sprite_object.frame = wrapi(sprite_object.frame + 1, 0, (get_value("hframes")*get_value("vframes")))
 			else:
-				%Sprite2D.frame = 0
+				sprite_object.frame = 0
 
 	elif get_value("non_animated_sheet"):
-		%Sprite2D.hframes = get_value("hframes")
-		%Sprite2D.vframes = get_value("vframes")
+		sprite_object.hframes = get_value("hframes")
+		sprite_object.vframes = get_value("vframes")
 		if (get_value("hframes")*get_value("vframes")) - 1 > 1:
 			if !get_value("animate_to_mouse"):
-				%Sprite2D.frame = get_value("frame")
+				sprite_object.frame = get_value("frame")
 	
 	if is_inside_tree():
 		$Animation.wait_time = 1.0/get_value("animation_speed") 
@@ -81,14 +81,14 @@ func animation():
 func animation_reset():
 	if not get_value("non_animated_sheet"):
 		if not get_value("advanced_lipsync"):
-			%Sprite2D.frame = 0
+			sprite_object.frame = 0
 	
 	elif get_value("non_animated_sheet"):
-		%Sprite2D.hframes = get_value("hframes")
-		%Sprite2D.vframes = get_value("vframes")
+		sprite_object.hframes = get_value("hframes")
+		sprite_object.vframes = get_value("vframes")
 		if (get_value("hframes")*get_value("vframes")) - 1 > 1:
 			if !get_value("animate_to_mouse"):
-				%Sprite2D.frame = get_value("frame")
+				sprite_object.frame = get_value("frame")
 	
 	if is_inside_tree():
 		$Animation.wait_time = 1.0/get_value("animation_speed") 
@@ -164,11 +164,12 @@ func wiggle_sprite():
 	var length : float = 0.0
 	
 	if get_value("wiggle_physics"):
-		if (get_parent() is Sprite2D  or get_parent() is WigglyAppendage2D) && is_instance_valid(get_parent()):
+		if (get_parent() is Sprite2D or get_parent() is WigglyAppendage2D) and is_instance_valid(get_parent()):
 			var c_parent = get_parent().owner
 			if c_parent != null && is_instance_valid(c_parent):
-				var c_parrent_length = (c_parent.get_node("Movements").glob.y - c_parent.get_node("%Sprite2D").global_position.y)
-				var c_parrent_length2 = (c_parent.get_node("%Movements").glob.x - c_parent.get_node("%Sprite2D").global_position.x)
+
+				var c_parrent_length = (c_parent.get_node("%Movements").glob.y + c_parent.get_node("%Sprite2D").position.y - c_parent.get_node("%Sprite2D").global_position.y)
+				var c_parrent_length2 = (c_parent.get_node("%Movements").glob.x + c_parent.get_node("%Sprite2D").position.x - c_parent.get_node("%Sprite2D").global_position.x)
 				length +=((c_parrent_length + c_parrent_length2)/50)
 	
 	
@@ -201,48 +202,52 @@ func save_state(id):
 
 func get_state(id):
 	if !states[id].is_empty():
+		# %Sprite2D equals to get_node("Sprite2D")
+		# actor.sprite_object is a cache ref of %Sprite2D
+		# use %Sprite2D without cache will call get_node() lots of times, and make the program slower 
 		var dict = states[id]
 		sprite_data.merge(dict, true)
+		
 		if get_value("should_reset_state"):
-			%ReactionConfig.reset_anim()
+			reaction_config.reset_anim()
 		
 		var old_glob = global_position
 		
-		%Sprite2D.position = get_value("offset") 
-		%Sprite2D.scale = Vector2(1,1)
+		sprite_object.position = get_value("offset") 
+		sprite_object.scale = Vector2(1,1)
 		
-		%Modifier1.z_index = get_value("z_index")
+		modifier1.z_index = get_value("z_index")
 		modulate = get_value("colored")
 		apply_transform()
-
+	#	use apply_transform to update all
 	#	global_position = get_value("global_position")
 		
+		var drag_snap = get_value("drag_snap")
+		if (global_position - old_glob).length() > drag_snap && drag_snap != 999999.0:
+			modifier.global_position = modifier1.global_position
 		
-		if (global_position - old_glob).length() > get_value("drag_snap") && get_value("drag_snap") != 999999.0:
-			%Modifier.global_position = %Modifier1.global_position
+		sprite_object.set_clip_children_mode(get_value("clip"))
 		
-		%Sprite2D.set_clip_children_mode(get_value("clip"))
-		
-		%Sprite2D.material.set_shader_parameter("wiggle", get_value("wiggle"))
-		%Sprite2D.material.set_shader_parameter("rotation_offset", get_value("wiggle_rot_offset"))
+		sprite_object.material.set_shader_parameter("wiggle", get_value("wiggle"))
+		sprite_object.material.set_shader_parameter("rotation_offset", get_value("wiggle_rot_offset"))
 		
 		if get_value("flip_sprite_h"):
-			%Sprite2D.scale.x = -1
+			sprite_object.scale.x = -1
 		else:
-			%Sprite2D.scale.x = 1
+			sprite_object.scale.x = 1
 		
 		if get_value("flip_sprite_v"):
-			%Sprite2D.scale.y = -1
+			sprite_object.scale.y = -1
 		else:
-			%Sprite2D.scale.y = 1
+			sprite_object.scale.y = 1
 
 		if get_value("advanced_lipsync"):
-			%Sprite2D.hframes = 6
+			sprite_object.hframes = 6
 		
 		if !get_value("should_blink"):
-			%Modifier1.show()
+			modifier1.show()
 		else:
-			%ReactionConfig.update_to_mode_change(Global.mode)
+			reaction_config.update_to_mode_change(Global.mode)
 
 		if get_value("fade"):
 			trigger_fade(visible)
@@ -284,5 +289,6 @@ func apply_transform():
 		position = get_value("position")
 		rotation = get_value("rotation")
 		scale = get_value("scale")
-		transform.x = transform.x.rotated(deg_to_rad(get_value("skew").x) )
-		transform.y = transform.y.rotated(deg_to_rad(get_value("skew").y) )
+		var skew = get_value("skew")
+		transform.x = transform.x.rotated(deg_to_rad(skew.x) )
+		transform.y = transform.y.rotated(deg_to_rad(skew.y) )

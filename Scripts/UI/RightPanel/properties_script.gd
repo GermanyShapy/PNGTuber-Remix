@@ -354,6 +354,7 @@ func _on_offset_y_spin_box_value_changed(value):
 			var undo_redo_data : Array = []
 			for i in Global.held_sprites:
 				var d = submit_to_undo_redo_manager(i, "offset", Global.current_state, i.sprite_data.offset , Vector2(i.sprite_data.offset.x, value))
+				var d2 = submit_to_undo_redo_manager(i, "position", Global.current_state, i.sprite_data.position , Vector2(i.sprite_data.position.x, value))
 				var of = i.get_value("offset").y - value
 				i.sprite_data.position.y += of
 				i.position.y = i.get_value("position").y
@@ -364,6 +365,7 @@ func _on_offset_y_spin_box_value_changed(value):
 				i.save_state(Global.current_state)
 				update_pos_spins()
 				undo_redo_data.append(d)
+				undo_redo_data.append(d2)
 			UndoRedoManager.push_data(undo_redo_data)
 			
 
@@ -373,6 +375,7 @@ func _on_offset_x_spin_box_value_changed(value):
 			var undo_redo_data : Array = []
 			for i in Global.held_sprites:
 				var d = submit_to_undo_redo_manager(i, "offset", Global.current_state, i.sprite_data.offset , Vector2(value,i.sprite_data.offset.y))
+				var d2 = submit_to_undo_redo_manager(i, "position", Global.current_state, i.sprite_data.position , Vector2(value,i.sprite_data.position.y))
 				var of = i.get_value("offset").x - value
 				i.sprite_data.position.x += of
 				i.position.x = i.get_value("position").x
@@ -383,6 +386,7 @@ func _on_offset_x_spin_box_value_changed(value):
 				i.get_node("%Sprite2D").position.x = i.get_value("offset").x
 				i.save_state(Global.current_state)
 				undo_redo_data.append(d)
+				undo_redo_data.append(d2)
 			UndoRedoManager.push_data(undo_redo_data)
 			
 		update_pos_spins()

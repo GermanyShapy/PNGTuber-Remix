@@ -1,10 +1,7 @@
 class_name StandGlobalInput
 extends GlobalInput
 
-
-signal raw_mouse_updated(guid, usFlags, ulButtons, usButtonFlags, usButtonData, ulRawButtons, dx, dy);
-signal raw_mouse_init();
-
+@onready var cycle :Node = %Cycle
 
 var just_pressed_details:Dictionary = {}
 var just_released_details:Dictionary = {}
@@ -22,17 +19,19 @@ func _ready() -> void:
 	call_deferred("_rawmouse_init");
 
 func _rawmouse_init():
-	if rawMouseInput == null:
+	if rawMouseInput == null and OS.get_name() == "Windows":
 		print("raw input init start")
 		rawMouseInput = RawMouseInput.new()
-		rawMouseInput.connect("raw_mouse", Callable(self, "_on_internal_raw_mouse"));
-		self.connect("raw_mouse_updated", Callable(self, "_on_raw_mouse_input_updated"))
+		rawMouseInput.raw_mouse.connect(_on_raw_mouse_input_updated)
+
 		add_child(rawMouseInput);
-		emit_signal("raw_mouse_init");
-		print("raw input init end")
-		
-func _on_internal_raw_mouse(guid, usFlags, ulButtons, usButtonFlags, usButtonData, ulRawButtons, dx, dy):
-	emit_signal("raw_mouse_updated", guid, usFlags, ulButtons, usButtonFlags, usButtonData, ulRawButtons, dx, dy);
+
+		if !rawMouseInput.is_inited:
+			print("raw input init failed")
+			remove_child(rawMouseInput)
+			rawMouseInput = null
+		else:
+			print("raw input init end")
 	
 func _physics_process(delta: float) -> void:
 	pressed_before_details = pressed_details
@@ -49,17 +48,18 @@ func _physics_process(delta: float) -> void:
 		if key != "os" and !pressed_details.has(key):
 			just_released_details[key] = true
 	
-	mouse_relative_movement = mouse_relative_movement_buffer
-	mouse_relative_movement_buffer = Vector2i.ZERO
-	is_mouse_relative_movement = is_mouse_relative_movement_buffer
-	is_mouse_relative_movement_buffer = false
-	#print("Move: " + str(mouse_relative_movement) + " is " + str(is_mouse_relative_movement_buffer))
-	#if !pressed_details.is_empty() or !pressed_before_details.is_empty():
-		#print("pressed: " + str(pressed_details) + "     pressed_before: " + str(pressed_before_details))
-	#if !just_pressed_details.is_empty():
-		#print("  just_pressed: " + str(just_pressed_details))
-	#if !just_released_details.is_empty():
-		#print("  just_released: " + str(just_released_details))
+	if rawMouseInput != null:
+		mouse_relative_movement = mouse_relative_movement_buffer
+		mouse_relative_movement_buffer = Vector2i.ZERO
+		is_mouse_relative_movement = is_mouse_relative_movement_buffer
+		is_mouse_relative_movement_buffer = false
+		#print("Move: " + str(mouse_relative_movement) + " is " + str(is_mouse_relative_movement_buffer))
+		#if !pressed_details.is_empty() or !pressed_before_details.is_empty():
+			#print("pressed: " + str(pressed_details) + "     pressed_before: " + str(pressed_before_details))
+	if !just_pressed_details.is_empty():
+		print("  just_pressed: " + str(just_pressed_details))
+	if !just_released_details.is_empty():
+		print("  just_released: " + str(just_released_details))
 	
 func get_stand_key_string(keycode):
 	if KEY_QUOTELEFT == keycode:
@@ -217,7 +217,7 @@ enum Raw_Mouse_Input_Flags {
 	MOUSE_MOVE_NOCOALESCE = 0x08,
 }
 
-func _on_raw_mouse_input_updated(guid: String, usFlags: int, ulButtons: int, usButtonFlags: int, usButtonData: int, ulRawButtons: int, lLastX: int, lLastY: int) -> void:
+func _on_raw_mouse_input_updated(lLastX: int, lLastY: int) -> void:
 	mouse_relative_movement_buffer.x += lLastX
 	mouse_relative_movement_buffer.y += lLastY
 	is_mouse_relative_movement_buffer = true

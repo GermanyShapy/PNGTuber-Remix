@@ -58,6 +58,7 @@ window/size/transparent=true
 window/energy_saving/keep_screen_on=false
 window/stretch/aspect="ignore"
 window/per_pixel_transparency/allowed=true
+window/vsync/vsync_mode=2
 window/enable_file_logging.pc=true
 window/enable_file_logging=false
 
@@ -336,3 +337,9 @@ renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_s3tc_bptc=true
 textures/vram_compression/import_etc2_astc=true
+textures/vram_compression/cache_gpu_compressor=false
+lights_and_shadows/directional_shadow/size=512
+lights_and_shadows/directional_shadow/size.mobile=512
+lights_and_shadows/directional_shadow/16_bits=false
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality=1
+2d/shadow_atlas/size=480

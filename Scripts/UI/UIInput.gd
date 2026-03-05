@@ -12,13 +12,17 @@ func _ready():
 
 #region Update Slider info
 func held_sprite_is_null():
+	if !Global.is_editor:
+		return
 	%SpriteID.text = "Sprite ID : 0"
 	%ParentID.text = "Parent ID : 0"
 	%Name.editable = false
 	%Name.text = ""
 	%AdvancedLipSync.disabled = true
 
-func held_sprite_is_true():
+func held_sprite_is_true():	
+	if !Global.is_editor:
+		return
 	Global.top_ui.get_node("%DeselectButton").show()
 	%Name.editable = true
 	for i in Global.held_sprites:

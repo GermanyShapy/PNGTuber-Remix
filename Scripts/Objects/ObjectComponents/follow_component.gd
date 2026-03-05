@@ -36,6 +36,7 @@ var current_dir : Vector2 = Vector2.ZERO
 var current_dist : float = 0.0
 
 func _physics_process(delta: float) -> void:
+	
 	if Global.static_view or actor.rest_mode == 5:
 		return
 	if actor.rest_mode in [1,3] and rest:
@@ -51,17 +52,18 @@ func reset_modifier() -> void:
 	modifier.scale = Vector2.ONE
 
 func mouse_delay():
-	
-	#TEST get mouse delta with relative movement in mouse inputs
-	if GlobInput.is_mouse_relative_movement:
-		mouse_delta = -GlobInput.mouse_relative_movement
-		#print(str(mouse_delta) + " vs " + str(last_mouse_position - mouse_coords))
+	#get mouse delta with relative movement in mouse inputs
+	if GlobInput.rawMouseInput != null:
+		if GlobInput.is_mouse_relative_movement:
+			mouse_delta = -GlobInput.mouse_relative_movement
+			#print(str(mouse_delta) + " vs " + str(last_mouse_position - mouse_coords))
+		else:
+			#mouse_delta = last_mouse_position - mouse_coords
+			mouse_delta = Vector2.ZERO
 	else:
-		#mouse_delta = last_mouse_position - mouse_coords
-		mouse_delta = Vector2.ZERO
+		mouse_delta = last_mouse_position - mouse_coords
 	#mouse_delta = GlobInput.get_mouse_position()
 	
-	#TEST END
 	distance = Vector2(tanh(mouse_delta.x / actor.get_value("look_at_mouse_pos") * 4), tanh(mouse_delta.y) / actor.get_value("look_at_mouse_pos_y") * 4)
 	if !mouse_delta.is_zero_approx():
 		if distance.length() == NAN:

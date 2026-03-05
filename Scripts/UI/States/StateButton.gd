@@ -17,7 +17,8 @@ func _ready():
 	text = state_name
 	if state == 0:
 		select_state()
-
+	
+	self.process_physics_priority = -1
 
 func _on_pressed():
 	if Input.is_action_pressed("ctrl"):
@@ -67,14 +68,13 @@ func _physics_process(_delta: float) -> void:
 	if StateUI.is_showing_state_remap_popup:
 		return
 	
-	if input_key != "Null" or input_key != "":
-		if GlobInput.is_action_input_just_pressed(input_key, state_inclusive_key_check):
-			select_state()
-			Global.get_sprite_states(state)
-			edit_protection = false
-			#print("switch normal")
-			
-		if state_hold_to_show and GlobInput.is_action_input_pressed(input_key, state_inclusive_key_check):
+	if input_key == "Null" or input_key == "":
+		return
+	
+	if state_hold_to_show:
+		var is_action_pressed = GlobInput.is_action_input_pressed(input_key, state_inclusive_key_check)
+		
+		if is_action_pressed:
 			if Global.current_state == state:
 				pass
 			elif GlobInput.is_action_input_pressed(selected_state.input_key, state_inclusive_key_check):
@@ -83,7 +83,7 @@ func _physics_process(_delta: float) -> void:
 				select_state()
 				Global.get_sprite_states(state)
 				#print("switch on")
-		if state_hold_to_show and !GlobInput.is_action_input_pressed(input_key, state_inclusive_key_check) and Global.current_state == state:
+		elif !is_action_pressed and Global.current_state == state:
 			if edit_protection:
 				return
 				
@@ -96,7 +96,12 @@ func _physics_process(_delta: float) -> void:
 			target_btn.select_state()
 			Global.get_sprite_states(target_btn.state)
 			#print("switch off")
-
+	elif GlobInput.is_action_input_just_pressed(input_key, state_inclusive_key_check):
+		select_state()
+		Global.get_sprite_states(state)
+		edit_protection = false
+		#print("switch normal")
+	
 func update_stuff():
 	if saved_event != null && InputMap.has_action(input_key):
 		InputMap.action_erase_events(input_key)

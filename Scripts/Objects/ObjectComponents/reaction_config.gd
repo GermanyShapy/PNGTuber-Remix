@@ -8,6 +8,7 @@ var blinking : bool = false
 var tween : Tween
 var min_duration_timer : float = 0.0
 var cast_timer : float = 0.0
+var is_rest :bool = false
 var was_rest_before :bool = false
 var fading_lock : bool = false
 
@@ -34,7 +35,7 @@ func _physics_process(_delta: float) -> void:
 	var cycle_sprite_pos = 0
 	
 	#Rest Check
-	var is_rest = !actor.is_visible_in_tree()
+	is_rest = !actor.is_visible_in_tree()
 	
 	if !is_rest and was_rest_before:	# Awaken
 		if actor.auto_show:
@@ -49,11 +50,12 @@ func _physics_process(_delta: float) -> void:
 			min_duration_timer = 0.0
 		else:
 			return
-	if actor.sprite_id == 5070712231532:
-		pass
 
 	# Conditions
-	if GlobInput.is_action_input_just_pressed(str(actor.sprite_id), actor.inclusive_key_check):
+	var is_action_just_pressed :bool = GlobInput.is_action_input_just_pressed(actor.disappear_keys, actor.inclusive_key_check)
+	var is_action_pressed :bool = GlobInput.is_action_input_pressed(str(actor.sprite_id), actor.inclusive_key_check)
+	
+	if is_action_just_pressed:
 		if actor.show_only:
 			is_trying_to_appear = true
 		else:
@@ -63,15 +65,16 @@ func _physics_process(_delta: float) -> void:
 				is_trying_to_disappear = true
 	
 	if actor.cast_time > 0.0 and cast_timer <= 0.0: #For "just_pressed" to show during cast time
-		if !actor.hold_to_show and !actor.was_active_before and GlobInput.is_action_input_pressed(str(actor.sprite_id), actor.inclusive_key_check):
+		if !actor.hold_to_show and !actor.was_active_before and is_action_pressed:
 			is_trying_to_appear = true
 	
-	if actor.hold_to_show and !actor.was_active_before and GlobInput.is_action_input_pressed(str(actor.sprite_id), actor.inclusive_key_check):
+	if actor.hold_to_show and !actor.was_active_before and is_action_pressed:
 		is_trying_to_appear = true
-	if GlobInput.is_action_input_just_pressed(actor.disappear_keys, actor.inclusive_key_check):
+	if is_action_just_pressed:
 		is_trying_to_disappear = true
-	if actor.hold_to_show and actor.was_active_before and !GlobInput.is_action_input_pressed(str(actor.sprite_id), actor.inclusive_key_check):
+	if actor.hold_to_show and actor.was_active_before and !is_action_pressed:
 		is_trying_to_disappear = true
+		
 	#Timer Tick
 	if min_duration_timer > 0.0:
 		is_trying_to_disappear = false
@@ -82,7 +85,7 @@ func _physics_process(_delta: float) -> void:
 		
 	if 0.0 == actor.cast_time:
 		cast_timer = 0.0
-	elif !GlobInput.is_action_input_pressed(str(actor.sprite_id)):
+	elif !is_action_pressed:
 		cast_timer = actor.cast_time
 
 	#Cycle Check
@@ -100,24 +103,24 @@ func _physics_process(_delta: float) -> void:
 	if is_trying_to_appear:
 		if cycle != null and !actor.was_active_before:
 			if cycle_sprite_pos == 0 and cycle_sprite_pos == cycle.pos:
-				sprite_show(actor, %Sprite2D)
+				sprite_show(actor, actor.sprite_object)
 			else:
-				GlobInput.get_node("Cycle").toggle_to(cycle, cycle_sprite_pos)
+				GlobInput.cycle.toggle_to(cycle, cycle_sprite_pos)
 		
 		if !actor.was_active_before:
-			sprite_show(actor, %Sprite2D)
+			sprite_show(actor, actor.sprite_object)
 			
 	if is_trying_to_disappear:
 		if cycle != null and actor.was_active_before:
 			if cycle_sprite_pos != 0 and cycle_sprite_pos == cycle.pos:
-				GlobInput.get_node("Cycle").toggle_to(cycle, 0)
+				GlobInput.cycle.toggle_to(cycle, 0)
 			
 		if actor.was_active_before:
-			sprite_hide(actor, %Sprite2D)
+			sprite_hide(actor, actor.sprite_object)
 			
-		if !actor.is_asset && !%Sprite2D.visible:
-			%Sprite2D.visible = true
-			actor.was_active_before = %Sprite2D.visible
+		if !actor.is_asset && !actor.sprite_object.visible:
+			actor.sprite_object.visible = true
+			actor.was_active_before = actor.sprite_object.visible
 			
 
 func update_to_mode_change(mode : int):
@@ -316,7 +319,7 @@ func reset_animations(_place_holder : int = 0):
 	if actor.get_value("never_reset"):
 		return
 	
-	if actor.get_value("one_shot") and %Sprite2D.frame == (actor.get_value("hframes")*actor.get_value("vframes") -1):
+	if actor.get_value("one_shot") and actor.sprite_object.frame == (actor.get_value("hframes")*actor.get_value("vframes") -1):
 		reset_anim()
 	
 	if actor.get_value("should_reset"):
