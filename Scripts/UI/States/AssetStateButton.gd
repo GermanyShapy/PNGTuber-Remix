@@ -95,12 +95,12 @@ func _on_is_asset_check_toggled(toggled_on):
 		if toggled_on:
 			if !InputMap.has_action(action):
 				InputMap.add_action(action)
-				Global.held_sprites[0].get_node("%Sprite2D").visible = true
+				ReactionConfig.sprite_show(Global.held_sprites[0], Global.held_sprites[0].sprite_object)
 		else:
 			if InputMap.has_action(action):
 				InputMap.erase_action(action)
 				Global.held_sprites[0].saved_event = null
-				Global.held_sprites[0].get_node("%Sprite2D").visible = true
+				ReactionConfig.sprite_show(Global.held_sprites[0], Global.held_sprites[0].sprite_object)
 				update_key_text()
 		
 		Global.held_sprites[0].is_asset = toggled_on

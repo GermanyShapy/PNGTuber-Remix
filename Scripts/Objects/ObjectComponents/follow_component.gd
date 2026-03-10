@@ -78,9 +78,7 @@ func process_follow(delta: float) -> void:
 		last_dist.y = lerp(last_dist.y, dir_vel_y * (distance.length() * actor.get_value("look_at_mouse_pos_y")), 0.5)
 		vel = mouse_delta
 		dir_vel_anim = mouse_delta 
-		#TEST
-		#print("position: " + str(GlobInput.get_mouse_position()))
-		#TEST END
+		
 	var dir = (mouse_coords - Vector2.ZERO).normalized() if mouse_coords.length() > 0.0001 else Vector2.ZERO
 	var dist = mouse_coords.length()
 	update_controller_inputs()

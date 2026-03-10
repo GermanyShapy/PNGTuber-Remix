@@ -136,11 +136,11 @@ const DEFAULT_DATA := {
 	hidden_item = false,
 	}
 
-@onready var reaction_config = %ReactionConfig
-@onready var modifier = %Modifier
-@onready var modifier1 = %Modifier1
-@onready var movements = %Movements
-@onready var follow_componet = %FollowComponent
+var reaction_config = %ReactionConfig
+var modifier : Node2D = %Modifier
+var modifier1 : Node2D = %Modifier1
+var movements = %Movements
+var follow_componet = %FollowComponent
 
 @export var sprite_object : Node2D
 @export var grab_object : BaseButton
