@@ -35,7 +35,7 @@ func _physics_process(_delta: float) -> void:
 	var cycle_sprite_pos = 0
 	
 	#Rest Check
-	is_rest = !actor.is_visible_in_tree()
+	is_rest = actor.movements.rest
 	
 	if !is_rest and was_rest_before:	# Awaken
 		if actor.auto_show:
@@ -52,9 +52,10 @@ func _physics_process(_delta: float) -> void:
 			return
 
 	# Conditions
-	var is_action_just_pressed :bool = GlobInput.is_action_input_just_pressed(actor.disappear_keys, actor.inclusive_key_check)
+	var is_action_just_pressed :bool = GlobInput.is_action_input_just_pressed(str(actor.sprite_id), actor.inclusive_key_check)
 	var is_action_pressed :bool = GlobInput.is_action_input_pressed(str(actor.sprite_id), actor.inclusive_key_check)
-	
+	var is_disappear_key_just_pressed :bool = GlobInput.is_action_input_just_pressed(actor.disappear_keys, actor.inclusive_key_check)
+
 	if is_action_just_pressed:
 		if actor.show_only:
 			is_trying_to_appear = true
@@ -68,17 +69,18 @@ func _physics_process(_delta: float) -> void:
 		if !actor.hold_to_show and !actor.was_active_before and is_action_pressed:
 			is_trying_to_appear = true
 	
-	if actor.hold_to_show and !actor.was_active_before and is_action_pressed:
-		is_trying_to_appear = true
-	if is_action_just_pressed:
+	if is_disappear_key_just_pressed:
 		is_trying_to_disappear = true
-	if actor.hold_to_show and actor.was_active_before and !is_action_pressed:
-		is_trying_to_disappear = true
+	if actor.hold_to_show:
+		if !actor.was_active_before and is_action_pressed:
+			is_trying_to_appear = true
+		elif actor.was_active_before and !is_action_pressed:
+			is_trying_to_disappear = true
 		
 	#Timer Tick
 	if min_duration_timer > 0.0:
 		is_trying_to_disappear = false
-			
+	
 	if cast_timer > 0.0:
 		cast_timer -= _delta
 		is_trying_to_appear = false

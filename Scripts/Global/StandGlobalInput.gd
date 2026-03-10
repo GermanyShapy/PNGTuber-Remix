@@ -53,7 +53,8 @@ func _physics_process(delta: float) -> void:
 		mouse_relative_movement_buffer = Vector2i.ZERO
 		is_mouse_relative_movement = is_mouse_relative_movement_buffer
 		is_mouse_relative_movement_buffer = false
-		#print("Move: " + str(mouse_relative_movement) + " is " + str(is_mouse_relative_movement_buffer))
+		if mouse_relative_movement != Vector2i.ZERO:
+			print("Move: " + str(mouse_relative_movement) + " is " + str(is_mouse_relative_movement))
 		#if !pressed_details.is_empty() or !pressed_before_details.is_empty():
 			#print("pressed: " + str(pressed_details) + "     pressed_before: " + str(pressed_before_details))
 	if !just_pressed_details.is_empty():
@@ -223,6 +224,5 @@ func _on_raw_mouse_input_updated(lLastX: int, lLastY: int) -> void:
 	is_mouse_relative_movement_buffer = true
 
 func refresh_raw_mouse_input():
-	pass
 	if rawMouseInput != null:
 		rawMouseInput.refresh()

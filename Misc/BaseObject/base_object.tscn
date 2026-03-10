@@ -49,5 +49,4 @@ script = ExtResource("10_lrffp")
 actor = NodePath("..")
 metadata/_custom_type_script = "uid://dfyvj4w18tr1"
 
-[connection signal="visibility_changed" from="." to="FollowComponent" method="_on_sprite_object_visibility_changed"]
 [connection signal="visibility_changed" from="." to="Movements" method="_on_sprite_object_visibility_changed"]
