@@ -97,21 +97,21 @@ func animation_reset():
 func _process(_delta):
 	if selected:
 		%Grab.mouse_filter = Control.MouseFilter.MOUSE_FILTER_PASS
-		%Selection.texture = %Sprite2D.texture
+		%Selection.texture = sprite_object.texture
 		%Selection.show()
-		%Selection.hframes = %Sprite2D.hframes
-		%Selection.vframes = %Sprite2D.vframes
-		%Selection.frame = %Sprite2D.frame
-		%Selection.flip_h = %Sprite2D.flip_h
-		%Selection.flip_v = %Sprite2D.flip_v
+		%Selection.hframes = sprite_object.hframes
+		%Selection.vframes = sprite_object.vframes
+		%Selection.frame = sprite_object.frame
+		%Selection.flip_h = sprite_object.flip_h
+		%Selection.flip_v = sprite_object.flip_v
 		
 		if get_value("wiggle"):
 			%WiggleOrigin.show()
-			var pos = (%Sprite2D.material.get_shader_parameter("rotation_offset") * %Sprite2D.texture.get_size())/2
+			var pos = (sprite_object.material.get_shader_parameter("rotation_offset") * sprite_object.texture.get_size())/2
 			%WiggleOrigin.position = Vector2(pos.x, pos.y)
 			%Selection.material.set_shader_parameter("wiggle", true)
-			%Selection.material.set_shader_parameter("rotation_offset", %Sprite2D.material.get_shader_parameter("rotation_offset"))
-			%Selection.material.set_shader_parameter("rotation", %Sprite2D.material.get_shader_parameter("rotation"))
+			%Selection.material.set_shader_parameter("rotation_offset", sprite_object.material.get_shader_parameter("rotation_offset"))
+			%Selection.material.set_shader_parameter("rotation", sprite_object.material.get_shader_parameter("rotation"))
 		else:
 			%Selection.material.set_shader_parameter("wiggle", false)
 			%WiggleOrigin.hide()
@@ -135,7 +135,7 @@ func _process(_delta):
 			wiggle_sprite()
 	else:
 		if get_value("wiggle"):
-			%Sprite2D.material.set_shader_parameter("rotation", 0)
+			sprite_object.material.set_shader_parameter("rotation", 0)
 		
 	advanced_lipsyc()
 
@@ -176,25 +176,25 @@ func wiggle_sprite():
 	wiggle_val = lerp(wiggle_val, sin((Global.tick * get_value("wiggle_freq"))+length)*get_value("wiggle_amp"), 0.05)
 	
 	if !get_parent() is Sprite2D:
-		%Sprite2D.material.set_shader_parameter("rotation", wiggle_val )
+		sprite_object.material.set_shader_parameter("rotation", wiggle_val )
 	elif get_parent() is Sprite2D:
 		if get_value("follow_parent_effects"):
 			var c_parent = get_parent().owner
-			%Sprite2D.material.set_shader_parameter("rotation", c_parent.get_node("%Sprite2D").material.get_shader_parameter("rotation"))
+			sprite_object.material.set_shader_parameter("rotation", c_parent.get_node("%Sprite2D").material.get_shader_parameter("rotation"))
 		else:
-			%Sprite2D.material.set_shader_parameter("rotation", wiggle_val )
+			sprite_object.material.set_shader_parameter("rotation", wiggle_val )
 
 func advanced_lipsyc():
 	if get_value("advanced_lipsync"):
-		if %Sprite2D.hframes != 14:
-			%Sprite2D.hframes = 14
-		if %ReactionConfig.currently_speaking:
+		if sprite_object.hframes != 14:
+			sprite_object.hframes = 14
+		if reaction_config.currently_speaking:
 			if GlobalAudioStreamPlayer.t.value == 0:
-				%Sprite2D.frame_coords.x = 13
+				sprite_object.frame_coords.x = 13
 			else:
-				%Sprite2D.frame_coords.x = GlobalAudioStreamPlayer.t.actual_value
+				sprite_object.frame_coords.x = GlobalAudioStreamPlayer.t.actual_value
 		else:
-			%Sprite2D.frame_coords.x = 13
+			sprite_object.frame_coords.x = 13
 
 func save_state(id):
 	var dict : Dictionary = sprite_data.duplicate(true)

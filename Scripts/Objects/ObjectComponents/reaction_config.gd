@@ -12,6 +12,13 @@ var is_rest :bool = false
 var was_rest_before :bool = false
 var fading_lock : bool = false
 
+var is_action_just_pressed :bool = false
+var is_action_pressed :bool = false
+var is_disappear_key_just_pressed :bool = false
+
+var is_trying_to_appear :bool = false
+var is_trying_to_disappear :bool = false
+
 func _ready() -> void:
 	Global.speaking.connect(speaking)
 	Global.not_speaking.connect(not_speaking)
@@ -29,10 +36,11 @@ func _physics_process(_delta: float) -> void:
 	if Global.settings_dict.checkinput != true:
 		return
 	
-	var is_trying_to_appear = false
-	var is_trying_to_disappear = false
 	var cycle = null
 	var cycle_sprite_pos = 0
+	
+	is_trying_to_appear = false
+	is_trying_to_disappear = false
 	
 	#Rest Check
 	is_rest = actor.movements.rest
@@ -52,10 +60,10 @@ func _physics_process(_delta: float) -> void:
 			return
 
 	# Conditions
-	var is_action_just_pressed :bool = GlobInput.is_action_input_just_pressed(str(actor.sprite_id), actor.inclusive_key_check)
-	var is_action_pressed :bool = GlobInput.is_action_input_pressed(str(actor.sprite_id), actor.inclusive_key_check)
-	var is_disappear_key_just_pressed :bool = GlobInput.is_action_input_just_pressed(actor.disappear_keys, actor.inclusive_key_check)
-
+	is_action_just_pressed = GlobInput.is_input_just_pressed(actor.saved_event, actor.inclusive_key_check)
+	is_action_pressed = GlobInput.is_input_pressed(actor.saved_event, actor.inclusive_key_check)
+	is_disappear_key_just_pressed = GlobInput.is_action_input_just_pressed(actor.disappear_keys, actor.inclusive_key_check)
+	
 	if is_action_just_pressed:
 		if actor.show_only:
 			is_trying_to_appear = true
@@ -97,7 +105,7 @@ func _physics_process(_delta: float) -> void:
 		
 		if !actor.hold_to_show:
 			for sprite in get_tree().get_nodes_in_group("Sprites"):
-				if sprite.sprite_id == cycle.last_sprite and sprite.get_value("is_cycle") and sprite.hold_to_show and sprite.was_active_before:
+				if sprite.sprite_id == cycle.last_sprite and sprite.sprite_data.is_cycle and sprite.hold_to_show and sprite.was_active_before:
 					is_trying_to_appear = false
 					break
 	
@@ -123,7 +131,6 @@ func _physics_process(_delta: float) -> void:
 		if !actor.is_asset && !actor.sprite_object.visible:
 			actor.sprite_object.visible = true
 			actor.was_active_before = actor.sprite_object.visible
-			
 
 func update_to_mode_change(mode : int):
 	match mode:

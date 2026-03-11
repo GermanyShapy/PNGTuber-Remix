@@ -53,8 +53,8 @@ func _physics_process(delta: float) -> void:
 		mouse_relative_movement_buffer = Vector2i.ZERO
 		is_mouse_relative_movement = is_mouse_relative_movement_buffer
 		is_mouse_relative_movement_buffer = false
-		if mouse_relative_movement != Vector2i.ZERO:
-			print("Move: " + str(mouse_relative_movement) + " is " + str(is_mouse_relative_movement))
+		#if mouse_relative_movement != Vector2i.ZERO:
+			#print("Move: " + str(mouse_relative_movement) + " is " + str(is_mouse_relative_movement))
 		#if !pressed_details.is_empty() or !pressed_before_details.is_empty():
 			#print("pressed: " + str(pressed_details) + "     pressed_before: " + str(pressed_before_details))
 	if !just_pressed_details.is_empty():
@@ -62,7 +62,7 @@ func _physics_process(delta: float) -> void:
 	if !just_released_details.is_empty():
 		print("  just_released: " + str(just_released_details))
 	
-func get_stand_key_string(keycode):
+func get_stand_key_string(keycode: int) -> String:
 	if KEY_QUOTELEFT == keycode:
 		return OS.get_keycode_string(KEY_ASCIITILDE)
 	elif KEY_EQUAL == keycode:

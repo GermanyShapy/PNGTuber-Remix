@@ -135,15 +135,15 @@ func _physics_process(delta: float) -> void:
 		modulate = Color.WHITE
 		
 	# apply movements
-	for p in movement_physics_process_stack:
-		p.call(delta)
+	for i in range(movement_physics_process_stack.size() - 1, -1, -1):
+		movement_physics_process_stack[i].call(delta)
 	
 	movement_physics_process_stack.clear()
 
 func _process(delta: float) -> void:
 	# apply movements
-	for p in movement_process_stack:
-		p.call(delta)
+	for i in range(movement_process_stack.size() - 1, -1, -1):
+		movement_process_stack[i].call(delta)
 	
 	movement_process_stack.clear()
 
