@@ -72,12 +72,12 @@ func _physics_process(_delta: float) -> void:
 		return
 	
 	if state_hold_to_show:
-		var is_action_pressed = GlobInput.is_action_input_pressed(input_key, state_inclusive_key_check)
+		var is_action_pressed = GlobInput.is_input_pressed(saved_event, state_inclusive_key_check)
 		
 		if is_action_pressed:
 			if Global.current_state == state:
 				pass
-			elif GlobInput.is_action_input_pressed(selected_state.input_key, state_inclusive_key_check):
+			elif GlobInput.is_input_pressed(selected_state.saved_event, state_inclusive_key_check):
 				pass
 			else:
 				select_state()
@@ -90,13 +90,13 @@ func _physics_process(_delta: float) -> void:
 			var target_btn : StateButton = (get_parent().get_child(0) as StateButton)
 			
 			for btn in get_parent().get_children():
-				if btn.state_hold_to_show and GlobInput.is_action_input_pressed(btn.input_key, state_inclusive_key_check):
+				if btn.state_hold_to_show and GlobInput.is_input_pressed(btn.saved_event, state_inclusive_key_check):
 					target_btn = btn
 				
 			target_btn.select_state()
 			Global.get_sprite_states(target_btn.state)
 			#print("switch off")
-	elif GlobInput.is_action_input_just_pressed(input_key, state_inclusive_key_check):
+	elif GlobInput.is_input_just_pressed(saved_event, state_inclusive_key_check):
 		select_state()
 		Global.get_sprite_states(state)
 		edit_protection = false

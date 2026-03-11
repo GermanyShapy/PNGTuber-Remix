@@ -70,8 +70,8 @@ func desel():
 	selected = false
 
 func correct_sprite_size(ret : bool = false):
-	var w = %Sprite2D.texture.get_image().get_size().y / 0.98
-	var l = %Sprite2D.texture.get_image().get_size().x / 5
+	var w = sprite_object.texture.get_image().get_size().y / 0.98
+	var l = sprite_object.texture.get_image().get_size().x / 5
 	
 	sprite_data.width = w
 	sprite_data.segm_length = l
@@ -97,10 +97,10 @@ func _physics_process(_delta: float) -> void:
 	
 	if !Global.static_view:
 		if get_value("auto_wag"):
-			%Sprite2D.curvature = clamp(sin(Global.tick*(get_value("wag_freq")))*get_value("wag_speed"), deg_to_rad(get_value("wag_mini")), deg_to_rad(get_value("wag_max")))
+			sprite_object.curvature = clamp(sin(Global.tick*(get_value("wag_freq")))*get_value("wag_speed"), deg_to_rad(get_value("wag_mini")), deg_to_rad(get_value("wag_max")))
 	else:
 		if get_value("auto_wag"):
-			%Sprite2D.curvature = 0.0
+			sprite_object.curvature = 0.0
 		
 	%Grab.anchors_preset = Control.LayoutPreset.PRESET_FULL_RECT
 
@@ -185,14 +185,14 @@ func get_state(id):
 
 func set_anchor_sprite(_placeholder = null):
 	if get_value("anchor_id") == null:
-		%Sprite2D.anchor_target = null
+		sprite_object.anchor_target = null
 	else:
 		for i in Global.get_tree().get_nodes_in_group("Sprites"):
 			if i.sprite_id == get_value("anchor_id"):
-				%Sprite2D.anchor_target = i.get_node("%Sprite2D")
+				sprite_object.anchor_target = i.get_node("%Sprite2D")
 				return
 			else:
-				%Sprite2D.anchor_target = null
+				sprite_object.anchor_target = null
 
 func update_wiggle_parts():
 	if sprite_object.segment_count != get_value("wiggle_segm"):
