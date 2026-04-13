@@ -37,8 +37,6 @@ var no_bounce_rot_drag: float = 0.0
 var no_bounce_stretch: Vector2 = Vector2.ONE
 
 var was_rainbow: bool = true
-var index_change: float = 0.0
-var index_change_y: float = 0.0
 var rot_frquecy: float = 0.0
 var rdrag_str: float = 0.0
 var stretch_amount: float = 0.0
@@ -78,16 +76,18 @@ func init_position():
 	stretch_amount = actor.get_value("stretchAmount")
 
 func _physics_process(delta: float) -> void:
+	c_parent_movement = get_c_parent_movement()
+	rot_frquecy = actor.get_value("rot_frq")
+	rdrag_str = actor.get_value("rdragStr")
+	stretch_amount = actor.get_value("stretchAmount")
+	no_bounce = actor.get_value("ignore_bounce")
+	
 	(Global.sprite_container.movement_physics_process_stack).push_back(self.movement_physics_process)
 
 func movement_physics_process(delta: float) -> void:
 	follow_wiggle(delta)
 	placeholder_position = actor.modifier1.global_position
 	applied_pos =  placeholder_position
-	rdrag_str = actor.get_value("rdragStr")
-	stretch_amount = actor.get_value("stretchAmount")
-	no_bounce = actor.get_value("ignore_bounce")
-	c_parent_movement = get_c_parent_movement()
 	
 	# Calculate movement data in diffrent mode
 	if !Global.static_view:
@@ -96,6 +96,7 @@ func movement_physics_process(delta: float) -> void:
 			modifier_node.rotation = 0.0
 			modifier_node.scale = Vector2.ONE
 			sprite_node.self_modulate = actor.get_value("tint")
+			return
 		elif rest and (actor.rest_mode == 2 or actor.rest_mode == 3 or actor.rest_mode == 6):
 			if actor.rest_mode == 6:
 				last_wobble_pos = Vector2.ZERO
@@ -123,9 +124,7 @@ func movement_physics_process(delta: float) -> void:
 		static_prev()
 		
 	# Z-Index
-	index_change = actor.get_value("index_change")
-	index_change_y = actor.get_value("index_change_y")
-	if index_change != 0.0 or index_change_y != 0.0:
+	if actor.get_value("index_change") != 0.0 or actor.get_value("index_change_y") != 0.0:
 		shadow_target = modifier_node.global_position + actor.follow_componet.target_pos
 		var test = (shadow_target - actor.global_position)
 		if !test.is_zero_approx():
@@ -135,8 +134,8 @@ func movement_physics_process(delta: float) -> void:
 		#var signed_len_y = (test.y)
 		index_change_len = lerp(index_change_len, (test.x), 0.95)
 		index_change_len_y = lerp(index_change_len_y, (test.y), 0.95)
-		index_change_len = index_change_len * index_change
-		index_change_len_y = index_change_len_y * index_change_y
+		index_change_len = index_change_len * actor.get_value("index_change")
+		index_change_len_y = index_change_len_y * actor.get_value("index_change_y")
 		modifier_node.z_index = floori(index_change_len + index_change_len_y)
 	
 	if mesh != null and is_instance_valid(mesh) and actor.sprite_type == "Mesh":
@@ -207,7 +206,6 @@ func movements(delta):
 	else:
 		# restore the dragger based on the simulated last_no_bounce_transform
 		# it remain the relative change of the movement without bounce effect
-		#var restored_dragger = no_bounce_shadow_dragger
 		no_bounce_shadow_dragger = c_parent_movement.last_no_bounce_transform.affine_inverse() * no_bounce_shadow_dragger
 		no_bounce_shadow_dragger = c_parent_movement.last_movement_transform * no_bounce_shadow_dragger
 		#no_bounce_shadow_dragger = restored_dragger
@@ -238,21 +236,27 @@ func movements(delta):
 	
 	# after apply position change, calculate rotation and stretch
 	var no_bounce_length = (no_bounce_glob.x - no_bounce_shadow_dragger.x) + (no_bounce_glob.y - no_bounce_shadow_dragger.y)
-	var length = (glob.x - shadow_dragger.x) + (glob.y - shadow_dragger.y) if !no_bounce else no_bounce_length
+	var length = (glob.x - shadow_dragger.x) + (glob.y - shadow_dragger.y)
 	relative_rot_drag = rot_drag - no_bounce_rot_drag
 	relative_stretch = applied_scale - no_bounce_stretch
 	relative_glob = glob + last_wobble_pos - no_bounce_glob
 	
 	if no_bounce:
+		length = no_bounce_length
 		shadow_dragger = no_bounce_shadow_dragger
 		glob = no_bounce_glob
 	
 	update_last_rot_frquecy(delta)
 	rot_drag = emulate_drag_rotation(rot_drag, length, delta)
 	applied_scale = emulate_drag_stretch(modifier_node.scale, length, delta)
-	no_bounce_rot_drag = emulate_drag_rotation(no_bounce_rot_drag, no_bounce_length, delta)
-	no_bounce_stretch = emulate_drag_stretch(no_bounce_stretch, no_bounce_length, delta)
 	
+	if no_bounce:
+		no_bounce_rot_drag = rot_drag
+		no_bounce_stretch = applied_scale
+	else:
+		no_bounce_rot_drag = emulate_drag_rotation(no_bounce_rot_drag, no_bounce_length, delta)
+		no_bounce_stretch = emulate_drag_stretch(no_bounce_stretch, no_bounce_length, delta)
+		
 	# simulate the transform without bounce, based on movement local transform(no change yet)
 	# it will be completed in movement_physics_process(delta):
 	# rotation += follow_point_rot + should_rot_rotation, then convert to global transformation
@@ -282,10 +286,9 @@ func rest_mode_movements(delta):
 	else:
 		# restore the dragger based on the simulated last_no_bounce_transform
 		# it remain the relative change of the movement without bounce effect
-		var restored_dragger = no_bounce_shadow_dragger
-		restored_dragger = c_parent_movement.last_no_bounce_transform.affine_inverse() * restored_dragger
-		restored_dragger = c_parent_movement.last_movement_transform * restored_dragger
-		no_bounce_shadow_dragger = restored_dragger
+		no_bounce_shadow_dragger = c_parent_movement.last_no_bounce_transform.affine_inverse() * no_bounce_shadow_dragger
+		no_bounce_shadow_dragger = c_parent_movement.last_movement_transform * no_bounce_shadow_dragger
+		#no_bounce_shadow_dragger = restored_dragger
 		# if the two position are similar, synchronize the data to avoid error accumulation
 		if no_bounce_shadow_dragger.is_equal_approx(shadow_dragger):
 			no_bounce_shadow_dragger = shadow_dragger
@@ -313,20 +316,25 @@ func rest_mode_movements(delta):
 	
 	# after apply position change, calculate rotation and stretch
 	var no_bounce_length = (no_bounce_glob.x - no_bounce_shadow_dragger.x) + (no_bounce_glob.y - no_bounce_shadow_dragger.y)
-	var length = (glob.x - shadow_dragger.x) + (glob.y - shadow_dragger.y) if !no_bounce else no_bounce_length
+	var length = (glob.x - shadow_dragger.x) + (glob.y - shadow_dragger.y)
 	relative_rot_drag = rot_drag - no_bounce_rot_drag
 	relative_stretch = applied_scale - no_bounce_stretch
 	relative_glob = glob + last_wobble_pos - no_bounce_glob
 	
 	if no_bounce:
+		length = no_bounce_length
 		shadow_dragger = no_bounce_shadow_dragger
 		glob = no_bounce_glob
 	
 	update_last_rot_frquecy(delta)
 	rot_drag = emulate_drag_rotation(rot_drag, length, delta)
 	applied_scale = emulate_drag_stretch(modifier_node.scale, length, delta)
-	no_bounce_rot_drag = emulate_drag_rotation(no_bounce_rot_drag, no_bounce_length, delta)
-	no_bounce_stretch = emulate_drag_stretch(no_bounce_stretch, no_bounce_length, delta)
+	if no_bounce:
+		no_bounce_rot_drag = rot_drag
+		no_bounce_stretch = applied_scale
+	else:
+		no_bounce_rot_drag = emulate_drag_rotation(no_bounce_rot_drag, no_bounce_length, delta)
+		no_bounce_stretch = emulate_drag_stretch(no_bounce_stretch, no_bounce_length, delta)
 	
 	# simulate the transform without bounce, based on movement local transform(no change yet)
 	# it will be completed in movement_physics_process(delta):
@@ -354,7 +362,7 @@ func drag(_delta, no_bounce = false):
 	
 
 func wobble(delta: float) -> void:
-	if actor.get_value("pause_movement"):
+	if false: #actor.get_value("pause_movement"):
 		if actor.is_all_default("xFrq"):
 			last_wobble_pos.x = 0
 		if actor.is_all_default("yFrq"):
@@ -383,7 +391,7 @@ func update_last_rot_frquecy(delta: float):
 	if rot_frquecy == 0.0:
 		last_rot = 0.0
 	else:
-		if actor.get_value("pause_movement"):
+		if false: # actor.get_value("pause_movement"):
 			paused_rotation += delta if Global.settings_dict.should_delta else 1.
 		else:
 			last_rot = sin((Global.tick-paused_rotation) * rot_frquecy) * deg_to_rad(rdrag_str)
@@ -396,9 +404,7 @@ func emulate_drag_rotation(last_rot_drag, length, delta: float) -> float:
 	var yvel = 0.0
 	if rdrag_str != 0.0:
 		yvel = ((length * rdrag_str)* 0.5)
-		yvel = clamp(yvel,actor.get_value("rLimitMin"),actor.get_value("rLimitMax"))
-	
-	#rot_drag = GlobalCalculations.is_nan_or_inf(lerp_angle(rot_drag,deg_to_rad(yvel),0.08))
+		
 	return lerp_angle(last_rot_drag,deg_to_rad(yvel),0.08)
 	
 func emulate_drag_stretch(last_stretch, length, delta: float) -> Vector2:
@@ -406,7 +412,6 @@ func emulate_drag_stretch(last_stretch, length, delta: float) -> Vector2:
 		return Vector2.ONE # no need to stretch
 		
 	var yvel = (length * stretch_amount * 0.01)
-	#var target = Vector2(1.0-yvel,1.0+yvel)
 	
 	return lerp(last_stretch, Vector2(1.0-yvel,1.0+yvel), 0.1)
 
@@ -416,7 +421,7 @@ func rotationalDrag(length, delta: float):
 		if rdrag_str == 0.0 and rot_drag == 0.0:
 			return #no need to rotation drag
 	else:
-		if actor.get_value("pause_movement"):
+		if false: #actor.get_value("pause_movement"):
 			paused_rotation += delta if Global.settings_dict.should_delta else 1.
 		else:
 			last_rot = sin((Global.tick-paused_rotation) * rot_frquecy) * deg_to_rad(rdrag_str)
@@ -427,7 +432,6 @@ func rotationalDrag(length, delta: float):
 		yvel = ((length * actor.get_value("rdrag_str"))* 0.5)
 		yvel = clamp(yvel,actor.get_value("rLimitMin"),actor.get_value("rLimitMax"))
 	
-	#rot_drag = GlobalCalculations.is_nan_or_inf(lerp_angle(rot_drag,deg_to_rad(yvel),0.08))
 	rot_drag = lerp_angle(rot_drag,deg_to_rad(yvel),0.08)
 
 func stretch(length, _delta):

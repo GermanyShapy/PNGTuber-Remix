@@ -7,7 +7,6 @@ var saved_event : InputEvent
 var state_name : String 
 var state_hold_to_show : bool = false
 var state_inclusive_key_check : bool = false
-var edit_protection : bool = false
 static var selected_state : StateButton = null
 static var other_states : Array[StateButton] = []
 
@@ -50,7 +49,6 @@ func _on_pressed():
 		other_states.clear()
 		select_state()
 		Global.get_sprite_states(state)
-		edit_protection = true
 
 func initial_update():
 	Global.get_sprite_states(state)
@@ -84,9 +82,6 @@ func _physics_process(_delta: float) -> void:
 				Global.get_sprite_states(state)
 				#print("switch on")
 		elif !is_action_pressed and Global.current_state == state:
-			if edit_protection:
-				return
-				
 			var target_btn : StateButton = (get_parent().get_child(0) as StateButton)
 			
 			for btn in get_parent().get_children():
@@ -99,7 +94,6 @@ func _physics_process(_delta: float) -> void:
 	elif GlobInput.is_input_just_pressed(saved_event, state_inclusive_key_check):
 		select_state()
 		Global.get_sprite_states(state)
-		edit_protection = false
 		#print("switch normal")
 	
 func update_stuff():

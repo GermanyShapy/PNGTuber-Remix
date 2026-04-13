@@ -200,10 +200,17 @@ func load_sprite_states(state):
 	for i in get_tree().get_nodes_in_group("Sprites"):
 		i.get_state(current_state)
 		
-	reinfo.emit()
+	#reinfo.emit()
+	#animation_state.emit(current_state)
+	#light_info.emit(current_state)
+	#reinfoanim.emit()
+	#Sprite Update Signal
 	animation_state.emit(current_state)
-	light_info.emit(current_state)
-	reinfoanim.emit()
+	#UI Update Signal
+	light_info.emit.call_deferred(current_state)
+	reinfo.emit.call_deferred()
+	update_layer_visib.emit.call_deferred()
+	reinfoanim.emit.call_deferred()
 
 func get_sprite_states(state):
 	var group_sprites: Array[Node] = get_tree().get_nodes_in_group("Sprites")

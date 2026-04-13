@@ -197,6 +197,8 @@ func advanced_lipsyc():
 			sprite_object.frame_coords.x = 13
 
 func save_state(id):
+	if sprite_name == "按左":
+		pass
 	var dict : Dictionary = sprite_data.duplicate(true)
 	states[id] = dict
 
