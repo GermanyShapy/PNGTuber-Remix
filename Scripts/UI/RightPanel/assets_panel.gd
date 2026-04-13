@@ -52,8 +52,6 @@ func enable():
 		set_data()
 	else:
 		nullfy()
-	
-
 
 func set_data():
 	%IsAssetButton.action = str(Global.held_sprites[0].sprite_id)

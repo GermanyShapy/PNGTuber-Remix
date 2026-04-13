@@ -35,6 +35,7 @@ func get_default_object_data() -> Dictionary:
 		max_anchor_stretch = 999999.0,
 		mirror_anchor_movement_h = false,
 		mirror_anchor_movement_v = false,
+		sync_appendage = null
 	}
 
 func _init() -> void:
@@ -125,13 +126,15 @@ func get_state(id):
 		sprite_data.merge(dict, true)
 		modifier1.z_index = get_value("z_index")
 		modulate = get_value("colored")
-		
+		%Sprite2D.self_modulate = get_value("tint")
+		scale = get_value("scale")
 	#	global_position = get_value("global_position")
 		if get_value("should_reset_state"):
 			reaction_config.reset_anim()
 	
 		var old_glob = global_position
 		apply_transform()
+			%Dragger.global_position = %Modifier.global_position
 		
 		var drag_snap = get_value("drag_snap")
 		if (global_position - old_glob).length() > drag_snap && drag_snap != 999999.0:
@@ -168,7 +171,7 @@ func get_state(id):
 		if get_value("fade"):
 			trigger_fade(visible)
 		else:
-			modulate.a = 1.0
+			modulate.a = get_value("colored").a
 			visible = get_value("visible")
 			
 		update_wiggle_parts()
@@ -193,6 +196,19 @@ func set_anchor_sprite(_placeholder = null):
 				return
 			else:
 				sprite_object.anchor_target = null
+				
+	if get_value("sync_appendage") == null:
+		%Sprite2D.sync_appendage = null
+	else:
+		for i in Global.get_tree().get_nodes_in_group("Sprites"):
+			if i.sprite_id == get_value("sync_appendage"):
+				if i.get_node("%Sprite2D") is WigglyAppendage2D:
+					%Sprite2D.sync_appendage = i.get_node("%Sprite2D")
+				else:
+					%Sprite2D.sync_appendage = null
+				return
+			else:
+				%Sprite2D.sync_appendage = null
 
 func update_wiggle_parts():
 	if sprite_object.segment_count != get_value("wiggle_segm"):
@@ -243,7 +259,6 @@ func update_wiggle_parts():
 	if sprite_object.gravity!= get_value("wiggle_gravity"):
 		sprite_object.gravity = get_value("wiggle_gravity")
 
-
 func check_talk():
 	if get_value("should_talk"):
 		if get_value("open_mouth"):
@@ -259,7 +274,6 @@ func _on_grab_button_down():
 			var mouse_pos = get_parent().to_local(get_global_mouse_position())
 			for s in Global.held_sprites:
 				drag_offsets[s] = mouse_pos - s.position
-
 
 func _on_grab_button_up():
 	if selected:

@@ -73,14 +73,16 @@ func enable():
 			%FlipH.disabled = true
 			%FlipV.disabled = true
 			continue
-		if (i.referenced_data.is_apng or i.referenced_data.img_animated):
-			%RotateImage.disabled = true
-			%FlipH.disabled = true
-			%FlipV.disabled = true
 		else:
-			%RotateImage.disabled = false
-			%FlipH.disabled = false
-			%FlipV.disabled = false
+			if i.referenced_data != null:
+				if (i.referenced_data.is_apng or i.referenced_data.img_animated):
+					%RotateImage.disabled = true
+					%FlipH.disabled = true
+					%FlipV.disabled = true
+				else:
+					%RotateImage.disabled = false
+					%FlipH.disabled = false
+					%FlipV.disabled = false
 
 func _on_delete_button_pressed():
 	for i in Global.held_sprites:
@@ -98,36 +100,37 @@ func _on_duplicate_button_pressed():
 	var id_map = {}
 	for sprite in Global.held_sprites:
 		if sprite != null and is_instance_valid(sprite):
-			var base = _duplicate_single(sprite, id_map)
+			var base = duplicate_single(sprite, id_map)
 			sprites.append(base)
 			var layers = %LayersTree.get_all_layeritems_with_parent(sprite.treeitem, true)
 			for layer in layers:
 				var t = layer.child.get_metadata(0).sprite_object
-				var child = _duplicate_child(base, t, id_map)
+				var child = duplicate_child(base, t, id_map)
 				sprites.append(child)
 	if sprites.is_empty():
 		return
+	await get_tree().physics_frame
 	Global.get_sprite_states(Global.current_state)
 	Global.reparent_layers.emit(sprites)
 	Global.reparent_objects.emit(sprites)
 
-func _duplicate_single(sprite, id_map):
-	var obj = _instantiate_by_type(sprite.sprite_type)
-	_copy_transform(sprite, obj)
-	_copy_images(sprite, obj)
-	_copy_common(sprite, obj)
+func duplicate_single(sprite, id_map):
+	var obj = instantiate_by_type(sprite.sprite_type)
+	copy_transform(sprite, obj)
+	copy_images(sprite, obj)
+	copy_common(sprite, obj)
 	_finalize_duplicate(sprite, obj, id_map)
 	return obj
 
-func _duplicate_child(parent, t, id_map):
-	var obj = _instantiate_by_type(t.sprite_type)
-	_copy_transform(t, obj)
-	_copy_images(t, obj)
-	_copy_common(t, obj)
+func duplicate_child(parent, t, id_map):
+	var obj = instantiate_by_type(t.sprite_type)
+	copy_transform(t, obj)
+	copy_images(t, obj)
+	copy_common(t, obj)
 	_finalize_child_duplicate(parent, t, obj, id_map)
 	return obj
 
-func _instantiate_by_type(type):
+func instantiate_by_type(type):
 	if type == "WiggleApp":
 		return append_obj.instantiate()
 	if type == "Comment":
@@ -136,7 +139,7 @@ func _instantiate_by_type(type):
 		return mesh_obj.instantiate()
 	return sprite_obj.instantiate()
 
-func _copy_transform(src, dst):
+func copy_transform(src, dst):
 	if src.sprite_type != "Comment" or src.sprite_type != "Mesh":
 		dst.rotated = src.rotated
 		dst.flipped_h = src.flipped_h
@@ -147,25 +150,43 @@ func _copy_transform(src, dst):
 	dst.scale = src.scale
 	dst.sprite_data.scale = src.scale
 
+
 func duplicate_mesh_data(src: CustomMesh, dst: CustomMesh) -> void:
 	dst.original_vertices = src.original_vertices.duplicate()
 	dst.base_vertices = src.base_vertices.duplicate()
 	dst.deformed_vertices = src.deformed_vertices.duplicate()
 	dst.internal_vertices = src.internal_vertices.duplicate()
 	dst.triangles = src.triangles.duplicate()
-	dst.deform_top_left = src.deform_top_left.duplicate()
-	dst.deform_top_middle = src.deform_top_middle.duplicate()
-	dst.deform_top_right = src.deform_top_right.duplicate()
-	dst.deform_middle_left = src.deform_middle_left.duplicate()
-	dst.deform_center = src.deform_center.duplicate()
-	dst.deform_middle_right = src.deform_middle_right.duplicate()
-	dst.deform_bottom_left = src.deform_bottom_left.duplicate()
-	dst.deform_bottom_middle = src.deform_bottom_middle.duplicate()
-	dst.deform_bottom_right = src.deform_bottom_right.duplicate()
+	dst.get_layers().clear()
+	for i in src.get_layers().size():
+		dst.add_deform_layer()
+		var layer = dst.get_layer(i)
+		layer.bottom_left = src.get_layer(i).bottom_left.duplicate()
+		layer.bottom_middle = src.get_layer(i).bottom_middle.duplicate()
+		layer.bottom_right = src.get_layer(i).bottom_right.duplicate()
+		
+		layer.middle_left = src.get_layer(i).middle_left.duplicate()
+		layer.middle_right = src.get_layer(i).middle_right.duplicate()
+		layer.center = src.get_layer(i).center.duplicate()
+	
+		layer.top_left = src.get_layer(i).top_left.duplicate()
+		layer.top_middle = src.get_layer(i).top_middle.duplicate()
+		layer.top_right = src.get_layer(i).top_right.duplicate()
+		
+		layer.damping = src.get_layer(i).damping
+		layer.stiffness = src.get_layer(i).stiffness
+		layer.mass = src.get_layer(i).mass
+		
+		layer.sine_speed = src.get_layer(i).sine_speed
+		layer.sine_amplitude = src.get_layer(i).sine_amplitude
+		layer.noise_scale = src.get_layer(i).noise_scale
+		layer.noise_speed = src.get_layer(i).noise_speed
+		
+	
 	dst.texture = src.texture
 
 
-func _copy_images(src, dst):
+func copy_images(src, dst):
 	dst.used_image_id = src.used_image_id
 	dst.used_image_id_normal = src.used_image_id_normal
 	dst.referenced_data = src.referenced_data
@@ -181,11 +202,11 @@ func _copy_images(src, dst):
 			dst.get_node("%Sprite2D").texture = canv
 		else:
 			var canv = CanvasTexture.new()
-			canv.diffuse_texture = preload("res://Misc/SpriteObject/Folder.png")
+			canv.diffuse_texture = Global.folder_texture
 			dst.get_node("%Sprite2D").texture = canv
 
 
-func _copy_common(src, dst):
+func copy_common(src, dst):
 	dst.sprite_name = "Duplicate" + src.sprite_name
 	if src.get_value("folder"):
 		dst.sprite_data.folder = true
@@ -194,6 +215,7 @@ func _copy_common(src, dst):
 	dst.saved_keys = src.saved_keys.duplicate(true)
 	dst.should_disappear = src.should_disappear
 	dst.show_only = src.show_only
+	dst.target_ik = src.target_ik
 	dst.hold_to_show = src.hold_to_show
 	dst.min_duration = src.min_duration
 	dst.cast_time = src.cast_time
@@ -226,7 +248,6 @@ func _finalize_duplicate(src, obj, id_map):
 	id_map[src.sprite_id] = obj.sprite_id
 	obj.parent_id = src.parent_id
 
-
 func _finalize_child_duplicate(parent, t, obj, id_map):
 	obj.sprite_id = randi()
 	id_map[t.sprite_id] = obj.sprite_id
@@ -247,7 +268,7 @@ func _on_folder_button_pressed():
 	var sprte_obj = sprite_obj.instantiate()
 	Global.sprite_container.add_child(sprte_obj)
 	var canv = CanvasTexture.new()
-	canv.diffuse_texture = preload("res://Misc/SpriteObject/Folder.png")
+	canv.diffuse_texture = Global.folder_texture
 	sprte_obj.get_node("%Sprite2D").texture =  canv
 	sprte_obj.sprite_name = str("Folder")
 	sprte_obj.sprite_data.folder = true

@@ -2,10 +2,13 @@ extends SpriteObject
 
 @export var mesh : CustomMesh
 
+
 func get_default_object_data() -> Dictionary:
 	return {
 		move_with_wobble = true,
 		move_with_follow= true,
+		flip_sprite_h = false,
+		flip_sprite_v = false,
 	}
 
 func _init() -> void:
@@ -14,7 +17,6 @@ func _init() -> void:
 	sprite_data = cached_defaults.duplicate(true)
 
 func _ready():
-	sprite_type = "Sprite2D"
 	Global.image_replaced.connect(image_replaced)
 	Global.reparent_objects.connect(reparent_obj)
 	og_glob = get_value("position")
@@ -95,12 +97,23 @@ func get_state(id):
 		position = get_value("position")
 		%Sprite2D.position = get_value("offset") 
 		%Sprite2D.scale = Vector2(1,1)
+		if get_value("flip_sprite_h"):
+			%Sprite2D.scale.x = -1
+		else:
+			%Sprite2D.scale.x = 1
+		
+		if get_value("flip_sprite_v"):
+			%Sprite2D.scale.y = -1
+		else:
+			%Sprite2D.scale.y = 1
 		
 		%Modifier1.z_index = get_value("z_index")
 		modulate = get_value("colored")
+		%Sprite2D.self_modulate = get_value("tint")
 		scale = get_value("scale")
 		if (global_position - old_glob).length() > get_value("drag_snap") && get_value("drag_snap") != 999999.0:
 			%Modifier.global_position = %Modifier1.global_position
+			%Dragger.global_position = %Modifier.global_position
 		%Sprite2D.set_clip_children_mode(get_value("clip"))
 		
 		rotation = get_value("rotation")
@@ -112,13 +125,13 @@ func get_state(id):
 		if get_value("fade"):
 			trigger_fade(visible)
 		else:
-			modulate.a = 1.0
+			modulate.a = get_value("colored").a
 			visible = get_value("visible")
 		
 	elif states[id].is_empty():
 		states[id] = sprite_data.duplicate(true)
-
-
+	
+	mesh.queue_redraw()
 
 func check_talk():
 	if get_value("should_talk"):
@@ -138,7 +151,6 @@ func zazaza(parent):
 					if !state.is_empty():
 						global = global_position
 						state.position = get_value("position")
-
 
 func _on_sprite_2d_text_changed() -> void:
 	sprite_data.text_data = %Sprite2D.text

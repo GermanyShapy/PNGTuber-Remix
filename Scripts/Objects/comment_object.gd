@@ -103,10 +103,12 @@ func get_state(id):
 		
 		%Modifier1.z_index = get_value("z_index")
 		modulate = get_value("colored")
+		%Sprite2D.self_modulate = get_value("tint")
 		scale = get_value("scale")
 
 		if (global_position - old_glob).length() > get_value("drag_snap") && get_value("drag_snap") != 999999.0:
 			%Modifier.global_position = %Modifier1.global_position
+			%Dragger.global_position = %Modifier.global_position
 		
 		%Sprite2D.set_clip_children_mode(get_value("clip"))
 		rotation = get_value("rotation")
@@ -120,7 +122,7 @@ func get_state(id):
 		if get_value("fade"):
 			trigger_fade(visible)
 		else:
-			modulate.a = 1.0
+			modulate.a = get_value("colored").a
 			visible = get_value("visible")
 		
 	elif states[id].is_empty():
@@ -144,7 +146,6 @@ func zazaza(parent):
 					if !state.is_empty():
 						global = global_position
 						state.position = get_value("position")
-
 
 func _on_sprite_2d_text_changed() -> void:
 	sprite_data.text_data = %Sprite2D.text

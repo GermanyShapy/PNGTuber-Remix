@@ -1,9 +1,9 @@
 extends Node
 
-var append_folder_selected : bool = false
-var should_change : bool = false
+var append_folder_selected: bool = false
+var should_change: bool = false
 
-# Called when the node enters the scene tree for the first time.
+
 func _ready() -> void:
 	Global.deselect.connect(nullfy)
 	Global.reinfo.connect(enable)
@@ -14,6 +14,7 @@ func nullfy():
 	%AnimationFramesSlider.editable = false
 	%AnimationFramesSlider2.editable = false
 	%AnimationSpeedSlider.editable = false
+
 
 func enable():
 	append_folder_selected = false
@@ -36,7 +37,7 @@ func enable():
 				%AnimationFramesSlider2.editable = false
 				%AnimationSpeedSlider.editable = false
 			#	append_folder_selected = true
-				
+
 			if i.sprite_type == "Sprite2D" && !append_folder_selected:
 				%AnimationFramesSlider.value = i.get_value("hframes")
 				%AnimationFramesLabel.text = tr("TR_ANIMATION_FRAMES_H") + " : " + str(i.get_value("hframes"))
@@ -46,6 +47,7 @@ func enable():
 				%AnimationSpeedLabel.text = tr("TR_ANIMATION_SPEED") + " : " + str(i.get_value("animation_speed")) + " Fps"
 			
 	should_change = true
+
 
 func _on_animation_frames_slider_value_changed(value):
 	if should_change:
@@ -57,6 +59,7 @@ func _on_animation_frames_slider_value_changed(value):
 					i.animation()
 					i.get_node("%Grab").anchors_preset = Control.LayoutPreset.PRESET_FULL_RECT
 					i.save_state(Global.current_state)
+
 
 func _on_animation_speed_slider_value_changed(value):
 	if should_change:

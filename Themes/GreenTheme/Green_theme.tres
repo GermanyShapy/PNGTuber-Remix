@@ -1,8 +1,11 @@
-[gd_resource type="Theme" load_steps=27 format=3 uid="uid://nqtn377c0xup"]
+[gd_resource type="Theme" format=3 uid="uid://nqtn377c0xup"]
 
 [ext_resource type="Texture2D" uid="uid://cs5x5k14vxaqv" path="res://Misc/TestAssets/SliderGrabber.png" id="1_jywgb"]
 [ext_resource type="Texture2D" uid="uid://cd54dgvet0k2m" path="res://Misc/TestAssets/SliderGrabberDisabled.png" id="2_1nkp3"]
 [ext_resource type="Texture2D" uid="uid://dahd6x51nj0iv" path="res://Misc/TestAssets/SliderGrabberHeld.png" id="3_itdpa"]
+[ext_resource type="Texture2D" uid="uid://b1g5br1kqebip" path="res://UI/Assets/Collapse1.png" id="4_t61vp"]
+[ext_resource type="Texture2D" uid="uid://c3enghpddaeg2" path="res://UI/Assets/Collapse2.png" id="5_ejt2x"]
+[ext_resource type="Texture2D" uid="uid://hi8bi4gdyyrj" path="res://UI/Assets/Collapse3.png" id="6_miv77"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5pxpf"]
 content_margin_left = 4.0
@@ -54,6 +57,21 @@ content_margin_left = 4.0
 content_margin_top = 2.0
 content_margin_right = 4.0
 bg_color = Color(0.631373, 0.780392, 0.643137, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.262745, 0.356863, 0.12549, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_p3nt7"]
+content_margin_left = 4.0
+content_margin_top = 2.0
+content_margin_right = 4.0
+bg_color = Color(0.47451, 0.627451, 0.486275, 1)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -152,21 +170,6 @@ corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_p3nt7"]
-content_margin_left = 4.0
-content_margin_top = 2.0
-content_margin_right = 4.0
-bg_color = Color(0.47451, 0.627451, 0.486275, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.262745, 0.356863, 0.12549, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sl4c5"]
 bg_color = Color(0.180392, 0.258824, 0.129412, 1)
 
@@ -195,7 +198,9 @@ expand_margin_bottom = 5.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_25ytb"]
 content_margin_left = 10.0
+content_margin_top = 5.0
 content_margin_right = 10.0
+content_margin_bottom = 5.0
 bg_color = Color(0.473139, 0.628085, 0.48683, 1)
 border_width_left = 2
 border_width_right = 2
@@ -269,6 +274,11 @@ Button/styles/hover = SubResource("StyleBoxFlat_1nkp3")
 Button/styles/hover_pressed = SubResource("StyleBoxFlat_jywgb")
 Button/styles/normal = SubResource("StyleBoxFlat_evoqv")
 Button/styles/pressed = SubResource("StyleBoxFlat_5pxpf")
+FoldableContainer/styles/panel = SubResource("StyleBoxFlat_p3nt7")
+FoldableContainer/styles/title_collapsed_hover_panel = SubResource("StyleBoxFlat_jywgb")
+FoldableContainer/styles/title_collapsed_panel = SubResource("StyleBoxFlat_5pxpf")
+FoldableContainer/styles/title_hover_panel = SubResource("StyleBoxFlat_1nkp3")
+FoldableContainer/styles/title_panel = SubResource("StyleBoxFlat_evoqv")
 HSeparator/styles/separator = SubResource("StyleBoxLine_rcmqk")
 HSlider/icons/grabber = ExtResource("1_jywgb")
 HSlider/icons/grabber_disabled = ExtResource("2_1nkp3")
@@ -294,10 +304,10 @@ TabContainer/styles/tab_hovered = SubResource("StyleBoxFlat_6jcu0")
 TabContainer/styles/tab_selected = SubResource("StyleBoxFlat_ur40a")
 TabContainer/styles/tab_unselected = SubResource("StyleBoxFlat_3ni74")
 Tree/colors/font_color = Color(0.105882, 0.105882, 0.105882, 1)
-Tree/icons/arrow = null
-Tree/icons/arrow_collapsed = null
-Tree/icons/arrow_collapsed_mirrored = null
-Tree/icons/select_arrow = null
+Tree/icons/arrow = ExtResource("4_t61vp")
+Tree/icons/arrow_collapsed = ExtResource("5_ejt2x")
+Tree/icons/arrow_collapsed_mirrored = ExtResource("6_miv77")
+Tree/icons/select_arrow = ExtResource("4_t61vp")
 Tree/styles/focus = SubResource("StyleBoxEmpty_q82rr")
 Tree/styles/panel = SubResource("StyleBoxEmpty_pgroq")
 Window/styles/embedded_border = SubResource("StyleBoxFlat_8py2d")

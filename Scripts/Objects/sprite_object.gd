@@ -20,7 +20,6 @@ func get_default_object_data() -> Dictionary:
 
 var wiggle_val : float = 0
 
-
 func _init() -> void:
 	cached_defaults = DEFAULT_DATA.merged(get_default_object_data(), true)
 	sprite_data = cached_defaults.duplicate(true)
@@ -161,17 +160,18 @@ func _input(event: InputEvent) -> void:
 			dragging = false
 
 func wiggle_sprite():
-	var length : float = 0.0
-	
+	var length: float = 0.0
+
 	if get_value("wiggle_physics"):
 		if (get_parent() is Sprite2D or get_parent() is WigglyAppendage2D) and is_instance_valid(get_parent()):
 			var c_parent = get_parent().owner
-			if c_parent != null && is_instance_valid(c_parent):
-
-				var c_parrent_length = (c_parent.get_node("%Movements").glob.y + c_parent.get_node("%Sprite2D").position.y - c_parent.get_node("%Sprite2D").global_position.y)
-				var c_parrent_length2 = (c_parent.get_node("%Movements").glob.x + c_parent.get_node("%Sprite2D").position.x - c_parent.get_node("%Sprite2D").global_position.x)
-				length +=((c_parrent_length + c_parrent_length2)/50)
-	
+			if c_parent != null and is_instance_valid(c_parent):
+				var drag_node = c_parent.get_node_or_null("%Drag")
+				var movements_node = c_parent.get_node_or_null("%Movements")
+				if drag_node != null and movements_node != null:
+					var c_parrent_length = movements_node.glob.y - drag_node.global_position.y
+					var c_parrent_length2 = movements_node.glob.x - drag_node.global_position.x
+					length += (c_parrent_length + c_parrent_length2) / 50.0
 	
 	wiggle_val = lerp(wiggle_val, sin((Global.tick * get_value("wiggle_freq"))+length)*get_value("wiggle_amp"), 0.05)
 	
@@ -197,7 +197,7 @@ func advanced_lipsyc():
 			sprite_object.frame_coords.x = 13
 
 func save_state(id):
-	if sprite_name == "æŒ‰å·¦":
+	if sprite_name == "°´×ó":
 		pass
 	var dict : Dictionary = sprite_data.duplicate(true)
 	states[id] = dict
@@ -229,6 +229,7 @@ func get_state(id):
 			modifier.global_position = modifier1.global_position
 		
 		sprite_object.set_clip_children_mode(get_value("clip"))
+			%Dragger.global_position = %Modifier.global_position
 		
 		sprite_object.material.set_shader_parameter("wiggle", get_value("wiggle"))
 		sprite_object.material.set_shader_parameter("rotation_offset", get_value("wiggle_rot_offset"))
@@ -254,7 +255,7 @@ func get_state(id):
 		if get_value("fade"):
 			trigger_fade(visible)
 		else:
-			modulate.a = 1.0
+			modulate.a = get_value("colored").a
 			visible = get_value("visible")
 		
 			
@@ -275,7 +276,7 @@ func check_talk():
 	else:
 		%Rotation.show()
 
-func zazaza(parent):
+func reposition_plus(parent):
 	for i in parent:
 		if i.sprite_id == parent_id:
 			sprite_data.position -= i.get_value("offset")

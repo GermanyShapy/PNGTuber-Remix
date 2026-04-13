@@ -3,7 +3,6 @@ extends Node
 var should_change : bool = false
 var undo_redo_data = []
 
-# Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	%ColorPickerButton.get_picker().picker_shape = 1
 	%ColorPickerButton.get_picker().presets_visible = false
@@ -142,7 +141,6 @@ func set_data():
 			%FlipSpriteH.button_pressed = i.get_value("flip_h")
 			%FlipSpriteV.button_pressed = i.get_value("flip_v")
 
-		
 	should_change = true
 
 func get_item_id_by_blend_mode(blend_mode: String) -> int:
@@ -242,7 +240,7 @@ func _on_color_picker_button_color_changed(color: Color) -> void:
 	if should_change:
 		var undo_redo_data : Array = []
 		for i in Global.held_sprites:
-			var d = submit_to_undo_redo_manager(i, "modulate", Global.current_state, i.modulate , color)
+			var d = submit_to_undo_redo_manager(i, "modulate", Global.current_state, i.sprite_data.colored , color)
 			i.modulate = color
 			i.sprite_data.colored = color
 			StateButton.multi_edit(color, "modulate", i, i.states)
@@ -260,14 +258,13 @@ func _on_tint_picker_button_color_changed(ncolor: Color) -> void:
 	if should_change:
 		var undo_redo_data : Array = []
 		for i in Global.held_sprites:
-			var d = submit_to_undo_redo_manager(i, "tint", Global.current_state, i.get_value("tint") , ncolor)
+			var d = submit_to_undo_redo_manager(i, "tint", Global.current_state, i.sprite_data.tint , ncolor)
 			i.sprite_data.tint = ncolor
 			i.get_node("%Sprite2D").self_modulate = ncolor
 			StateButton.multi_edit(ncolor, "tint", i, i.states)
 			i.save_state(Global.current_state)
 			undo_redo_data.append(d)
 		UndoRedoManager.push_data(undo_redo_data)
-
 
 func _on_pos_x_spin_box_value_changed(value):
 	if not should_change:
@@ -282,7 +279,6 @@ func _on_pos_x_spin_box_value_changed(value):
 		add_or_merge_undo_redo(%PosXSpinBox, d)
 	
 	push_undo_redo_on_focus(%PosXSpinBox)
-
 
 func _on_pos_y_spin_box_value_changed(value):
 	if not should_change:
@@ -320,11 +316,11 @@ func _on_visible_toggled(toggled_on):
 			if toggled_on:
 				i.sprite_data.visible = true
 				i.visible = true
-				i.treeitem.set_button(0, 0, preload("res://UI/EditorUI/LeftUI/Components/LayerView/Assets/New folder/EyeButton.png"))
+				i.treeitem.set_button(0, 0, preload("res://UI/Assets/EyeButton.png"))
 			else:
 				i.sprite_data.visible = false
 				i.visible = false
-				i.treeitem.set_button(0, 0, preload("res://UI/EditorUI/LeftUI/Components/LayerView/Assets/New folder/EyeButton2.png"))
+				i.treeitem.set_button(0, 0, preload("res://UI/Assets/EyeButton2.png"))
 			
 			StateButton.multi_edit(i.sprite_data.visible, "visible", i, i.states)
 			i.save_state(Global.current_state)
@@ -344,7 +340,6 @@ func _on_z_order_spinbox_value_changed(value):
 		add_or_merge_undo_redo(%ZOrderSpinbox,d)
 		
 	push_undo_redo_on_focus(%ZOrderSpinbox)
-
 
 func _on_size_spin_y_box_value_changed(value):
 	if not should_change:
@@ -423,7 +418,7 @@ func _on_flip_sprite_h_toggled(toggled_on: bool) -> void:
 	if should_change:
 		undo_redo_data = []
 		for i in Global.held_sprites:
-			if i.sprite_type == "Sprite2D":
+			if i.sprite_type == "Sprite2D" or  i.sprite_type == "Mesh":
 				var d = submit_to_undo_redo_manager(i, "flip_sprite_h", Global.current_state, i.sprite_data.flip_sprite_h , toggled_on)
 				i.sprite_data.flip_sprite_h = toggled_on
 				if i.get_value("flip_sprite_h"):
@@ -446,12 +441,11 @@ func _on_flip_sprite_h_toggled(toggled_on: bool) -> void:
 				i.save_state(Global.current_state)
 		UndoRedoManager.push_data(undo_redo_data)
 
-
 func _on_flip_sprite_v_toggled(toggled_on: bool) -> void:
 	if should_change:
 		undo_redo_data = []
 		for i in Global.held_sprites:
-			if i.sprite_type == "Sprite2D":
+			if i.sprite_type == "Sprite2D" or  i.sprite_type == "Mesh":
 				var d = submit_to_undo_redo_manager(i, "flip_sprite_v", Global.current_state, i.sprite_data.flip_sprite_h , toggled_on)
 				i.sprite_data.flip_sprite_v = toggled_on
 				if i.get_value("flip_sprite_v"):
@@ -548,7 +542,6 @@ func _on_mouth_option_item_selected(index: int) -> void:
 		
 		UndoRedoManager.push_data(undo_redo_data)
 		Global.not_speaking.emit()
-
 
 func _on_rest_mode_option_item_selected(index: int) -> void:
 	for i in Global.held_sprites:

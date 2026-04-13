@@ -208,12 +208,12 @@ models like the ones seen in VeadoTube Mini and Gazō-Tuber
 If this is on, the object’s movement gets affected by the parent’s Y-axis movement. This could be used to add more flavor to your model!
 
 ##### Ignore Bounce Example:
-|Ignore Bounce On|Ignore Bounce Off|
+|  Ignore Bounce On  |  Ignore Bounce Off  |
 
 ![IgnoreBounce](assets/IgnoreBounce.gif)
 
 ##### Physics Example:
-|Physics On|Physics Off|
+|  Physics On  |  Physics Off  |
 
 ![Physics](assets/Physics.gif)
 
@@ -303,6 +303,15 @@ Movements in PNGTube-Remix work using the concept of Sine Movement/ Sine Waves.
 - Texture mode :  Either stretch the texture onto the appendage or tile it, tiling can be useful for something like chains.
 - Mirror Reaction H : Honestly, don't remember, need to check the code again. I think it was a test feature I forgot to remove.
   
+#### Note
+When setting up the appendage, make sure that the tip of the appednage/ tail is pointing to the right.
+<br>Here is an example of how some appendages look</br>
+
+Example Tail and Hair piece.
+
+![AppendageTail](assets/TailRef.png)
+![AppendageHair](assets/Hair.png)
+
 Remember to check [Original Wiggle Appendage](https://github.com/Tameno-01/GodotWigglyAppendage2D).  
 Check this [Basic Appendage Parameters for Artists](https://github.com/Tameno-01/GodotWigglyAppendage2D/blob/main/docs/parameter_decriptions.md)  
 
@@ -387,11 +396,54 @@ Light can be used with the Normal Maps feature to give your model a dynamic ligh
 
 ---
 ##### Mesh
-Sorry, I broke it. Just kidding, I am still working on it.
+**MESHES ARE EXPERIMENTAL.**
 
-![Meshes](assets/Tutorial_image_15.PNG)
+**Only usable/ enabled from Developer Mode**
+
+- Deform : Enables/ Disables the mesh editing.
+- Show Web : Shows the internal web/ connections between the mesh points.
+- Influence : The brush influece size.
+- Strength : The strength of the brush when moving points.
+- Wobble Movement : Enables/ Disables if the the mesh should move with the X/Y Freq/ Amp while animating or animates in place.
+- Follow Movements : Enables/ Disables if the the mesh should move with the follow movement ranges while animating or animates in place.
+- Phyiscs Effects : The amount of physics reaction applied on a parented mesh on the X/Y, check the enable physics from properties.
+- Mesh Grid : This grids holds all the points that you can animate. It has 9 points that can hold animated data.
+- Target Mesh : Links two meshes together/ sets allows a mesh to be used by another mesh.
+- Add Layer : Adds a new deform layer.
+- Delete Layer : Deletes currently selected deform layer.
+- Target Strength : The strength of the current selected layer on the total animation/ movement.
+- Stiffness : The how soft/ hard the mesh is.
+- Damping : the dampness of the mesh.
+- Mass : How heavy/ lightweight the mesh is.
+- Follow Speed : idk, self explanatory. (Check Motion Type)
+- Noise Speed : The speed of the noise cycle. (Check Motion Type)
+- Noise Scale : The scale the noise map used for randomized mesh movement.
+- Sine Speed : The speed of the sine wave for the sine motion type.
+- Sine Amp : The amplitude of the sine wave for the sine motion type.
+- Motion Type : The motion/ physics type of the current selected layer.
+
+--
+
+##### Mesh Generation
+
+- Grid Size : The size of the grids of the generated mesh.
+- Radial Spacing : the space between rings in radial generated meshes.
+- Alpha threshold : The alpha detection in a texture during generation.
+- Inner Points : The amount of inner points in the generation.
+- Eplision : Similar to alpha threshold, but for polygon generation.
+- Merge Points Space : Detects how close two points are and if they are in range, they get merged into 1 point.
+- Smooth Iterations : The smoothness of the generated mesh.
+
+How to add a new Mesh:
 
 ![AddingMesh](assets/AddingMeshes.gif)
+
+Tools: 
+
+![MeshTools](assets/Tutorial_image_22.png)
+
+
+![Meshes](assets/Tutorial_image_15.PNG)
 
 ---
 ##### Test
@@ -409,6 +461,7 @@ Special thanks for vj4 for the feature!
 ---
 ### Assigning Input keys and Naming States
 In V1.4 onwards, assigning Input Keys/ renaming States is done from the Remap button ontop of the states as shown here, not from settings. Don't forget to press enter after renaming your State.
+
 
 ![Input](assets/Tutorial_image_1.PNG)
 ![Input2](assets/Tutorial_image_2.png)

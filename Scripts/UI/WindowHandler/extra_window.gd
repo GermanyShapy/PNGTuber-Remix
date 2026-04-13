@@ -1,4 +1,5 @@
 extends Window
+
 class_name ExtraWindow
 
 const WINDOW_SIZE := Vector2(512, 512)
@@ -42,7 +43,7 @@ func _init(world: World2D, remove_window: Callable, lock_window: Callable, other
 	
 	hide()
 	size = WINDOW_SIZE
-	title = "Window " + str(len(WindowHandler.windows) + 1)
+	title = tr("TR_WINDOW") + " " + str(len(WindowHandler.windows) + 1)
 	always_on_top = true
 	transparent = true
 	transparent_bg = true
@@ -54,15 +55,16 @@ func _init(world: World2D, remove_window: Callable, lock_window: Callable, other
 	control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	control.mouse_default_cursor_shape = Control.CURSOR_DRAG
 	control.mouse_filter = Control.MOUSE_FILTER_PASS
-	
+
 	control.add_child(button)
 	button.theme = Settings.current_theme
 	button.text = tr("TR_LOCK_SIZE")
 	button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	button.position -= Vector2.ONE * BUTTON_MARGIN
-	button.pressed.connect(lock_window.bind(self))
+	button.pressed.connect(lock_window.bind(self ))
 	
 	self.focus_entered.connect(on_focus_enter)
+
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("lmb"):
@@ -75,6 +77,7 @@ func _input(event: InputEvent) -> void:
 		was_pressed_before = false
 	
 	viewport.push_input(event)
+
 
 func _process(_delta: float) -> void:
 	mouse_pos = DisplayServer.mouse_get_position()

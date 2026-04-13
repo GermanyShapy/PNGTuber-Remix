@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=67 format=4 uid="uid://tnhi5mwski6n"]
+[gd_resource type="Theme" format=4 uid="uid://tnhi5mwski6n"]
 
 [ext_resource type="Texture2D" uid="uid://diem26sgg42vr" path="res://Misc/TestAssets/Panels/AeroPanel2.svg" id="1_d35nj"]
 [ext_resource type="Texture2D" uid="uid://be04yv0nl81oc" path="res://Misc/TestAssets/Panels/AeroPanel4.svg" id="2_2bs7g"]
@@ -9,6 +9,9 @@
 [ext_resource type="Texture2D" uid="uid://crrhrokuy1mxt" path="res://Misc/TestAssets/Panels/AeroPanel3.svg" id="6_8bobq"]
 [ext_resource type="Texture2D" uid="uid://cy4xxakjg5ggq" path="res://Misc/TestAssets/Panels/AeroPanel5.svg" id="7_k16pw"]
 [ext_resource type="Texture2D" uid="uid://bqr2odu6suobf" path="res://Misc/TestAssets/Panels/AeroPanel6.svg" id="8_7fpot"]
+[ext_resource type="Texture2D" uid="uid://b1g5br1kqebip" path="res://UI/Assets/Collapse1.png" id="10_np3lo"]
+[ext_resource type="Texture2D" uid="uid://c3enghpddaeg2" path="res://UI/Assets/Collapse2.png" id="11_8bobq"]
+[ext_resource type="Texture2D" uid="uid://hi8bi4gdyyrj" path="res://UI/Assets/Collapse3.png" id="12_k16pw"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_j8txy"]
 texture = ExtResource("6_8bobq")
@@ -64,6 +67,14 @@ texture_margin_top = 5.0
 texture_margin_right = 5.0
 texture_margin_bottom = 5.0
 modulate_color = Color(0.545098, 0.403922, 0.647059, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_f2x4u"]
+texture = ExtResource("6_8bobq")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
 
 [sub_resource type="StyleBoxLine" id="StyleBoxLine_vn4vb"]
 color = Color(0.25098, 0.25098, 0.25098, 1)
@@ -208,6 +219,15 @@ font_weight = 600
 subpixel_positioning = 0
 msdf_pixel_range = 14
 msdf_size = 128
+cache/0/variation_coordinates = {}
+cache/0/face_index = 0
+cache/0/embolden = 0.0
+cache/0/transform = Transform2D(1, 0, 0, 1, 0, 0)
+cache/0/spacing_top = 0
+cache/0/spacing_bottom = 0
+cache/0/spacing_space = 0
+cache/0/spacing_glyph = 0
+cache/0/baseline_offset = 0.0
 cache/0/16/0/ascent = 18.0
 cache/0/16/0/descent = 5.0
 cache/0/16/0/underline_position = 1.60938
@@ -3286,7 +3306,7 @@ cache/0/17/0/glyphs/75/size = Vector2(11, 14)
 cache/0/17/0/glyphs/75/uv_rect = Rect2(28, 17, 11, 14)
 cache/0/17/0/glyphs/75/texture_idx = 0
 
-[sub_resource type="Image" id="Image_2bs7g"]
+[sub_resource type="Image" id="Image_np3lo"]
 data = {
 "data": PackedByteArray("////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////YP///2H///8A////AP///wD///8A////AP///wD///8A////AP///2D///9h////AP///wD///8A////YP///7////+/////Yf///wD///8A////AP///wD///8A////AP///2D///+/////v////2H///8A////AP///2H///+/////v////7////9h////AP///wD///8A////AP///2D///+/////v////7////9g////AP///wD///8A////Yf///7////+/////v////2H///8A////AP///2D///+/////v////7////9g////AP///wD///8A////AP///wD///9h////v////7////+/////Yf///2D///+/////v////7////9g////AP///wD///8A////AP///wD///8A////AP///2H///+/////v////7////+/////v////7////9g////AP///wD///8A////AP///wD///8A////AP///wD///8A////Yf///7////+/////v////7////9g////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///2D///+/////v////7////+/////Yf///wD///8A////AP///wD///8A////AP///wD///8A////AP///2D///+/////v////7////+/////v////7////9h////AP///wD///8A////AP///wD///8A////AP///2D///+/////v////7////9g////Yf///7////+/////v////2H///8A////AP///wD///8A////AP///2D///+/////v////7////9g////AP///wD///9h////v////7////+/////Yf///wD///8A////AP///2D///+/////v////7////9g////AP///wD///8A////AP///2H///+/////v////7////9h////AP///wD///9h////v////7////9g////AP///wD///8A////AP///wD///8A////Yf///7////+/////YP///wD///8A////AP///2H///9g////AP///wD///8A////AP///wD///8A////AP///wD///9h////YP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AA=="),
 "format": "RGBA8",
@@ -3296,7 +3316,7 @@ data = {
 }
 
 [sub_resource type="ImageTexture" id="ImageTexture_aovhr"]
-image = SubResource("Image_2bs7g")
+image = SubResource("Image_np3lo")
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_d35nj"]
 texture = ExtResource("2_2bs7g")
@@ -3366,14 +3386,6 @@ texture_margin_top = 10.0
 texture_margin_right = 10.0
 texture_margin_bottom = 10.0
 
-[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_f2x4u"]
-texture = ExtResource("6_8bobq")
-texture_margin_left = 5.0
-texture_margin_top = 5.0
-texture_margin_right = 5.0
-texture_margin_bottom = 5.0
-axis_stretch_horizontal = 2
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_oq7mi"]
 bg_color = Color(0.786803, 0.569347, 0.932157, 1)
 border_width_left = 5
@@ -3433,6 +3445,10 @@ texture_margin_bottom = 8.0
 axis_stretch_horizontal = 1
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_g6lay"]
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
 texture = ExtResource("6_8bobq")
 texture_margin_left = 5.0
 texture_margin_top = 5.0
@@ -3559,6 +3575,11 @@ Button/styles/hover = SubResource("StyleBoxTexture_kavif")
 Button/styles/hover_pressed = SubResource("StyleBoxTexture_43a4b")
 Button/styles/normal = SubResource("StyleBoxTexture_xcop2")
 Button/styles/pressed = SubResource("StyleBoxTexture_wl36d")
+FoldableContainer/styles/panel = SubResource("StyleBoxTexture_f2x4u")
+FoldableContainer/styles/title_collapsed_hover_panel = SubResource("StyleBoxTexture_43a4b")
+FoldableContainer/styles/title_collapsed_panel = SubResource("StyleBoxTexture_wl36d")
+FoldableContainer/styles/title_hover_panel = SubResource("StyleBoxTexture_kavif")
+FoldableContainer/styles/title_panel = SubResource("StyleBoxTexture_xcop2")
 HSeparator/constants/separation = 6
 HSeparator/styles/separator = SubResource("StyleBoxLine_vn4vb")
 HSlider/icons/grabber = ExtResource("2_m24h7")
@@ -3608,10 +3629,10 @@ TabContainer/styles/tab_unselected = SubResource("StyleBoxTexture_f4mku")
 TextEdit/styles/normal = SubResource("StyleBoxTexture_0lxvj")
 Tree/colors/drop_position_color = Color(0.20871, 0.20871, 0.20871, 1)
 Tree/colors/font_color = Color(0.105882, 0.105882, 0.105882, 1)
-Tree/icons/arrow = null
-Tree/icons/arrow_collapsed = null
-Tree/icons/arrow_collapsed_mirrored = null
-Tree/icons/select_arrow = null
+Tree/icons/arrow = ExtResource("10_np3lo")
+Tree/icons/arrow_collapsed = ExtResource("11_8bobq")
+Tree/icons/arrow_collapsed_mirrored = ExtResource("12_k16pw")
+Tree/icons/select_arrow = ExtResource("10_np3lo")
 Tree/styles/focus = SubResource("StyleBoxEmpty_mgdks")
 Tree/styles/panel = SubResource("StyleBoxEmpty_jnojd")
 VScrollBar/styles/grabber = SubResource("StyleBoxTexture_7fpot")

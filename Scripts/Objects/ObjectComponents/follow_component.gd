@@ -12,21 +12,19 @@ var distance : Vector2 = Vector2.ZERO
 var mouse_moving
 var last_dist_smoothed := Vector2.ZERO
 
-var smoothed_dir := Vector2.ZERO
-var dir_vel_anim := Vector2.ZERO
-var dist_vel_anim := 0.0
+var smoothed_dir : Vector2 = Vector2.ZERO
+var dir_vel_anim : Vector2 = Vector2.ZERO
+var dist_vel_anim : float = 0.0
 
-var frame_h := 0.0
-var frame_v := 0.0
+var frame_h : float = 0.0
+var frame_v : float = 0.0
 
-var target_x := 0.0
-var target_y := 0.0
-var target_rotation :Vector2 = Vector2.ZERO
-var target_scale :Vector2 = Vector2.ONE
+var target_x : float = 0.0
+var target_y : float = 0.0
 var target_pos = Vector2.ZERO
 
 var mouse_delta :Vector2 = Vector2.ZERO
-var rest := false
+var rest : bool = false
 var axis_left :Vector2 = Vector2.ZERO
 var axis_right :Vector2 = Vector2.ZERO
 var axis_shoulderl :Vector2 = Vector2.ZERO
@@ -34,16 +32,21 @@ var axis_shoulderr :Vector2 = Vector2.ZERO
 var axis_lr_3 : Vector2 = Vector2.ZERO
 var current_dir : Vector2 = Vector2.ZERO
 var current_dist : float = 0.0
+var final_target : Vector2 = Vector2.ZERO
 
 func _physics_process(delta: float) -> void:
+	if actor.get_value("follow_type") == 15:
+		target_pos = Vector2.ZERO
+		modifier.position = Vector2.ZERO
+		return
 	
 	if Global.static_view or actor.rest_mode in [0,4]:
 		return
 	if actor.rest_mode in [1,3] and rest:
 		reset_modifier()
 	else:
-		mouse_coords = follow_calculation() 
 		process_follow(delta)
+		mouse_coords = follow_calculation()
 		last_mouse_position = mouse_coords
 
 func reset_modifier() -> void:
@@ -81,10 +84,9 @@ func process_follow(delta: float) -> void:
 		
 	var dir = (mouse_coords - Vector2.ZERO).normalized() if mouse_coords.length() > 0.0001 else Vector2.ZERO
 	var dist = mouse_coords.length()
+	
 	update_controller_inputs()
 	update_position(dir, dist, delta)
-	update_rotation(dir, delta)
-	update_scale(dir, delta)
 	#print("mouse_croods: " + str(mouse_coords))
 
 func follow_calculation(_delta = 0.0):
@@ -92,31 +94,36 @@ func follow_calculation(_delta = 0.0):
 		return mouse_coords
 		
 	var main_marker = Global.main.get_node("%Marker")
-	
 	#return mouse_coords
 	if WindowHandler.windows:
 		mouse_coords = Vector2.ZERO
-		if main_marker.current_screen == Monitor.ALL_SCREENS:
-			mouse_coords = DisplayServer.mouse_get_position() - DisplayServer.screen_get_size() /2
-		elif main_marker.mouse_in_current_screen():
-			mouse_coords = DisplayServer.mouse_get_position() - DisplayServer.screen_get_size(main_marker.current_screen) /2
-	
+		if main_marker.current_screen == Monitor.ALL_SCREENS or main_marker.mouse_in_current_screen():
+			mouse_coords = get_mouse_coords(main_marker, 0)
 	elif main_marker.current_screen != Monitor.ALL_SCREENS:
-		if !main_marker.mouse_in_current_screen():
+		if !main_marker.mouse_in_current_screen() && Global.settings_dict.snap_out_of_bounds:
 			mouse_coords = Vector2.ZERO
 		else:
-			var viewport_size = actor.get_viewport().size
-			var origin = actor.get_global_transform_with_canvas().origin
-			var x_per = 1.0 - origin.x/float(viewport_size.x)
-			var y_per = 1.0 - origin.y/float(viewport_size.y)
-			var display_size = DisplayServer.screen_get_size(main_marker.current_screen)
-			var offset = Vector2(display_size.x * x_per, display_size.y * y_per)
-			var mouse_pos = DisplayServer.mouse_get_position() - DisplayServer.screen_get_position(main_marker.current_screen)
-			mouse_coords = Vector2(mouse_pos - display_size) + offset 
+			mouse_coords = get_mouse_coords(main_marker, main_marker.current_screen)
 	else:
-		mouse_coords = actor.get_local_mouse_position()
-	
+		mouse_coords = get_mouse_coords(main_marker, 0)
 	return mouse_coords
+
+func get_mouse_coords(main_marker, screen) -> Vector2:
+	var coord : Vector2 = Vector2.ZERO
+	if actor.get_value("use_object_pos"):
+		var offset = Vector2(main_marker.get_cached_screen_position(screen))
+		coord = (actor.get_local_mouse_position() - offset)  / Global.camera.zoom.clampf(0.001, 10.0)
+	else:
+		var viewport_size = actor.get_viewport().size
+		var origin = actor.get_global_transform_with_canvas().origin
+		var x_per = 1.0 - origin.x/float(viewport_size.x)
+		var y_per = 1.0 - origin.y/float(viewport_size.y)
+		var display_size : Vector2 = main_marker.get_screen_size()
+		var offset = Vector2(display_size.x * x_per, display_size.y * y_per)
+		var mouse_pos = Vector2(DisplayServer.mouse_get_position()) - Vector2(main_marker.get_cached_screen_position(screen))
+		coord = Vector2(mouse_pos - display_size) + offset
+
+	return coord
 
 func update_controller_inputs() -> void:
 	axis_left = Input.get_vector("ControllerLeft", "ControllerRight", "ControllerUp", "ControllerDown")
@@ -127,267 +134,173 @@ func update_controller_inputs() -> void:
 
 func update_position(dir: Vector2, dist: float, _delta: float) -> void:
 	if actor.get_value("follow_type") == 15:
-		%Modifier1.position = Vector2(0,0)
+		target_pos = Vector2.ZERO
+		modifier.position = Vector2.ZERO
 		return
-	
-	var follow_type = actor.get_value("follow_type")
-	var keyboard_axis := Vector2.ZERO
-	if follow_type in [3,4,5,6,7,8]:
-		keyboard_axis = GlobalCalculations.some_keyboard_calc_wasd("follow_type", actor)
+	var invert_x: bool = actor.get_value("pos_invert_x")
+	var invert_y: bool = actor.get_value("pos_invert_y")
+	var swap_x: bool = actor.get_value("pos_swap_x")
+	var swap_y: bool = actor.get_value("pos_swap_y")
+	var follow_type: int = actor.get_value("follow_type")
+	var keyboard_axis: Vector2 = Vector2.ZERO
 	if follow_type == 0:
 		if actor.get_value("follow_mouse_velocity"):
-			if actor.get_value("snap_pos"):
-				if abs(distance.x) > 0.5:
-					target_pos.x = lerp(target_pos.x, last_dist.x, actor.get_value("mouse_delay"))
-					current_dir.x = dir.x
-				if abs(distance.y) > 0.5:
-					target_pos.y = lerp(target_pos.y, last_dist.y, actor.get_value("mouse_delay"))
-					current_dir.y = dir.y
-			else:
-				target_pos = target_pos.lerp(last_dist, actor.get_value("mouse_delay")) 
-				current_dir = dir
+			follow_position_calculations(dir, last_dist)
 		else:
-			target_pos.x = lerp(target_pos.x , dir.x * min(dist, actor.get_value("look_at_mouse_pos")), actor.get_value("mouse_delay"))
-			target_pos.y = lerp(target_pos.y , dir.y * min(dist, actor.get_value("look_at_mouse_pos_y")), actor.get_value("mouse_delay"))
-			current_dir = dir
-
-	elif follow_type == 1:
-		if actor.get_value("snap_pos"):
-			if axis_left.x != 0:
-				target_x = lerp(target_x, axis_left.x * actor.get_value("look_at_mouse_pos"), actor.get_value("mouse_delay"))
-				current_dir.x = axis_left.x
-			if axis_left.y != 0:
-				target_y = lerp(target_y, axis_left.y * actor.get_value("look_at_mouse_pos_y"), actor.get_value("mouse_delay"))
-				current_dir.y = axis_left.y
-			target_pos = Vector2(target_x, target_y)
-		else:
-			target_pos = target_pos.lerp(axis_left * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y")), actor.get_value("mouse_delay"))
-			current_dir = axis_left
-			current_dist = target_pos.length()
-	elif follow_type == 2:
-		if actor.get_value("snap_pos"):
-			if axis_right.x != 0:
-				target_x = lerp(target_x, axis_right.x * actor.get_value("look_at_mouse_pos"), actor.get_value("mouse_delay"))
-				current_dir.x = axis_right.x
-			if axis_right.y != 0:
-				target_y = lerp(target_y, axis_right.y * actor.get_value("look_at_mouse_pos_y"), actor.get_value("mouse_delay"))
-				current_dir.y = axis_right.y
-			target_pos = Vector2(target_x, target_y)
-		else:
-			target_pos = target_pos.lerp(axis_right * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y")), actor.get_value("mouse_delay"))
-			current_dir = axis_right
-			current_dist = target_pos.length()
-	elif follow_type == 10:
-		if actor.get_value("snap_pos"):
-			if axis_shoulderl.x != 0:
-				target_x = lerp(target_x, axis_shoulderl.x * actor.get_value("look_at_mouse_pos"), actor.get_value("mouse_delay"))
-				current_dir.x = axis_shoulderl.x
-			if axis_shoulderl.y != 0:
-				target_y = lerp(target_y, axis_shoulderl.y * actor.get_value("look_at_mouse_pos_y"), actor.get_value("mouse_delay"))
-				current_dir.y = axis_shoulderl.y
-			target_pos = Vector2(target_x, target_y)
-		else:
-			target_pos = target_pos.lerp(axis_shoulderl * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y")), actor.get_value("mouse_delay"))
-			current_dir = axis_shoulderl
-			current_dist = target_pos.length()
-	elif follow_type == 11:
-		if actor.get_value("snap_pos"):
-			if axis_shoulderr.x != 0:
-				target_x = lerp(target_x, axis_shoulderr.x * actor.get_value("look_at_mouse_pos"), actor.get_value("mouse_delay"))
-				current_dir.x = axis_shoulderr.x
-			if axis_shoulderr.y != 0:
-				target_y = lerp(target_y, axis_shoulderr.y * actor.get_value("look_at_mouse_pos_y"), actor.get_value("mouse_delay"))
-				current_dir.y = axis_shoulderr.y
-			target_pos = Vector2(target_x, target_y)
-		else:
-			target_pos = target_pos.lerp(axis_shoulderr * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y")), actor.get_value("mouse_delay"))
-			current_dir = axis_shoulderr
-			current_dist = target_pos.length()
-	elif follow_type == 12:
-		if actor.get_value("snap_pos"):
-			if axis_lr_3.x != 0:
-				target_x = lerp(target_x, axis_lr_3.x * actor.get_value("look_at_mouse_pos"), actor.get_value("mouse_delay"))
-				current_dir.x = axis_lr_3.x
-			if axis_lr_3.y != 0:
-				target_y = lerp(target_y, axis_lr_3.y * actor.get_value("look_at_mouse_pos_y"), actor.get_value("mouse_delay"))
-				current_dir.y = axis_lr_3.y
-			target_pos = Vector2(target_x, target_y)
-		else:
-			target_pos = target_pos.lerp(axis_lr_3 * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y")), actor.get_value("mouse_delay"))
-			current_dir = axis_lr_3
-			current_dist = target_pos.length()
-	elif follow_type in [3,4,5,6,7,8]:
-		if actor.get_value("snap_pos"):
-			if keyboard_axis.x != 0:
-				target_x = lerp(target_x, keyboard_axis.x * actor.get_value("look_at_mouse_pos"), actor.get_value("mouse_delay"))
-				current_dir.x = keyboard_axis.x
-			if keyboard_axis.y != 0:
-				target_y = lerp(target_y, keyboard_axis.y * actor.get_value("look_at_mouse_pos_y"), actor.get_value("mouse_delay"))
-				current_dir.y = keyboard_axis.y
-			target_pos = Vector2(target_x, target_y)
-		else:
-			target_pos = target_pos.lerp(keyboard_axis * Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y")), actor.get_value("mouse_delay"))
-			current_dir = keyboard_axis
-		current_dist = target_pos.length()
-
+			follow_position_calculations(dir, Vector2(dist, dist))
+	elif follow_type in [1, 2, 10, 11, 12]:
+		var axis: Vector2 = axis_left
+		match follow_type:
+			1: axis = axis_left
+			2: axis = axis_right
+			10: axis = axis_shoulderl
+			11: axis = axis_shoulderr
+			12: axis = axis_lr_3
+			_: axis = Vector2.ZERO
+		follow_position_calculations(axis)
+	elif follow_type in [3, 4, 5, 6, 7, 8]:
+		keyboard_axis = GlobalCalculations.some_keyboard_calc_wasd("follow_type", actor)
+		follow_position_calculations(keyboard_axis)
+	elif follow_type == 17 and Tracker.working:
+		match actor.get_value("udp_pos"):
+			0:
+				pass
+			1:
+				follow_position_calculations(Tracker.track_pos.normalized(), Tracker.track_pos)
+			2:
+				var multip = Vector2(TrackingBackend.osf_pos_strength, TrackingBackend.osf_pos_strength_y)
+				follow_position_calculations(Tracker.track_pupil_left.normalized(), Tracker.track_pupil_left * multip)
+			3:
+				var multip = Vector2(TrackingBackend.osf_pos_strength, TrackingBackend.osf_pos_strength_y)
+				follow_position_calculations(Tracker.track_pupil_right.normalized(), Tracker.track_pupil_right * multip)
+			4:
+				var dis = Vector2(Tracker.eye_smile_left * TrackingBackend.osf_pos_strength, Tracker.eye_smile_left * TrackingBackend.osf_pos_strength_y)
+				follow_position_calculations(Vector2(Tracker.eye_smile_left, Tracker.eye_smile_left), dis)
+			5:
+				var dis = Vector2(Tracker.eye_smile_right * TrackingBackend.osf_pos_strength, Tracker.eye_smile_right * TrackingBackend.osf_pos_strength_y)
+				follow_position_calculations(Vector2(Tracker.eye_smile_right, Tracker.eye_smile_right), dis)
+			6:
+				var dis = Vector2(Tracker.cheek_raise_left * TrackingBackend.osf_pos_strength, Tracker.cheek_raise_left * TrackingBackend.osf_pos_strength_y)
+				follow_position_calculations(Vector2(Tracker.cheek_raise_left, Tracker.cheek_raise_left), dis)
+			7:
+				var dis = Vector2(Tracker.cheek_raise_right * TrackingBackend.osf_pos_strength, Tracker.cheek_raise_right * TrackingBackend.osf_pos_strength_y)
+				follow_position_calculations(Vector2(Tracker.cheek_raise_right, Tracker.cheek_raise_right), dis)
+			8:
+				var dis = Vector2(Tracker.brow_left_final * TrackingBackend.osf_pos_strength, Tracker.brow_left_final * TrackingBackend.osf_pos_strength_y)
+				follow_position_calculations(Vector2(Tracker.brow_left_final, Tracker.brow_left_final),dis)
+			9:
+				var dis = Vector2(Tracker.brow_right_final * TrackingBackend.osf_pos_strength, Tracker.brow_right_final * TrackingBackend.osf_pos_strength_y)
+				follow_position_calculations(Vector2(Tracker.brow_right_final, Tracker.brow_right_final), dis)
+			10:
+				var dis = Vector2(Tracker.cheek_average * TrackingBackend.osf_pos_strength, Tracker.cheek_average * TrackingBackend.osf_pos_strength_y)
+				follow_position_calculations(Vector2(Tracker.cheek_average, Tracker.cheek_average), dis)
+			11:
+				var dis = Vector2(Tracker.mouth_pucker * TrackingBackend.osf_pos_strength, Tracker.mouth_pucker * TrackingBackend.osf_pos_strength_y)
+				follow_position_calculations(Vector2(Tracker.mouth_pucker, Tracker.mouth_pucker), dis)
 	else:
-		target_pos = dir * Vector2(
-			min(dist, actor.get_value("look_at_mouse_pos")),
-			min(dist, actor.get_value("look_at_mouse_pos_y"))
-		)
-	if actor.get_value("snap_pos"):
-		if target_pos.x != 0:
-			target_x = lerp(target_x, target_pos.x, actor.get_value("mouse_delay"))
-		if target_pos.y != 0:
-			target_y = lerp(target_y, target_pos.y, actor.get_value("mouse_delay"))
-		target_pos = Vector2(target_x, target_y)
-
-	if actor.sprite_type == "Sprite2D" && actor.get_value("non_animated_sheet") && actor.get_value("animate_to_mouse"):
+		target_pos = Vector2.ZERO
+	
+	var sw_x = target_pos.y if swap_x else target_pos.x
+	var sw_y = target_pos.x if swap_y else target_pos.y
+	
+	if invert_x:
+		sw_x *= -1
+	if invert_y:
+		sw_y *= -1
+	
+	final_target = Vector2(sw_x, sw_y)
+	
+	if actor.sprite_type == "Sprite2D" && actor.get_value("animate_to_mouse") && actor.get_value("non_animated_sheet"):
 		update_sprite_animation(current_dir, current_dist, _delta)
 		if !actor.get_value("animate_to_mouse_track_pos"):
-			modifier.position.x = GlobalCalculations.is_nan_or_inf(lerp(modifier.position.x, 0.0, actor.get_value("mouse_delay")))
-			modifier.position.y = GlobalCalculations.is_nan_or_inf(lerp(modifier.position.y, 0.0, actor.get_value("mouse_delay")))
+			modifier.position = modifier.position.lerp(Vector2.ZERO, actor.get_value("mouse_delay"))
 			return
-		
-	if actor.sprite_type == "Mesh" and mesh != null && is_instance_valid(mesh):
+	if actor.sprite_type == "Mesh" && mesh != null && is_instance_valid(mesh):
 		if !actor.get_value("move_with_follow"):
 			modifier.position = modifier.position.lerp(Vector2.ZERO, actor.get_value("mouse_delay"))
 			return
 
-	modifier.position.x = GlobalCalculations.is_nan_or_inf(lerp(modifier.position.x, target_pos.x, actor.get_value("mouse_delay")))
-	modifier.position.y = GlobalCalculations.is_nan_or_inf(lerp(modifier.position.y, target_pos.y, actor.get_value("mouse_delay")))
+	modifier.position = final_target
 
-func update_rotation(_dir: Vector2, delta: float) -> void:
-	if actor.get_value("follow_type2") == 15:
-		return
-	var follow_type2 = actor.get_value("follow_type2")
-	var target_rot = 0.0
-	var keyboard_axis := Vector2.ZERO
-	var normalized_axis_x = 0
+# shout out to the worst code i have ever made
+func follow_position_calculations(dir : Vector2, m_dist : Vector2 = Vector2.ZERO):
+	var dist = dir
+	
+	var min_x = actor.get_value("pos_x_min")
+	var max_x = actor.get_value("pos_x_max")
 
-	if follow_type2 in [3,4,5,6,7,8]:
-		keyboard_axis = GlobalCalculations.some_keyboard_calc_wasd("follow_type2", actor)
-		if actor.get_value("snap_rot") and not keyboard_axis.is_zero_approx():
-			target_rotation = target_rotation.lerp(keyboard_axis, 0.15)
-		else:
-			target_rotation = keyboard_axis
-	if follow_type2 == 0:
-		if actor.get_value("follow_mouse_velocity"):
-			follow_mouse_vel_rotation()
-		else:
-			var main_marker = Global.main.get_node("%Marker")
-			var screen_size = DisplayServer.screen_get_size(-1)
-			if main_marker.current_screen == Monitor.ALL_SCREENS:
-				screen_size = DisplayServer.screen_get_size(1)
-			else:
-				screen_size = DisplayServer.screen_get_size(main_marker.current_screen)
-			var mouse_x = mouse_coords.x
-			var screen_width = screen_size.x
-			var normalized_mouse = (mouse_x) / (screen_width / 2)
-			normalized_mouse = clamp(normalized_mouse, -1.0, 1.0)
-			target_rot = normalized_mouse
+	var min_y = actor.get_value("pos_y_min")
+	var max_y = actor.get_value("pos_y_max")
+	
+	if m_dist != Vector2.ZERO:
+		dist = m_dist
+	else:
+		dist = Vector2(abs(min_x) + max_x, abs(min_y) + max_y)*0.5
+		
+	var clamped_x_min = 0.0
+	var clamped_y_min  = 0.0
+	
+	if min_x != 0 && max_x == 0:
+		if dir.x <= 0:
+			clamped_x_min = dir.x * min(dist.x, abs(min_x))
 			
-	elif follow_type2 == 1: target_rot = axis_left.x
-	elif follow_type2 == 2: target_rot = axis_right.x
-	elif follow_type2 == 10: target_rot = axis_shoulderl.x
-	elif follow_type2 == 11: target_rot = axis_shoulderr.x
-	elif follow_type2 == 12: target_rot = axis_lr_3.x
-	elif follow_type2 in [3,4,5,6,7,8]:
-		target_rot = target_rotation.x
+	elif min_x == 0 && max_x != 0:
+		if dir.x >= 0:
+			clamped_x_min = dir.x * min(dist.x, max_x)
+	else:
+		var clm_x = clamp(dir.x*dist.x, -abs(dir.x*max_x), abs(dir.x*min_x))
+		clamped_x_min = clm_x
+		
+	
+	if min_y != 0 && max_y == 0:
+		if dir.y >= 0:
+			clamped_y_min = dir.y * clamp(dist.y, 0, abs(min_y))
+	
+	elif min_y == 0 && max_y != 0:
+		if dir.y <= 0:
+			clamped_y_min = dir.y * clamp(dist.y, 0, max_y)
+		
+	else:
+		var clm_y = clamp(dir.y*dist.y, -abs(dir.y*max_y), abs(dir.y*min_y))
+		clamped_y_min = clm_y
+	
+	var x = clamped_x_min
+	var y = clamped_y_min
+	
+	if actor.get_value("snap_pos"):
+		if dir.x != 0:
+			target_pos.x =  lerp(target_pos.x, x, actor.get_value("mouse_delay"))
+			current_dir.x = dir.x
+		if dir.y != 0:
+			target_pos.y = lerp(target_pos.y, y, actor.get_value("mouse_delay"))
+			current_dir.y = dir.y
+	else:
+		var t = Vector2(x, y)
 
-	var safe_rot_min = clamp(actor.sprite_data.rLimitMin, -360, 360)
-	var safe_rot_max = clamp(actor.sprite_data.rLimitMax, -360, 360)
-	var rotation_factor = lerp(actor.sprite_data.mouse_rotation, actor.sprite_data.mouse_rotation_max, max((target_rot + 1) / 2, 0.001))
-	target_rot = GlobalCalculations.is_nan_or_inf(clamp(rotation_factor, deg_to_rad(safe_rot_min), deg_to_rad(safe_rot_max)))
-
-
-	var t = actor.get_value("mouse_delay") * delta * 60.0
-	t = clamp(t, 0.0, 1.0)
-	modifier.rotation = lerp_angle(modifier.rotation, target_rot, t)
-
-func update_scale(dir: Vector2, delta: float) -> void:
-	if actor.get_value("follow_type3") == 15:
-		return
-	var follow_type3 = actor.get_value("follow_type3")
-	var keyboard_axis := Vector2.ZERO
-	if follow_type3 in [3,4,5,6,7,8]:
-		keyboard_axis = GlobalCalculations.some_keyboard_calc_wasd("follow_type3", actor)
-		if actor.get_value("snap_scale") and not keyboard_axis.is_zero_approx():
-			target_scale = target_scale.lerp(keyboard_axis, 0.15)
-		else:
-			target_scale = keyboard_axis
-
-	var x_val = 0.0
-	var y_val = 0.0
-
-	if follow_type3 == 0:
-		if actor.get_value("follow_mouse_velocity"):
-			follow_mouse_vel_scale()
-		else:
-			x_val = abs(dir.x)
-			y_val = abs(dir.y)
-	elif follow_type3 == 1:
-		x_val = abs(axis_left.x)
-		y_val = abs(axis_left.y)
-	elif follow_type3 == 2:
-		x_val = abs(axis_right.x)
-		y_val = abs(axis_right.y)
-	elif follow_type3 == 10:
-		x_val = abs(axis_shoulderl.x)
-		y_val = abs(axis_shoulderl.y)
-	elif follow_type3 == 11:
-		x_val = abs(axis_shoulderr.x)
-		y_val = abs(axis_shoulderr.y)
-	elif follow_type3 == 12:
-		x_val = abs(axis_lr_3.x)
-		y_val = abs(axis_lr_3.y)
-	elif follow_type3 in [3,4,5,6,7,8]:
-		x_val = abs(target_scale.x)
-		y_val = abs(target_scale.y)
-	var target_sx = lerp(1.0, 1.0 - actor.get_value("mouse_scale_x"), max(x_val, 0.01))
-	var target_sy = lerp(1.0, 1.0 - actor.get_value("mouse_scale_y"), max(y_val, 0.01))
-	var t = actor.get_value("mouse_delay") * delta * 60.0
-	t = clamp(t, 0.0, 1.0)
-	modifier.scale.x = GlobalCalculations.is_nan_or_inf(lerp(modifier.scale.x, target_sx, t))
-	modifier.scale.y = GlobalCalculations.is_nan_or_inf(lerp(modifier.scale.y, target_sy, t))
-
-func follow_mouse_vel_rotation():
-	var t = Vector2(-dir_vel_anim.x, 0).normalized()
-	var normalized_mouse = t.x/2
-	if abs(dir_vel_anim.x) < 10.0:
-		normalized_mouse = 0
-	normalized_mouse = clamp(normalized_mouse, -1.0, 1.0)
-	var rotation_factor = lerp(actor.get_value("mouse_rotation_max"), actor.get_value("mouse_rotation"), max(0.0, 0.5 + normalized_mouse) )
-	var safe_rot_min = clamp(actor.get_value("rLimitMin"), -360, 360)
-	var safe_rot_max = clamp(actor.get_value("rLimitMax"), -360, 360)
-	var _target_rotation = clamp(rotation_factor * deg_to_rad(90), deg_to_rad(safe_rot_min), deg_to_rad(safe_rot_max))
-	print(rotation_factor * deg_to_rad(90))
-	modifier.rotation = GlobalCalculations.is_nan_or_inf(lerp_angle(modifier.rotation, _target_rotation, actor.get_value("mouse_delay")))
-	print(modifier.rotation)
-func follow_mouse_vel_scale():
-	var t = dir_vel_anim.normalized()
-	var normalized_mouse = t/2
-
-	var norm_x = clamp(abs(normalized_mouse.x), 0.0, 1.0)
-	var norm_y = clamp(abs(normalized_mouse.y), 0.0, 1.0)
-
-	var target_scale_x = lerp(1.0, 1.0 - actor.get_value("mouse_scale_x") , max(norm_x, 0.01))
-	var target_scale_y = lerp(1.0, 1.0 - actor.get_value("mouse_scale_y"), max(norm_y, 0.01))
-	modifier.scale.x = GlobalCalculations.is_nan_or_inf(lerp(modifier.scale.x, target_scale_x, actor.get_value("mouse_delay")), true)
-	modifier.scale.y = GlobalCalculations.is_nan_or_inf(lerp(modifier.scale.y, target_scale_y, actor.get_value("mouse_delay")), true)
+		target_pos.x = lerp(target_pos.x, t.x, actor.get_value("mouse_delay"))
+		target_pos.y = lerp(target_pos.y, t.y, actor.get_value("mouse_delay"))
+		current_dir = dir
+		current_dist = target_pos.length()
 
 func update_sprite_animation(dir: Vector2, dist: float, _delta: float) -> void:
-	if actor.sprite_type != "Sprite2D" or not actor.get_value("non_animated_sheet") or not actor.get_value("animate_to_mouse"):
+	if actor.sprite_type != "Sprite2D":
 		return
+		
+	var min_x = actor.get_value("pos_x_min")
+	var max_x = actor.get_value("pos_x_max")
 
-	var dist_x = dir.x * min(dist, actor.get_value("look_at_mouse_pos"))
-	var dist_y = dir.y * min(dist, actor.get_value("look_at_mouse_pos_y"))
+	var min_y = actor.get_value("pos_y_min")
+	var max_y = actor.get_value("pos_y_max")
+	var dist_cen = Vector2(abs(min_x) + max_x, abs(min_y) + max_y)*0.5
+
+	var dist_x = dir.x * min(dist, dist_cen.x)
+	var dist_y = dir.y * min(dist, dist_cen.y)
 
 	var hframes = %Sprite2D.hframes
 	var vframes = %Sprite2D.vframes
 
-	var norm_x = (dist_x / (2.0 * actor.get_value("look_at_mouse_pos"))) + 0.5
-	var norm_y = (dist_y / (2.0 * actor.get_value("look_at_mouse_pos_y"))) + 0.5
+	var norm_x = (dist_x / (2.0 * dist_cen.x)) + 0.5
+	var norm_y = (dist_y / (2.0 * dist_cen.y)) + 0.5
 
 	var frame_x = clamp(floor(norm_x * hframes), 0, hframes - 1)
 	var frame_y = clamp(floor(norm_y * vframes), 0, vframes - 1)
@@ -397,3 +310,6 @@ func update_sprite_animation(dir: Vector2, dist: float, _delta: float) -> void:
 
 	%Sprite2D.frame_coords.x = floor(frame_h)
 	%Sprite2D.frame_coords.y = floor(frame_v)
+
+func _on_sprite_object_visibility_changed() -> void:
+	rest = !actor.is_visible_in_tree()

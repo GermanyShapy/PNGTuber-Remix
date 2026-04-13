@@ -1,8 +1,7 @@
 extends Node
 
-@export var actor: SpriteObject
+@export var actor : SpriteObject
 @export var mesh : CustomMesh = null
-
 var modifier_node: Node2D
 var sprite_node: Node
 
@@ -35,13 +34,16 @@ var should_rot_rotation: float = 0.0
 var rot_drag: float = 0.0
 var no_bounce_rot_drag: float = 0.0
 var no_bounce_stretch: Vector2 = Vector2.ONE
-
+var calc_length : float = 0.0
 var was_rainbow: bool = true
 var rot_frquecy: float = 0.0
 var rdrag_str: float = 0.0
 var stretch_amount: float = 0.0
+
+var ik_smoothed_rot : float = 0.0
+var ik_angular_velocity : float = 0.0
+
 var shadow_target : Vector2 = Vector2.ZERO
-var last_modifier_position = Vector2(0,0)
 
 var c_parent_movement
 var no_bounce : bool = false
@@ -54,9 +56,14 @@ var last_movement_transform : Transform2D = Transform2D.IDENTITY # %Modifier
 var last_glob_transform : Transform2D = Transform2D.IDENTITY # %Modifier
 var last_no_bounce_transform : Transform2D = Transform2D.IDENTITY # %Modifier
 
+var last_mouse_position : Vector2 = Vector2.ZERO
+var last_dist : Vector2 = Vector2.ZERO
+var applied_pos_offset : Vector2 = Vector2.ZERO
+
+var modifier_global : Vector2 =  Vector2.ZERO
+var yvel : float = 0.0
+
 func _ready() -> void:
-	modifier_node = %Modifier
-	sprite_node =  %Sprite2D
 	
 	init_position.call_deferred()
 
@@ -67,6 +74,12 @@ func init_position():
 	applied_pos = placeholder_position
 	applied_rotation = 0.0
 	applied_scale = Vector2.ONE
+	glob = placeholder_position
+	await get_tree().create_timer(0.025).timeout
+	ik_smoothed_rot = actor.modifier1_node.global_rotation
+	last_modifier_position = sprite_node.global_position
+	actor.dragger.top_level = true
+	actor.dragger.global_position = modifier_node.global_position
 	shadow_dragger = applied_pos
 	no_bounce_shadow_dragger = applied_pos
 	modifier_node.rotation = 0.0
@@ -76,6 +89,8 @@ func init_position():
 	stretch_amount = actor.get_value("stretchAmount")
 
 func _physics_process(delta: float) -> void:
+	modifier_global = actor.modifier1.global_position
+	placeholder_position = actor.modifier1.position
 	c_parent_movement = get_c_parent_movement()
 	rot_frquecy = actor.get_value("rot_frq")
 	rdrag_str = actor.get_value("rdragStr")
@@ -85,13 +100,16 @@ func _physics_process(delta: float) -> void:
 	(Global.sprite_container.movement_physics_process_stack).push_back(self.movement_physics_process)
 
 func movement_physics_process(delta: float) -> void:
-	follow_wiggle(delta)
+	if !actor.get_value("follow_wa_tip"):
+		follow_point_rot = 0.0
+	else:
+		follow_wiggle(delta)
 	placeholder_position = actor.modifier1.global_position
 	applied_pos =  placeholder_position
 	
 	# Calculate movement data in diffrent mode
 	if !Global.static_view:
-		if actor.rest_mode == 0 or actor.rest_mode == 5:
+		if actor.rest_mode == 0 or actor.rest_mode == 4:
 			modifier_node.position = Vector2.ZERO
 			modifier_node.rotation = 0.0
 			modifier_node.scale = Vector2.ONE
@@ -138,24 +156,45 @@ func movement_physics_process(delta: float) -> void:
 		index_change_len_y = index_change_len_y * actor.get_value("index_change_y")
 		modifier_node.z_index = floori(index_change_len + index_change_len_y)
 	
+	shadow_target = modifier_node.global_position + actor.follow_componet.final_target
 	if mesh != null and is_instance_valid(mesh) and actor.sprite_type == "Mesh":
 		var can_deform : bool = false
-		if is_instance_valid(Global.mesh_text_node):
+		if is_instance_valid(Global.mesh_text_node) && Global.mode == 2:
 			can_deform = Global.mesh_text_node.deform
-		if !mesh.editable && !can_deform:
-			var mesh_len = last_wobble_pos + actor.follow_componet.target_pos + (actor.modifier1.global_position - last_modifier_position )
+			var mesh_len = last_wobble_pos + actor.follow_componet.final_target + (actor.modifier1.global_position - last_modifier_position )
+		if can_deform:
+			return
+			
+		if Global.static_view:
+			mesh.deform_x = 0.5
+			mesh.deform_y = 0.5
+		else:
+			var t : Vector2 = (last_modifier_position - %Origin.global_position)
+			var mesh_len = (last_wobble_pos + follow_component.final_target )
 			var amp = Vector2(actor.get_value("xAmp"), actor.get_value("yAmp"))
-			var follow_amp = Vector2(actor.get_value("look_at_mouse_pos"), actor.get_value("look_at_mouse_pos_y"))
-			var final_amp = amp  + follow_amp + Vector2(25,25)
-			var safe_deform_pos = mesh.apply_wobble_to_deformer(mesh_len, delta, final_amp, final_amp.length())
+			var middle_x = (abs(actor.get_value("pos_x_min"))+ actor.get_value("pos_x_max"))*0.5
+			var middle_y = (abs(actor.get_value("pos_y_min"))+ actor.get_value("pos_y_max"))*0.5
+			var follow_amp = Vector2(middle_x, middle_y)
+			var final_amp = amp  + follow_amp 
+			if actor.get_value("physics"):
+				mesh_len +=   t
+				var dir = Vector2(actor.get_value("mesh_phys_x"), actor.get_value("mesh_phys_y")).normalized()
+				final_amp -=  (Vector2(300,300) -  abs(Vector2(actor.get_value("mesh_phys_x"), actor.get_value("mesh_phys_y"))))*dir
+				
+			var safe_deform_pos
+			if Tracker.working:
+				safe_deform_pos = mesh.apply_wobble_to_deformer(mesh_len , delta, final_amp, 0.08)
+				
+			else:
+				safe_deform_pos = mesh.apply_wobble_to_deformer(mesh_len, delta, final_amp, 0.15)
 			if abs(safe_deform_pos.x) != 0:
 				mesh.deform_x = safe_deform_pos.x
-				mesh.update_physics(delta, false)
 			if abs(safe_deform_pos.y) != 0:
 				mesh.deform_y = safe_deform_pos.y
-				mesh.update_physics(delta, false)
 			
-		last_modifier_position.lerp(actor.modifier1.global_position, 0.08)
+			mesh.call_deferred("update_physics", delta, false)
+	
+		last_modifier_position = last_modifier_position.lerp(%Origin.global_position,0.125 )
 	# Record the transforms
 	last_follow_global_transform = actor.modifier1.global_transform
 	last_follow_transform = actor.modifier1.transform
@@ -179,14 +218,14 @@ func static_obj_process(delta):
 		
 	actor.global_transform = current_transform
 
-func static_prev():
-	modifier_node.position = Vector2(0,0)
+func static_prev() -> void:
+	modifier_node.position = Vector2.ZERO
 	modifier_node.rotation = 0.0
-	modifier_node.scale = Vector2(1,1)
+	modifier_node.scale = Vector2.ONE
+	modifier1_node.position = Vector2.ZERO
+	modifier1_node.rotation = 0.0
+	modifier1_node.scale = Vector2.ONE
 	sprite_node.self_modulate = actor.get_value("tint")
-	actor.modifier1.position = Vector2.ZERO
-	actor.modifier1.rotation = 0.0
-	actor.modifier1.scale = Vector2(1,1)
 	modifier_node.z_index = 0
 
 func get_c_parent_movement() -> Node:
@@ -230,6 +269,7 @@ func movements(delta):
 	
 	glob = shadow_dragger
 	no_bounce_glob = no_bounce_shadow_dragger
+	apply_recursive_look_at_chain(actor)
 
 	drag(delta, no_bounce)
 	wobble(delta)
@@ -276,7 +316,42 @@ func movements(delta):
 		#+ " |> nb_glob: " + str("[{x}, {y}]").format({"x": "%8.3f" % no_bounce_glob.x, "y": "%8.3f" % no_bounce_glob.y}) 
 		#)
 	
-func rest_mode_movements(delta):
+		return
+	if actor_node.target_ik != null and is_instance_valid(actor_node.target_ik):
+		var root = actor_node.get_node("%Origin")
+		var target = actor_node.target_ik.get_node("%Origin")
+		if root != null and target != null:
+			var target_pos: Vector2 = target.global_position - root.global_position
+			apply_look_at_ik(target_pos, actor_node.get_node("%Rotation"))
+			
+			var ik_chain =  actor_node.target_ik.target_ik
+			if ik_chain != null && is_instance_valid(ik_chain):
+				var target_pos_2: Vector2 = ik_chain.get_node("%Origin").global_position - root.global_position
+				apply_look_at_ik(target_pos_2, actor_node.get_node("%Rotation"))
+				
+			if actor_node.has_node("%Sprite2D"):
+				var sprite_root = actor_node.get_node("%Sprite2D")
+				for child in sprite_root.get_children():
+					if child is SpriteObject && is_instance_valid(child):
+						apply_recursive_look_at_chain(child)
+		else:
+			%Rotation.rotation = 0.0
+	else:
+		%Rotation.rotation = 0.0
+
+func apply_look_at_ik(target_pos: Vector2, rotation_node : Node2D) -> void:
+	var chain_softness: float = actor.get_value("chain_softness")
+	var rot_min: float = actor.get_value("chain_rot_min")
+	var rot_max: float = actor.get_value("chain_rot_max")
+	var bone_len: float = actor.get_value("bone_length")
+	var rigidity = 1.0/ max(chain_softness, 0.0001)
+	var lerp_amount = clamp(target_pos.length() / max(bone_len, 0.001) * rigidity, 0.0, 1.0)
+	var target_angle_global = target_pos.normalized().angle()
+	target_angle_global = wrapf(target_angle_global, -PI, PI)
+	target_angle_global = clamp(target_angle_global, rot_min, rot_max)
+	rotation_node.global_rotation = lerp_angle(rotation_node.global_rotation,target_angle_global,lerp_amount)
+
+func rest_mode_movements(delta : float) -> void:
 	if Global.static_view:
 		return
 	# the root node calculate the original no_bounce_shadow_dragger
@@ -346,9 +421,20 @@ func rest_mode_movements(delta):
 			relative_glob + no_bounce_shadow_dragger
 		)
 
+func add_parent_physics(length : float) -> float:
+	var leng = length
+	if !actor.get_value("physics"):
+		return leng
+	var p = actor.get_parent()
+	if (p is Sprite2D or p is WigglyAppendage2D or p is CustomMesh)  && is_instance_valid(p):
+			var c_parent = actor.get_parent().owner
+			if c_parent != null && is_instance_valid(c_parent):
+				leng += c_parent.get_node("%Movements").calc_length
+	return leng
+
 func drag(_delta, no_bounce = false):
 	var drag_speed = actor.get_value("dragSpeed")
-	var target = applied_pos
+	var target = modifier_node.global_position + last_wobble_pos
 	if drag_speed < 1.0:
 		drag_speed = 1.0
 		
@@ -416,6 +502,7 @@ func emulate_drag_stretch(last_stretch, length, delta: float) -> Vector2:
 	return lerp(last_stretch, Vector2(1.0-yvel,1.0+yvel), 0.1)
 
 func rotationalDrag(length, delta: float):
+func rotational_drag(length, delta: float):
 	if rot_frquecy == 0.0:
 		last_rot = 0
 		if rdrag_str == 0.0 and rot_drag == 0.0:
@@ -426,88 +513,69 @@ func rotationalDrag(length, delta: float):
 		else:
 			last_rot = sin((Global.tick-paused_rotation) * rot_frquecy) * deg_to_rad(rdrag_str)
 	
-	rot_drag = lerp_angle(rot_drag, last_rot, 0.15)
-	var yvel = 0.0
-	if rdrag_str != 0.0:
-		yvel = ((length * actor.get_value("rdrag_str"))* 0.5)
-		yvel = clamp(yvel,actor.get_value("rLimitMin"),actor.get_value("rLimitMax"))
+	applied_rotation = lerp_angle(applied_rotation, last_rot, 0.15)
+	yvel = ((length * actor.get_value("rdragStr")))*(actor.get_value("phys_eff")/200.0)
 	
-	rot_drag = lerp_angle(rot_drag,deg_to_rad(yvel),0.08)
+	#Calculate Max angle
+	yvel = clamp(yvel,actor.get_value("rLimitMin"),actor.get_value("rLimitMax"))
+	applied_rotation = lerp_angle(applied_rotation,deg_to_rad(yvel),0.15)
 
-func stretch(length, _delta):
-	if stretch_amount == 0.0 and modifier_node.scale == Vector2.ONE:
-		return # no need to stretch
-		
-	var yvel = (length * stretch_amount * 0.01)
-	var target = Vector2(1.0-yvel,1.0+yvel)
-	
-	applied_scale = lerp(modifier_node.scale,target,0.1)
-	#modifier_node.scale
+func stretch(length : float) -> void:
+	var syvel : float = (length * actor.get_value("stretchAmount") * 0.01)* (actor.get_value("phys_eff")/200.0)
+	var target : Vector2 = Vector2(1.0 - syvel, 1.0 + syvel)
+	modifier_node.scale = modifier_node.scale.lerp(target, 0.15)
 
-var points_cache: Array = []
-var points_dirty: bool = true
-
-func follow_wiggle(_delta):
-	if not actor.get_value("follow_wa_tip"):
-		follow_point_rot = 0.0
-		return
+func follow_wiggle(_delta : float) -> void:
 	var parent = actor.get_parent()
-	if not is_instance_valid(parent) or not (parent is WigglyAppendage2D):
+	if !parent or !(parent is WigglyAppendage2D):
 		follow_point_rot = 0.0
 		return
-	var tip_index = clamp(actor.get_value("tip_point"), 0, parent.points.size() - 1)
-	var raw_tip = parent.points[tip_index]
-	var global_raw_tip = parent.to_global(parent.points[tip_index])
-	var speed_strength = actor.get_value("follow_strength")
-	if not has_prev:
-		prev_smoothed_pos = global_raw_tip
-		has_prev = true
-	var d = prev_smoothed_pos.distance_to(global_raw_tip)
-	var w = clamp(d * speed_strength, 0.0, 1.0)
-	var smoothed = prev_smoothed_pos.lerp(global_raw_tip, w)
-	prev_smoothed_pos = smoothed
-	var parent_pos = actor.modifier1.global_position
-	var final_pos = smoothed.lerp(parent_pos, actor.get_value("follow_strength"))
-	actor.modifier1.global_position = final_pos
+
+	var tip_index : int = clamp(actor.get_value("tip_point"), 0, parent.points.size() - 1)
+	var raw_tip : Vector2 = parent.to_global(parent.points[tip_index])
+	var real_tip : Vector2 = parent.points[tip_index]
+	var local_tip : Vector2 = actor.to_local(raw_tip)
 	
-	var prev_point_pos
+	if !has_prev:
+		prev_smoothed_pos = local_tip
+		has_prev = true
+
+	var d : float = prev_smoothed_pos.distance_to(local_tip)
+	var w : float = clamp(d * actor.get_value("follow_strength"), 0.0, 1.0)
+	prev_smoothed_pos = prev_smoothed_pos.lerp(local_tip, w)
+
+	applied_pos = prev_smoothed_pos
+
+	var prev_point : Vector2 = local_tip
 	if tip_index > 0:
-		prev_point_pos = parent.points[tip_index - 1]
-	else:
-		prev_point_pos = raw_tip - Vector2(cos(parent._rest_direction_angle), sin(parent._rest_direction_angle))
-	var dir = raw_tip - prev_point_pos
-	if dir == Vector2.ZERO:
-		dir = Vector2(cos(parent._rest_direction_angle), sin(parent._rest_direction_angle))
-	var dir_angle = atan2(dir.y, dir.x)
-	var rest_angle = parent._rest_direction_angle
-	var min_angle = deg_to_rad(actor.get_value("follow_wa_mini")) + rest_angle
-	var max_angle = deg_to_rad(actor.get_value("follow_wa_max")) + rest_angle
-	var rel_angle = wrapf(dir_angle - rest_angle, -PI, PI)
-	var target_ang = rest_angle + rel_angle
+		prev_point = parent.points[tip_index - 1]
+
+	var dir : Vector2 = real_tip - prev_point
+	
+	var rest_angle : float = parent._rest_direction_angle
+	var target_ang : float = wrapf(dir.rotated(-rest_angle).angle(), -PI, PI)
 
 	if abs(target_ang - biased) < actor.get_value("rotation_threshold"):
 		return
 
-	_b = target_ang
-	biased = lerp(biased, _b, actor.get_value("follow_strength"))
-	follow_point_rot = GlobalCalculations.clamp_angle(biased, min_angle, max_angle, rest_angle)
+	biased = lerp(biased, target_ang, actor.get_value("follow_strength"))
+	follow_point_rot = clamp(biased, deg_to_rad(actor.get_value("follow_wa_mini")), deg_to_rad(actor.get_value("follow_wa_max")))
 
-func rainbow(delta):
+func rainbow(delta : float) -> void:
 	if Global.mode != 0 and actor.get_value("hidden_item"):
 		sprite_node.self_modulate.a = 0.0
 		return
 
 	if actor.get_value("rainbow"):
-		was_rainbow = true
-		var h_speed = actor.get_value("rainbow_speed") * delta
-		if not actor.get_value("rainbow_self"):
-			sprite_node.self_modulate.s = 0
-			modifier_node.modulate.s = 1
-			modifier_node.modulate.h = wrap(modifier_node.modulate.h + h_speed, 0, 1)
+		var h_speed : float = actor.get_value("rainbow_speed") * delta
+		if actor.get_value("rainbow_self"):
+			sprite_node.self_modulate.s = 1.0
+			modifier_node.modulate.s = 0.0
+			sprite_node.self_modulate.h = wrap(sprite_node.self_modulate.h + h_speed, 0.0, 1.0)
 		else:
-			modifier_node.modulate.s = 0
-			sprite_node.self_modulate.s = 1
-			sprite_node.self_modulate.h = wrap(sprite_node.self_modulate.h + h_speed, 0, 1)
+			sprite_node.self_modulate.s = 0.0
+			modifier_node.modulate.s = 1.0
+			modifier_node.modulate.h = wrap(modifier_node.modulate.h + h_speed, 0.0, 1.0)
 	else:
 		if was_rainbow:
 			sprite_node.self_modulate = actor.get_value("tint")
@@ -516,11 +584,6 @@ func rainbow(delta):
 
 func auto_rotate():
 	should_rot_rotation += actor.get_value("should_rot_speed")
-
-func _frame_lerp(delta: float, base_t := 0.15) -> float:
-	var fps = max(30.0, Engine.max_fps)
-	var per_second_k = -log(1.0 - clamp(base_t, 0.001, 0.999)) * fps
-	return clamp(1.0 - exp(-per_second_k * clamp(delta, 0.0, 1.0)), 0.0, 1.0)
 
 func _on_sprite_object_visibility_changed() -> void:
 	rest = !actor.is_visible_in_tree() if !(actor == null) else false
