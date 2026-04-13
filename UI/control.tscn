@@ -612,7 +612,7 @@ light_mask = 0
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="LabelMouseInputArea" type="Button" parent="MainSplit/SecondarySplit/RightPanel/Margin/VBoxContainer/VSplit/StatePanel"]
+[node name="LabelMouseInputArea" type="Button" parent="MainSplit/SecondarySplit/RightSide/RightPanel/Margin/VBoxContainer/VSplit/StatePanel"]
 custom_minimum_size = Vector2(350, 30)
 layout_mode = 2
 mouse_filter = 2

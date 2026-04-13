@@ -1,7 +1,7 @@
 ; Engine configuration file.
 ; It's best edited using the editor UI and not directly,
 ; since the parameters that go here are not all obvious.
-; 
+;
 ; Format:
 ;   [section] ; section goes between []
 ;   param=value ; assign values to parameters
@@ -11,6 +11,7 @@ config_version=5
 [application]
 
 config/name="PNGTube-Remix"
+config/description="No Description"
 config/version="1.4.5"
 run/main_scene="uid://ckgt30cxu04dj"
 run/print_header=false
@@ -25,7 +26,6 @@ boot_splash/image="res://SplashImage.png"
 config/icon="res://PicklesSurprised.png"
 config/macos_native_icon="res://PicklesSurprisedre.icns"
 config/windows_native_icon="res://PicklesSurprised.ico"
-config/description="No Description"
 
 [audio]
 
@@ -353,9 +353,6 @@ debug_rep={
 ]
 }
 
-[input_devices]
-
-
 [internationalization]
 
 locale/translations=PackedStringArray("res://Localization/translations.en.translation", "res://Localization/translations.ru.translation", "res://Localization/zh/cn/zh_cn.zh_CN.translation")
@@ -386,4 +383,3 @@ lights_and_shadows/positional_shadow/soft_shadow_filter_quality=1
 environment/ssao/quality=1
 2d/sdf/oversize=0
 2d/sdf/scale=2
-

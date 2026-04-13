@@ -390,7 +390,7 @@ func get_value(key: String) -> Variant:
 
 func set_blend(blend):
 	match  blend:
-		# TODO Completely upgrade other blend mode(SpriteShader)£º Burn, HardMix, Cursed
+		# TODO Completely upgrade other blend mode(SpriteShader)ï¼š Burn, HardMix, Cursed
 		"Normal":
 			(sprite_object.material as ShaderMaterial).shader = sprite_normal_shader
 			sprite_object.material.set_shader_parameter("enabled", false)

@@ -173,14 +173,14 @@ step = 0.1
 value = 0.1
 script = ExtResource("1_tcd20")
 
-[node name="SkewYLabel" type="Label" parent="VBoxContainer/Layouts/HBox10"]
+[node name="SkewYLabel" type="Label" parent="VBoxContainer/Layouts"]
 custom_minimum_size = Vector2(74, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_font_sizes/font_size = 15
 text = "TR_SKEW_Y"
 
-[node name="SkewSpinYBox" type="SpinBox" parent="Scroll/MarginContainer/VBoxContainer/Layouts/HBox10"]
+[node name="SkewSpinYBox" type="SpinBox" parent="VBoxContainer/Layouts"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -193,8 +193,6 @@ script = ExtResource("1_tcd20")
 [node name="Sp3" type="HSeparator" parent="VBoxContainer" unique_id=690604835]
 layout_mode = 2
 
-[node name="Sp3" type="HSeparator" parent="Scroll/MarginContainer/VBoxContainer"]
-layout_mode = 2
 theme_override_constants/separation = 5
 
 [node name="Label2" type="Label" parent="VBoxContainer" unique_id=1285211584]

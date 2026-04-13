@@ -374,7 +374,7 @@ expand_icon = true
 [connection signal="empty_clicked" from="ShouldDisListContainer/ShouldDisList" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_dis_list_empty_clicked"]
 [connection signal="focus_exited" from="ShouldDisListContainer/ShouldDisList" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_dis_list_focus_exited"]
 [connection signal="item_selected" from="ShouldDisListContainer/ShouldDisList" to="Buttons/HBoxAsset/IsAssetButton" method="_on_should_dis_list_item_selected"]
-[connection signal="changed" from="CycleGrid/CheckBox" to="." method="_on_is_cycle_checkbox_changed"]
+[connection signal="toggled" from="CycleGrid/CheckBox" to="." method="_on_is_cycle_checkbox_changed"]
 [connection signal="item_selected" from="CycleGrid/CycleChoiceSprite" to="." method="_on_cycle_choice_sprite_item_selected"]
 [connection signal="item_selected" from="HBoxContainer/CycleChoice" to="." method="_on_cycle_choice_item_selected"]
 [connection signal="pressed" from="HBoxContainer/AddCycle" to="." method="_on_add_cycle_pressed"]

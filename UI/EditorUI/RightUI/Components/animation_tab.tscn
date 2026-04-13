@@ -73,7 +73,7 @@ sp_type = ""
 seen_type = "Comment"
 value_to_update = "should_reset_state"
 
-[node name="NeverReset" type="CheckBox" parent="Scroll/MarginContainer/VBoxContainer/GridContainer"]
+[node name="NeverReset" type="CheckBox" parent="VBoxContainer/GridContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
