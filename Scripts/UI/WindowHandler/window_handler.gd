@@ -46,7 +46,11 @@ func remove_window(window: ExtraWindow) -> void:
 
 func lock_window(window: ExtraWindow) -> void:
 	if !is_instance_valid(window): return
+	var window_size = window.size
+	var window_pos = window.position
 	window.borderless = true
+	window.position = window_pos
+	window.size = window_size
 	window.button.hide()
 
 func update_theme(new_theme: Theme) -> void:
@@ -55,6 +59,10 @@ func update_theme(new_theme: Theme) -> void:
 
 func unlock_windows() -> void:
 	for window in windows:
+		var window_size = window.size
+		var window_pos = window.position
 		window.borderless = false
+		window.size = window_size
+		window.position = window_pos
 		window.button.show()
 		window.button.release_focus()

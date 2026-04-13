@@ -93,6 +93,7 @@ func follow_calculation(_delta = 0.0):
 		
 	var main_marker = Global.main.get_node("%Marker")
 	
+	#return mouse_coords
 	if WindowHandler.windows:
 		mouse_coords = Vector2.ZERO
 		if main_marker.current_screen == Monitor.ALL_SCREENS:

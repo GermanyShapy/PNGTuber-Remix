@@ -324,7 +324,6 @@ debug_rep={
 
 [input_devices]
 
-pen_tablet/driver.windows="auto"
 buffering/agile_event_flushing=true
 
 [internationalization]
