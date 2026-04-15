@@ -220,6 +220,7 @@ func get_state(id):
 		
 		modifier1.z_index = get_value("z_index")
 		modulate = get_value("colored")
+		sprite_object.self_modulate = get_value("tint")
 		apply_transform()
 	#	use apply_transform to update all
 	#	global_position = get_value("global_position")
@@ -254,7 +255,7 @@ func get_state(id):
 		if get_value("fade"):
 			trigger_fade(visible)
 		else:
-			modulate.a = 1.0
+			modulate.a = get_value("colored").a
 			visible = get_value("visible")
 		
 			
