@@ -197,7 +197,7 @@ func advanced_lipsyc():
 			sprite_object.frame_coords.x = 13
 
 func save_state(id):
-	if sprite_name == "°´×ó":
+	if sprite_name == "æŒ‰å·¦":
 		pass
 	var dict : Dictionary = sprite_data.duplicate(true)
 	states[id] = dict
@@ -227,9 +227,9 @@ func get_state(id):
 		var drag_snap = get_value("drag_snap")
 		if (global_position - old_glob).length() > drag_snap && drag_snap != 999999.0:
 			modifier.global_position = modifier1.global_position
+			dragger.global_position = modifier.global_position
 		
 		sprite_object.set_clip_children_mode(get_value("clip"))
-			%Dragger.global_position = %Modifier.global_position
 		
 		sprite_object.material.set_shader_parameter("wiggle", get_value("wiggle"))
 		sprite_object.material.set_shader_parameter("rotation_offset", get_value("wiggle_rot_offset"))

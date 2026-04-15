@@ -134,12 +134,11 @@ func get_state(id):
 	
 		var old_glob = global_position
 		apply_transform()
-			%Dragger.global_position = %Modifier.global_position
 		
 		var drag_snap = get_value("drag_snap")
 		if (global_position - old_glob).length() > drag_snap && drag_snap != 999999.0:
 			modifier.global_position = modifier1.global_position
-		
+			dragger.global_position = modifier.global_position
 		
 		sprite_object.position = get_value("offset") 
 		sprite_object.scale = Vector2(1,1)

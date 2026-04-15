@@ -8,4 +8,5 @@ physics_interpolation_mode = 2
 script = ExtResource("1_jwel8")
 
 [node name="Cycle" type="Node" parent="." unique_id=124913555]
+unique_name_in_owner = true
 script = ExtResource("1_13c7p")

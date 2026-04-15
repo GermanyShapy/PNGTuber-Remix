@@ -34,6 +34,12 @@ func enable():
 
 func set_data():
 	should_change = false
+	for i in Global.held_sprites:
+		%RSSlider.value = i.get_value("rainbow_speed")
+		if i.sprite_type == "Sprite2D":
+			%NonAnimatedSheetCheck.button_pressed = i.get_value("non_animated_sheet")
+			%FrameSpinbox.value = i.get_value("frame")
+			%FrameSpinbox.max_value = (i.get_node("%Sprite2D").hframes * i.get_node("%Sprite2D").vframes) - 1
 		else:
 			%NonAnimatedSheetCheck.button_pressed = false
 			%AnimateToMouse.disabled = true

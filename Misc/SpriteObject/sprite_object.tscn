@@ -117,9 +117,6 @@ actor = NodePath("..")
 [node name="FollowScale" parent="." index="5" unique_id=1127925180 node_paths=PackedStringArray("actor")]
 actor = NodePath("..")
 
-[node name="Movements" parent="." index="7" unique_id=941197373 node_paths=PackedStringArray("actor")]
-actor = NodePath("..")
-
 [node name="AnimatedSpriteTexture" parent="." index="8" unique_id=1705399464 node_paths=PackedStringArray("sprite_node")]
 sprite_node = NodePath("../Modifier1/Rotation/Modifier/Sprite2D")
 

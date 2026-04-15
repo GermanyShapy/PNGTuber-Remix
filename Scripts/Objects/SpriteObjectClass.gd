@@ -241,7 +241,7 @@ var reaction_config = %ReactionConfig
 var modifier : Node2D = %Modifier
 var modifier1 : Node2D = %Modifier1
 var movements = %Movements
-var follow_componet = %FollowComponent
+var follow_componet = %FollowPosition
 var dragger : Node2D = %Dragger #create for movement.gd
 
 @export var sprite_object : Node2D

@@ -148,7 +148,7 @@ func update_hotkey_event(event):
 	
 	hotkey_event = (event as InputEvent).duplicate()
 	update_key_text()
-	TopBarInput.desel_everything()
+	Global.deselect.emit()
 
 func _on_hotkey_name_text_submitted(new_text):
 	if hotkey_name == new_text:
