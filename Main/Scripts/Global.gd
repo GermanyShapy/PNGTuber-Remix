@@ -214,7 +214,7 @@ func load_sprite_states(state):
 
 func get_sprite_states(state):
 	var group_sprites: Array[Node] = get_tree().get_nodes_in_group("Sprites")
-	if state != current_state and is_editor:
+	if is_editor:
 		for i in group_sprites:
 			i.save_state(current_state)
 		print("save_current_state: " + str(state))
