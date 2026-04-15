@@ -332,7 +332,7 @@ func _on_visible_toggled(toggled_on):
 		UndoRedoManager.push_data(undo_redo_data)
 
 func _on_z_order_spinbox_value_changed(value):
-	if should_change:
+	if not should_change:
 		return
 	init_undo_on_focus(%ZOrderSpinbox)
 	for i in Global.held_sprites:
