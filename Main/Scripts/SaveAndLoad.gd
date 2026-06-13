@@ -389,6 +389,15 @@ func load_objects(load_dict: Dictionary) -> void:
 			sprite_obj = preload("res://Misc/SpriteObject/sprite_object.tscn").instantiate()
 			set_common_data(sprite, sprite_obj)
 			load_normal_objects(load_dict, sprite, sprite_obj)
+			
+	# Cycle fix: set the cycle choice index for the sprite in cycle.sprites list
+	for sprite in get_tree().get_nodes_in_group("Sprites"):
+		for index in Global.settings_dict.cycles.size():
+			if  sprite.sprite_id in Global.settings_dict.cycles[index].sprites:
+				sprite.sprite_data.cycle = index + 1
+				sprite.sprite_data.is_cycle = true
+				sprite.sync_sprite_cycle_in_states()
+				continue
 
 func set_common_data(sprite, sprite_obj):
 	sprite_obj.layer_color = sprite.get("layer_color", Color.BLACK)

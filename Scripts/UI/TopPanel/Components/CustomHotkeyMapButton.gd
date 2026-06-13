@@ -129,10 +129,15 @@ func update_hotkey_event(event):
 
 	for sprite: SpriteObject in hotkey_disappear_sprites:
 		var dis_action_events = InputMap.action_get_events(sprite.disappear_keys)
+		var changed_hotkey: Array = []
 		for id in dis_action_events.size():
 			if is_same_hotkey_event(hotkey_event, dis_action_events[id]):
-				var new_event = (event as InputEvent).duplicate()
-				dis_action_events.set(id, new_event)
+				changed_hotkey.append(dis_action_events.get(id))
+		
+		for old_event in changed_hotkey:
+			var new_event = (event as InputEvent).duplicate()
+			InputMap.action_erase_event(sprite.disappear_keys, old_event)
+			InputMap.action_add_event(sprite.disappear_keys, new_event)
 	
 	for cycle in hotkey_cycles:
 		var toggle_event = cycle.toggle
