@@ -101,6 +101,7 @@ func movement_physics_process(delta: float) -> void:
 			if actor.rest_mode == 6:
 				last_wobble_pos = Vector2.ZERO
 				paused_wobble = Vector2.ZERO
+				paused_rotation = 0.0
 				should_rot_rotation = 0.0
 			rest_mode_movements(delta)
 		else:
@@ -391,10 +392,9 @@ func update_last_rot_frquecy(delta: float):
 	if rot_frquecy == 0.0:
 		last_rot = 0.0
 	else:
-		if false: # actor.get_value("pause_movement"):
-			paused_rotation += delta if Global.settings_dict.should_delta else 1.
-		else:
-			last_rot = sin((Global.tick-paused_rotation) * rot_frquecy) * deg_to_rad(rdrag_str)
+		var offset = delta if Global.settings_dict.should_delta else 1.0
+		paused_rotation += offset
+		last_rot = sin(paused_rotation * rot_frquecy) * deg_to_rad(rdrag_str)
 
 func emulate_drag_rotation(last_rot_drag, length, delta: float) -> float:
 	if rdrag_str == 0.0 and last_rot_drag == 0.0:

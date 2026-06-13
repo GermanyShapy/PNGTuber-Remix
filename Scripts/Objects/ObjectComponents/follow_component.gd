@@ -361,9 +361,9 @@ func follow_mouse_vel_rotation():
 	var safe_rot_min = clamp(actor.get_value("rLimitMin"), -360, 360)
 	var safe_rot_max = clamp(actor.get_value("rLimitMax"), -360, 360)
 	var _target_rotation = clamp(rotation_factor * deg_to_rad(90), deg_to_rad(safe_rot_min), deg_to_rad(safe_rot_max))
-	print(rotation_factor * deg_to_rad(90))
+	
 	modifier.rotation = GlobalCalculations.is_nan_or_inf(lerp_angle(modifier.rotation, _target_rotation, actor.get_value("mouse_delay")))
-	print(modifier.rotation)
+	
 func follow_mouse_vel_scale():
 	var t = dir_vel_anim.normalized()
 	var normalized_mouse = t/2

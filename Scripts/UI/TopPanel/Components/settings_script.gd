@@ -104,7 +104,8 @@ func append_unique_hotkey_to_dict(hotkey_event: InputEvent, dict: Dictionary):
 	for e in dict.values():
 		if CustomHotkeyMapButton.is_same_hotkey_event(e, hotkey_event):
 			return
-
+	if hotkey_event.as_text() == "Ctrl+7":
+		pass
 	dict[hotkey_event.as_text()] = hotkey_event.duplicate()
 
 func init_hotkey_list():

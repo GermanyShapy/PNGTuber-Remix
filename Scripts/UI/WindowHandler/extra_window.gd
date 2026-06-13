@@ -19,7 +19,7 @@ var mouse_pos :Vector2i = Vector2()
 var updated_image :Image
 var update_buffer_lock :bool = false
 
-var test_frame = 0
+#var test_frame = 0
 
 func _init(world: World2D, remove_window: Callable, lock_window: Callable, other_camera: Camera2D, container_material: ShaderMaterial, effects_material: ShaderMaterial) -> void:
 	content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
@@ -39,6 +39,7 @@ func _init(world: World2D, remove_window: Callable, lock_window: Callable, other
 	effects.texture = viewport.get_texture()
 	effects.material = effects_material
 	effects.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	effects.stretch_mode = TextureRect.STRETCH_KEEP
 	
 	hide()
 	size = WINDOW_SIZE
@@ -110,14 +111,14 @@ func _physics_process(delta: float) -> void:
 				polygon[index] *= scale
 			mouse_passthrough_polygon = polygon
 			
-			test_frame += 1
-			if test_frame % 30 == 0:
-				print("___ Tick " + str(Engine.get_physics_frames()) + " ___")
-				print("window: " + str(size) + " in " + str(position))
-				print("window.stretch_transform: " + str(get_stretch_transform()))
-				print("image: " + str(image_original_size))
-				print("viewport.scale: " + str(viewport_container.scale))
-				print("points: " + str(polygon.size()) + " ->>> " + str(polygon))
+			#test_frame += 1
+			#if test_frame % 30 == 0:
+				#print("___ Tick " + str(Engine.get_physics_frames()) + " ___")
+				#print("window: " + str(size) + " in " + str(position))
+				#print("window.stretch_transform: " + str(get_stretch_transform()))
+				#print("image: " + str(image_original_size))
+				#print("viewport.scale: " + str(viewport_container.scale))
+				#print("points: " + str(polygon.size()) + " ->>> " + str(polygon))
 		else:
 			mouse_passthrough_polygon = []
 	else:

@@ -430,3 +430,8 @@ func fade_reset(node: Node = self):
 	if self[tween_name]:
 		self[tween_name].kill()
 	node.modulate.a = 1.0
+
+func sync_sprite_cycle_in_states():
+	for s in states:
+		s.is_cycle = sprite_data.is_cycle
+		s.cycle = sprite_data.cycle

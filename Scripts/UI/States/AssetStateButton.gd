@@ -51,7 +51,9 @@ func _unhandled_input(event):
 				if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
 					if InputMap.has_action(Global.held_sprites[0].disappear_keys):
 						if id in range(InputMap.action_get_events(Global.held_sprites[0].disappear_keys).size()):
-							InputMap.action_get_events(Global.held_sprites[0].disappear_keys).set(id, event)
+							var old_event = InputMap.action_get_events(Global.held_sprites[0].disappear_keys).get(id)
+							InputMap.action_erase_event(Global.held_sprites[0].disappear_keys,old_event)
+							InputMap.action_add_event(Global.held_sprites[0].disappear_keys,event)
 						else:
 							InputMap.action_add_event(Global.held_sprites[0].disappear_keys,event)
 					else:

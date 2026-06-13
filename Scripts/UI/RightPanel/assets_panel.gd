@@ -28,7 +28,7 @@ func nullfy():
 	%ShouldDisRemapButton.disabled = true
 	%ShouldDisListContainer.hide()
 	%CycleChoiceSprite.disabled = true
-	%CycleMargin.hide()
+	#%CycleMargin.hide()
 
 func enable():
 	if Global.held_sprites.size() == 1:
@@ -78,6 +78,7 @@ func set_data():
 	%CycleChoiceSprite.select(Global.held_sprites[0].sprite_data.cycle)
 	if !Global.held_sprites[0].sprite_data.is_cycle:
 		%CycleChoiceSprite.disabled = true
+	_on_cycle_choice_item_selected(%CycleChoice.selected)
 	
 func _on_cycle_choice_item_selected(index: int) -> void:
 	if index == 0:
@@ -87,7 +88,7 @@ func _on_cycle_choice_item_selected(index: int) -> void:
 		%CycleKey.update_key_text()
 		%CycleForward.update_key_text()
 		%CycleBackward.update_key_text()
-
+		%CycleItemTree.update_tree_items()
 
 func _on_add_cycle_pressed() -> void:
 	%CycleChoiceSprite.add_item("Cycle " + str(%CycleChoice.item_count))
@@ -106,16 +107,38 @@ func _on_add_cycle_pressed() -> void:
 
 func _on_delete_cycle_pressed() -> void:
 	if %CycleChoice.get_selected_id() != 0:
-		Global.settings_dict.cycles.remove_at(%CycleChoice.get_selected_id() - 1)
-		# TODO: move forward remained IDs after the deleted ID
-		%CycleChoiceSprite.remove_item(%CycleChoice.get_selected_id())
-		%CycleChoice.remove_item(%CycleChoice.get_selected_id())
+		var cycle_id = %CycleChoice.get_selected_id() - 1
+		var cycle = Global.settings_dict.cycles[cycle_id]
+		var behind_sprites: Array = []
+		# clear relative sprite cycle bindings.
+		for sprite in get_tree().get_nodes_in_group("Sprites"):
+			if sprite.get_value("is_cycle") == false:
+				continue
+			if  sprite.sprite_id in cycle.sprites:
+				sprite.sprite_data.cycle = 0
+				sprite.sync_sprite_cycle_in_states()
+			elif sprite.get_value("cycle") - 1 > cycle_id:
+				behind_sprites.append(sprite)
+		
+		# the behind cycle numbers will be shifted forward to compensate.
+		for sprite in behind_sprites:
+			sprite.sprite_data.cycle = sprite.sprite_data.cycle - 1
+			sprite.sync_sprite_cycle_in_states()
+		# remove target cycle data
+		Global.settings_dict.cycles.remove_at(cycle_id)
+		#%CycleChoiceSprite.remove_item(%CycleChoice.get_selected_id())
+		#%CycleChoice.remove_item(%CycleChoice.get_selected_id())
+		update_cycle_choice()
+		%CycleItemTree.update_tree_items()
 
 func _on_cycle_choice_sprite_item_selected(index: int) -> void:
 	if %CycleChoiceSprite.get_selected_id() != 0:
 		for i in Global.held_sprites:
 			if i != null && is_instance_valid(i):
+				if index == i.sprite_data.cycle:
+					continue
 				i.sprite_data.cycle = index
+				i.sync_sprite_cycle_in_states()
 				for l in Global.settings_dict.cycles:
 					if l.sprites.has(i.sprite_id):
 						l.sprites.remove_at(l.sprites.find(i.sprite_id))
@@ -124,11 +147,14 @@ func _on_cycle_choice_sprite_item_selected(index: int) -> void:
 		for i in Global.held_sprites:
 			if i != null && is_instance_valid(i):
 				i.sprite_data.cycle = index
+				i.sync_sprite_cycle_in_states()
 				for l in Global.settings_dict.cycles:
 					if l.sprites.has(i.sprite_id):
 						l.sprites.remove_at(l.sprites.find(i.sprite_id))
 						i.get_node("%Sprite2D").show()
-
+	
+	%CycleItemTree.update_tree_items()
+	
 func update_cycle_choice():
 	%CycleChoiceSprite.clear()
 	%CycleChoice.clear()
@@ -150,3 +176,13 @@ func _on_is_cycle_checkbox_changed(button_changed):
 		%CycleChoiceSprite.disabled = true
 	else:
 		%CycleChoiceSprite.disabled = false
+		for i in Global.held_sprites:
+			if i != null && is_instance_valid(i):
+				i.sync_sprite_cycle_in_states()
+
+
+func _on_delete_cycle_mouse_entered() -> void:
+	%CycleDeleteTip.show()
+
+func _on_delete_cycle_mouse_exited() -> void:
+	%CycleDeleteTip.hide()
