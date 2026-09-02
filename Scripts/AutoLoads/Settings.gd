@@ -143,6 +143,12 @@ func _ready():
 			elif !theme_settings.borders:
 				get_window().borderless = true
 			get_window().always_on_top = theme_settings.always_on_top
+			
+			if theme_settings.screen_pos.x < 0:
+				theme_settings.screen_pos.x = 0
+			if theme_settings.screen_pos.y < 0:
+				theme_settings.screen_pos.y = 0
+				
 			get_window().position = theme_settings.screen_pos
 			
 			update_tracking_backend()
@@ -188,6 +194,19 @@ func _ready():
 	
 	LanguageManager.language_changed.connect(_on_language_changed)
 	LanguageManager.initialize(theme_settings.language)
+
+	# [合流自 Branch_ec121415] Settings 启动音频早重启修复：先恢复 record_effect，延时后重设 bus effect
+	GlobalAudioStreamPlayer.record_effect = AudioServer.get_bus_effect(GlobalAudioStreamPlayer.record_bus_index, theme_settings.get("audio_capturer", 2))
+	await get_tree().create_timer(0.5).timeout
+	match theme_settings.audio_capturer:
+		0:
+			AudioServer.set_bus_effect_enabled(GlobalAudioStreamPlayer.record_bus_index, 0, true)
+			AudioServer.set_bus_effect_enabled(GlobalAudioStreamPlayer.record_bus_index, 2, false)
+			GlobalAudioStreamPlayer.mic_restart_timer_timeout()
+		2:
+			AudioServer.set_bus_effect_enabled(GlobalAudioStreamPlayer.record_bus_index, 0, false)
+			AudioServer.set_bus_effect_enabled(GlobalAudioStreamPlayer.record_bus_index, 2, true)
+			GlobalAudioStreamPlayer.mic_restart_timer_timeout()
 
 func _on_language_changed(locale_code: String) -> void:
 	theme_settings.language = locale_code

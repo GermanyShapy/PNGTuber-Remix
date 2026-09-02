@@ -588,3 +588,5 @@ TR_PHYS_EFF,Physics Effect,Physics Effect
 TR_DISTANCE,Distance,Расстояние
 TR_DEGREE,Degree,Градус
 TR_THROW_FORCE,Throw Force,Сила броска
+TR_HOTKEY_NAME_COLUMN,Action,Действие
+TR_HOTKEY_COLUMN,Hotkey,Горячая клавиша

@@ -1,5 +1,6 @@
 # Godot cache and import
 .godot/
+<<<<<<< HEAD
 .import/
 
 # Export configs (local, machine-specific, may contain secrets)
@@ -55,3 +56,13 @@ Icon
 # Temporary files / logs
 *.tmp
 *.log
+
+# Local binary build output
+/bin
+
+# WorkBuddy local AI memory (do not commit)
+.workbuddy/
+
+# Local AI workspace: AGENTS.md pointer + .ai/ doc space (personal, separate git)
+/AGENTS.md
+/.ai/

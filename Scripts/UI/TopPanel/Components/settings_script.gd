@@ -29,6 +29,7 @@ func _ready() -> void:
 			Global.settings_dict.monitor = Monitor.ALL_SCREENS
 			%SelectedScreen.select(0)
 	check_data()
+	init_hotkey_list()
 
 func _populate_languages() -> void:
 	%LanguageOptions.clear()
@@ -100,6 +101,73 @@ func check_data():
 			%BackendOption.select(2)
 
 	change_setting = true
+
+func append_unique_hotkey_to_dict(hotkey_event: InputEvent, dict: Dictionary):
+	if hotkey_event == null:
+		return
+		
+	for e in dict.values():
+		if CustomHotkeyMapButton.is_same_hotkey_event(e, hotkey_event):
+			return
+	if hotkey_event.as_text() == "Ctrl+7":
+		pass
+	dict[hotkey_event.as_text()] = hotkey_event.duplicate()
+
+func init_hotkey_list():
+	#Search all states and sprites
+	var state_buttons = get_tree().get_nodes_in_group("StateButtons")
+	var sprites = get_tree().get_nodes_in_group("Sprites")
+	var hotkey_dict: Dictionary = {}
+	
+	for state_btn: StateButton in state_buttons:
+		append_unique_hotkey_to_dict(state_btn.saved_event, hotkey_dict)
+		
+	for sprite: SpriteObject in sprites:
+		append_unique_hotkey_to_dict(sprite.saved_event, hotkey_dict)
+
+		if InputMap.has_action(sprite.disappear_keys): #disappear keys
+			var dis_action_events = InputMap.action_get_events(sprite.disappear_keys)
+			for id in dis_action_events.size():
+				append_unique_hotkey_to_dict(dis_action_events[id], hotkey_dict)
+	
+	for cycle in Global.settings_dict.cycles:
+		append_unique_hotkey_to_dict(cycle.toggle, hotkey_dict)
+		append_unique_hotkey_to_dict(cycle.forward, hotkey_dict)
+		append_unique_hotkey_to_dict(cycle.backward, hotkey_dict)
+	
+	#Get intersection of scaned hotkeys and global hotkeys
+	#New hotkeys will be added, named by its event
+	#Unexisting global hotkeys will be removed
+	for hotkey_name in hotkey_dict:
+		var is_diffent = true
+		for e in Global.settings_dict.custom_hotkeys.values():
+			if CustomHotkeyMapButton.is_same_hotkey_event(hotkey_dict[hotkey_name], e):
+				is_diffent = false
+				break
+		
+		if is_diffent:
+			Global.settings_dict.custom_hotkeys[hotkey_name] = hotkey_dict[hotkey_name]
+	
+	var union_hotkeys = (Global.settings_dict.custom_hotkeys as Dictionary).duplicate()
+	for hotkey_name in union_hotkeys:
+		var is_diffent = true
+		for e in hotkey_dict.values():
+			if CustomHotkeyMapButton.is_same_hotkey_event(union_hotkeys[hotkey_name], e):
+				is_diffent = false
+				break
+		
+		if is_diffent:
+			Global.settings_dict.custom_hotkeys.erase(hotkey_name)
+			
+	Global.settings_dict.custom_hotkeys.sort()
+	#####################
+	#Create Items
+	for hotkey_name in Global.settings_dict.custom_hotkeys:
+		var new_item = preload("res://UI/EditorUI/TopUI/Components/hotkey_item.tscn").instantiate()
+		var btn = new_item.get_node("%CustomHotkeyMapButton") as CustomHotkeyMapButton
+		btn.hotkey_name = hotkey_name
+		btn.hotkey_event = (Global.settings_dict.custom_hotkeys[hotkey_name] as InputEvent).duplicate()
+		%HotkeyItemList.add_child(new_item)
 
 func _physics_process(_delta):
 	%VolumeBar.value = GlobalMicAudio.volume

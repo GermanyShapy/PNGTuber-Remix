@@ -393,3 +393,4 @@ lights_and_shadows/positional_shadow/soft_shadow_filter_quality=1
 environment/ssao/quality=1
 2d/sdf/oversize=0
 2d/sdf/scale=2
+textures/default_filters/use_nearest_mipmap_filter=true

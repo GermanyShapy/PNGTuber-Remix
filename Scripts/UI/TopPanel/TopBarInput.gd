@@ -1,4 +1,5 @@
 extends Node
+class_name TopBarInput
 
 @onready var files_button: MenuButton = %FilesButton
 @onready var mode_button: MenuButton = %ModeButton
@@ -425,6 +426,10 @@ func _on_deselect_button_pressed() -> void:
 
 
 func _deselect_everything() -> void:
+	desel_everything()
+
+
+static func desel_everything() -> void:
 	if Global.held_sprite != null and is_instance_valid(Global.held_sprite):
 		if Global.held_sprite.has_node("%Origin"):
 			Global.held_sprite.get_node("%Origin").hide()
