@@ -68,7 +68,7 @@ window/enable_file_logging=false
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/aimg_io/plugin.cfg", "res://addons/wiggly_appendage_2d/plugin.cfg")
+enabled=PackedStringArray("res://addons/aimg_io/plugin.cfg", "res://addons/godot_mcp/plugin.cfg", "res://addons/wiggly_appendage_2d/plugin.cfg")
 
 [global_group]
 

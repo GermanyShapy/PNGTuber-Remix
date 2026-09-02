@@ -1,6 +1,5 @@
 # Godot cache and import
 .godot/
-<<<<<<< HEAD
 .import/
 
 # Export configs (local, machine-specific, may contain secrets)
@@ -57,11 +56,17 @@ Icon
 *.tmp
 *.log
 
+# Godot 资源锁文件（编辑器对 dll 等资源加锁时产生的 ~ 前缀临时文件）
+~*
+
 # Local binary build output
 /bin
 
 # WorkBuddy local AI memory (do not commit)
 .workbuddy/
+
+# gdmcp CLI 本地工具目录（含二进制可执行文件，不入库）
+.gdmcp/
 
 # Local AI workspace: AGENTS.md pointer + .ai/ doc space (personal, separate git)
 /AGENTS.md
