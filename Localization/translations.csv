@@ -612,3 +612,8 @@ TR_SKEW_Y,Skew-Y,Skew-Y
 TR_FILE_OPEN,Open,Open
 TR_REDO,Redo,Redo
 TR_UNDO,Undo,Undo
+TR_GRID,Grid,Grid
+TR_SHOW_GRID,Show Grid,Show Grid
+TR_SNAP_POSITION,Snap Position,Snap Position
+TR_SNAP_SIZE,Snap Size,Snap Size
+TR_SNAP_SIZE_TITLE,Grid Snap Size,Grid Snap Size

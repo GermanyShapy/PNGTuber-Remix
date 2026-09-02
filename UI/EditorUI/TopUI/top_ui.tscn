@@ -169,15 +169,15 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 14
-text = "Grid"
+text = "TR_GRID"
 item_count = 3
-popup/item_0/text = "Show Grid"
+popup/item_0/text = "TR_SHOW_GRID"
 popup/item_0/checkable = 1
 popup/item_0/id = 0
-popup/item_1/text = "Snap Position"
+popup/item_1/text = "TR_SNAP_POSITION"
 popup/item_1/checkable = 1
 popup/item_1/id = 1
-popup/item_2/text = "Snap Size: 1.0 px"
+popup/item_2/text = "TR_SNAP_SIZE"
 popup/item_2/id = 2
 
 [node name="BounceControlButton" type="MenuButton" parent="TopBar/HBox" unique_id=1613266894]
@@ -222,21 +222,21 @@ popup/item_2/id = 2
 popup/item_3/text = "TR_CENTER_WINDOW"
 popup/item_3/id = 3
 popup/item_4/text = "TR_WINDOW_DEFAULT"
-popup/item_4/id = 4
+popup/item_4/id = 8
 popup/item_5/text = "TR_ADD_WINDOW"
-popup/item_5/id = 5
+popup/item_5/id = 4
 popup/item_6/text = "TR_MINI_VIEW"
 popup/item_6/checkable = 1
 popup/item_6/checked = true
-popup/item_6/id = 6
+popup/item_6/id = 5
 popup/item_7/text = "TR_SPRITE_VIEW"
 popup/item_7/checkable = 1
 popup/item_7/checked = true
-popup/item_7/id = 7
+popup/item_7/id = 6
 popup/item_8/text = "TR_BOTTOM_BAR"
 popup/item_8/checkable = 1
 popup/item_8/checked = true
-popup/item_8/id = 8
+popup/item_8/id = 7
 
 [node name="AboutButton" type="MenuButton" parent="TopBar/HBox" unique_id=1689104778]
 unique_name_in_owner = true
