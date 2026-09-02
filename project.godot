@@ -27,7 +27,7 @@ config/windows_native_icon="res://PicklesSurprised.ico"
 
 [audio]
 
-buses/default_bus_layout="uid://b2xlc2esq3cvw"
+buses/default_bus_layout="res://default_bus_layout.tres"
 driver/output_latency=100
 
 [autoload]
