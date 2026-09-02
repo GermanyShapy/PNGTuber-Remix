@@ -170,10 +170,9 @@ func _ready():
 	
 	await get_tree().create_timer(0.05).timeout
 	get_window().size = Settings.theme_settings.screen_size
-	check_ui()
-#	top_bar.check_data()
+	# 模式初始化已由 TopBarInput._ready() 依据 Settings.theme_settings.mode 自完成（见 TopBarInput.gd），无需在此强制
 	if top_bar != null && is_instance_valid(top_bar):
-		top_bar.sliders_revalue(Global.settings_dict)
+		top_bar.apply_settings_to_ui(Global.settings_dict)
 	scale_window()
 	lipsync_set_up()
 	if theme_settings.microphone != null:
@@ -194,19 +193,6 @@ func _ready():
 	
 	LanguageManager.language_changed.connect(_on_language_changed)
 	LanguageManager.initialize(theme_settings.language)
-
-	# [合流自 Branch_ec121415] Settings 启动音频早重启修复：先恢复 record_effect，延时后重设 bus effect
-	GlobalAudioStreamPlayer.record_effect = AudioServer.get_bus_effect(GlobalAudioStreamPlayer.record_bus_index, theme_settings.get("audio_capturer", 2))
-	await get_tree().create_timer(0.5).timeout
-	match theme_settings.audio_capturer:
-		0:
-			AudioServer.set_bus_effect_enabled(GlobalAudioStreamPlayer.record_bus_index, 0, true)
-			AudioServer.set_bus_effect_enabled(GlobalAudioStreamPlayer.record_bus_index, 2, false)
-			GlobalAudioStreamPlayer.mic_restart_timer_timeout()
-		2:
-			AudioServer.set_bus_effect_enabled(GlobalAudioStreamPlayer.record_bus_index, 0, false)
-			AudioServer.set_bus_effect_enabled(GlobalAudioStreamPlayer.record_bus_index, 2, true)
-			GlobalAudioStreamPlayer.mic_restart_timer_timeout()
 
 func _on_language_changed(locale_code: String) -> void:
 	theme_settings.language = locale_code
@@ -267,13 +253,6 @@ func window_size_changed():
 		if Global.main.has_node("%WindowSize"):
 			Global.main.get_node("%WindowSize").text = tr("TR_WINDOW_SIZE") + " " + str(Settings.theme_settings.screen_size)
 	save()
-
-func check_ui():
-	if top_bar != null && is_instance_valid(top_bar):
-		if Settings.theme_settings.mode == 0:
-			top_bar.get_node("%TopBarInput").choosing_mode(0)
-		else:
-			top_bar.get_node("%TopBarInput").choosing_mode(1)
 
 func loaded_UI(id):
 	_on_ui_theme_button_item_selected(id)
