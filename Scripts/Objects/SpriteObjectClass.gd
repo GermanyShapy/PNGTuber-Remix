@@ -245,7 +245,6 @@ var reaction_config = %ReactionConfig
 var modifier : Node2D = %Modifier
 var modifier1 : Node2D = %Modifier1
 var movements = %Movements
-var follow_componet = %FollowComponent
 @export var sprite_object : Node2D
 @export var grab_object : BaseButton
 @export var static_collision : CollisionShape2D
