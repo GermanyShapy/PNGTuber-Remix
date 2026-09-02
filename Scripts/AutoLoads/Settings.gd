@@ -164,10 +164,9 @@ func _ready():
 	
 	await get_tree().create_timer(0.05).timeout
 	get_window().size = Settings.theme_settings.screen_size
-	check_ui()
-#	top_bar.check_data()
+	# 模式初始化已由 TopBarInput._ready() 依据 Settings.theme_settings.mode 自完成（见 TopBarInput.gd），无需在此强制
 	if top_bar != null && is_instance_valid(top_bar):
-		top_bar.sliders_revalue(Global.settings_dict)
+		top_bar.apply_settings_to_ui(Global.settings_dict)
 	scale_window()
 	lipsync_set_up()
 	if theme_settings.microphone != null:
@@ -248,13 +247,6 @@ func window_size_changed():
 		if Global.main.has_node("%WindowSize"):
 			Global.main.get_node("%WindowSize").text = tr("TR_WINDOW_SIZE") + " " + str(Settings.theme_settings.screen_size)
 	save()
-
-func check_ui():
-	if top_bar != null && is_instance_valid(top_bar):
-		if Settings.theme_settings.mode == 0:
-			top_bar.get_node("%TopBarInput").choosing_mode(0)
-		else:
-			top_bar.get_node("%TopBarInput").choosing_mode(1)
 
 func loaded_UI(id):
 	_on_ui_theme_button_item_selected(id)
