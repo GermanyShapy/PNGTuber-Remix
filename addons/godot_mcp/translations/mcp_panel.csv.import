@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://cdwskichvhxgq"
+
+[deps]
+
+files=["res://addons/godot_mcp/translations/mcp_panel.source.translation", "res://addons/godot_mcp/translations/mcp_panel.en.translation", "res://addons/godot_mcp/translations/mcp_panel.zh.translation"]
+
+source_file="res://addons/godot_mcp/translations/mcp_panel.csv"
+dest_files=["res://addons/godot_mcp/translations/mcp_panel.source.translation", "res://addons/godot_mcp/translations/mcp_panel.en.translation", "res://addons/godot_mcp/translations/mcp_panel.zh.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true
