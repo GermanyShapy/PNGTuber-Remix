@@ -182,6 +182,34 @@ layout_mode = 2
 tooltip_text = "TR_SETTINGS_POPUP_OUT_OF_BOUNDS_TOOLTIP"
 text = "TR_SNAP_OUT_OF_BOUNDS"
 
+[node name="Sp4" type="HSeparator" parent="SettingVbox/SettingsTab/Model/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="HotkeyItemList" type="VBoxContainer" parent="SettingVbox/SettingsTab/Model/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+
+[node name="HotkeyTitleHBox" type="HBoxContainer" parent="SettingVbox/SettingsTab/Model/VBoxContainer/HotkeyItemList"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HotkeyNameLabel" type="Label" parent="SettingVbox/SettingsTab/Model/VBoxContainer/HotkeyItemList/HotkeyTitleHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.7
+text = "TR_HOTKEY_NAME_COLUMN"
+vertical_alignment = 1
+
+[node name="HotkeyMapLabel" type="Label" parent="SettingVbox/SettingsTab/Model/VBoxContainer/HotkeyItemList/HotkeyTitleHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.3
+text = "TR_HOTKEY_COLUMN"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="Audio" type="ScrollContainer" parent="SettingVbox/SettingsTab" unique_id=743431230]
 visible = false
 layout_mode = 2
