@@ -319,11 +319,24 @@ var target_ik : SpriteObject = null
 var hidden_target_id_check : float = -1
 
 #region shader
-@onready var sprite_normal_shader = (sprite_object.material as ShaderMaterial).shader
-var sprite_add_shader = preload("res://Scripts/Shaders/SpriteAddShader.gdshader")
-var sprite_sub_shader = preload("res://Scripts/Shaders/SpriteSubShader.gdshader")
-var sprite_multiply_shader = preload("res://Scripts/Shaders/SpriteMultiplyShader.gdshader")
-var sprite_masking_shader = preload("res://Scripts/Shaders/SpriteMaskingShader.gdshader")
+# const preload: evaluated once at script load, resource is globally cached and
+# shared by all 100+ instances (no per-node copy), so const is the right semantic.
+const sprite_normal_shader = preload("res://Scripts/Shaders/SpriteShader.gdshader")
+const sprite_add_shader = preload("res://Scripts/Shaders/SpriteAddShader.gdshader")
+const sprite_sub_shader = preload("res://Scripts/Shaders/SpriteSubShader.gdshader")
+const sprite_multiply_shader = preload("res://Scripts/Shaders/SpriteMultiplyShader.gdshader")
+const sprite_masking_shader = preload("res://Scripts/Shaders/SpriteMaskingShader.gdshader")
+# EasyBlend textures: previously preloaded inside set_blend() on every call;
+# hoisted to class-level consts so each is loaded exactly once.
+const blend_texture_burn = preload("res://Misc/EasyBlend/Blends/burn.png")
+const blend_texture_hardmix = preload("res://Misc/EasyBlend/Blends/hardmix.png")
+const blend_texture_cursed = preload("res://Misc/EasyBlend/Blends/test1.png")
+const blend_texture_multiply = preload("res://Misc/EasyBlend/Blends/multiply.png")
+
+# Idempotency short-circuit: mouth-state switches / undo-redo / batch property
+# refreshes call set_blend() on every sprite; skip redundant shader writes when
+# the blend has not actually changed.
+var _active_blend := ""
 #endregion
 
 func get_default_object_data() -> Dictionary:
@@ -392,8 +405,12 @@ func get_value(key: String) -> Variant:
 	
 	return default
 
-func set_blend(blend):
-	match  blend:
+func set_blend(blend: String) -> void:
+	if blend == _active_blend:
+		return
+	_active_blend = blend
+
+	match blend:
 		# TODO Completely upgrade other blend mode(SpriteShader)： Burn, HardMix, Cursed
 		"Normal":
 			(sprite_object.material as ShaderMaterial).shader = sprite_normal_shader
@@ -401,31 +418,39 @@ func set_blend(blend):
 		"Add":
 			(sprite_object.material as ShaderMaterial).shader = sprite_add_shader
 			sprite_object.material.set_shader_parameter("enabled", true)
-			#sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/add.png"))
+			# Add is implemented by render_mode blend_add; no Blend texture needed
+			# (optional texture: res://Misc/EasyBlend/Blends/add.png)
 		"Subtract":
 			(sprite_object.material as ShaderMaterial).shader = sprite_sub_shader
 			sprite_object.material.set_shader_parameter("enabled", true)
-			#sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/exclusion.png"))
+			# Subtract is implemented by render_mode blend_sub; no Blend texture
+			# needed (optional texture: res://Misc/EasyBlend/Blends/exclusion.png)
 		"Multiply":
 			(sprite_object.material as ShaderMaterial).shader = sprite_multiply_shader
 			sprite_object.material.set_shader_parameter("enabled", true)
-			#sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/multiply.png"))
+			# Multiply is implemented by render_mode blend_mul; no Blend texture
+			# needed (optional texture: res://Misc/EasyBlend/Blends/multiply.png)
 		"Burn":
 			(sprite_object.material as ShaderMaterial).shader = sprite_normal_shader
 			sprite_object.material.set_shader_parameter("enabled", true)
-			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/burn.png"))
+			sprite_object.material.set_shader_parameter("Blend", blend_texture_burn)
 		"HardMix":
 			(sprite_object.material as ShaderMaterial).shader = sprite_normal_shader
 			sprite_object.material.set_shader_parameter("enabled", true)
-			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/hardmix.png"))
+			sprite_object.material.set_shader_parameter("Blend", blend_texture_hardmix)
 		"Cursed":
 			(sprite_object.material as ShaderMaterial).shader = sprite_normal_shader
 			sprite_object.material.set_shader_parameter("enabled", true)
-			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/test1.png"))
+			sprite_object.material.set_shader_parameter("Blend", blend_texture_cursed)
 		"Masking":
 			(sprite_object.material as ShaderMaterial).shader = sprite_masking_shader
 			sprite_object.material.set_shader_parameter("enabled", true)
-			sprite_object.material.set_shader_parameter("Blend", preload("res://Misc/EasyBlend/Blends/multiply.png"))
+			sprite_object.material.set_shader_parameter("Blend", blend_texture_multiply)
+		_:
+			# Fallback: legacy saves may carry old enum values like TR_BLEND_NORMAL;
+			# render as Normal so the previous blended shader does not linger.
+			(sprite_object.material as ShaderMaterial).shader = sprite_normal_shader
+			sprite_object.material.set_shader_parameter("enabled", false)
 
 func reparent_obj(parent, no_global : bool = false):
 	for i in parent:
