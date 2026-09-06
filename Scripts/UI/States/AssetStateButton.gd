@@ -153,7 +153,7 @@ func _on_should_dis_remap_button_toggled(toggled_on):
 		if %ShouldDisList.item_count < id:
 			toggled_on = false
 			return
-		%ShouldDisList.set_item_text(id, "Awaiting Input.")
+		%ShouldDisList.set_item_text(id, tr("TR_AWAITING_INPUT"))
 	set_process_unhandled_input(toggled_on)
 
 func _on_should_dis_list_empty_clicked(_at_position, _mouse_button_index):
