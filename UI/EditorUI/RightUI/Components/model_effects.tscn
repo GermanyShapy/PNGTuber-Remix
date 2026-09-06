@@ -140,10 +140,11 @@ theme_override_constants/v_separation = 8
 columns = 2
 metadata/_tab_index = 1
 
-[node name="Label2" type="Label" parent="PanelContainer/TabContainer/Grid3" unique_id=1743272266]
+[node name="SizeLabel2" type="Label" parent="PanelContainer/TabContainer/Grid3" unique_id=1743272266]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-text = "TR_EFFECT_SIZE_LABEL"
+text = "TR_EFFECT_SIZE"
 
 [node name="SizeSlider2" type="HSlider" parent="PanelContainer/TabContainer/Grid3" unique_id=451503973]
 unique_name_in_owner = true
@@ -219,6 +220,7 @@ step = 0.01
 [connection signal="visibility_changed" from="PanelContainer/TabContainer/Grid2/SizeLabel" to="." method="_on_size_label_visibility_changed"]
 [connection signal="value_changed" from="PanelContainer/TabContainer/Grid2/SizeSlider" to="." method="_on_size_slider_value_changed"]
 [connection signal="toggled" from="PanelContainer/TabContainer/Grid2/RainbowCheck" to="." method="_on_rainbow_check_toggled"]
+[connection signal="visibility_changed" from="PanelContainer/TabContainer/Grid3/SizeLabel2" to="." method="_on_size_label_visibility_changed"]
 [connection signal="value_changed" from="PanelContainer/TabContainer/Grid3/SizeSlider2" to="." method="_on_size_slider_2_value_changed"]
 [connection signal="color_changed" from="PanelContainer/TabContainer/Grid4/EffectColor2" to="." method="_on_effect_color_2_color_changed"]
 [connection signal="value_changed" from="PanelContainer/TabContainer/Grid5/RollSpeed" to="." method="_on_roll_speed_value_changed"]
