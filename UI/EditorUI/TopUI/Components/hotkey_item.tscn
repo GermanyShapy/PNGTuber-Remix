@@ -24,7 +24,7 @@ custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 1.3
-text = "TR_BLIND_KEY"
+text = "TR_BIND_KEY"
 script = ExtResource("1_ql208")
 hotkey_name_line_edit = NodePath("../HotkeyName")
 
