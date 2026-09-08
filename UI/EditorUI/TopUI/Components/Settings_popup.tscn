@@ -601,6 +601,14 @@ layout_mode = 2
 text = "TR_WARNING_IF_KNOW"
 horizontal_alignment = 1
 
+[node name="LabelMouseInputArea" type="Button" parent="SettingVbox" unique_id=2904421862]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+button_mask = 0
+text = "TR_MOUSE_INPUT_AREA"
+
 [node name="Grid2" type="GridContainer" parent="SettingVbox" unique_id=818639693]
 layout_mode = 2
 size_flags_horizontal = 0
