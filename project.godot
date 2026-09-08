@@ -27,6 +27,7 @@ config/windows_native_icon="res://PicklesSurprised.ico"
 
 [audio]
 
+buses/default_bus_layout="uid://b2xlc2esq3cvw"
 driver/output_latency=100
 
 [autoload]
@@ -53,6 +54,7 @@ settings/crash_handler/message.editor="Please include this when reporting the bu
 gdscript/warnings/unused_signal=0
 gdscript/warnings/integer_division=0
 gdscript/warnings/get_node_default_without_onready=0
+canvas_items/subwindows/embed_subwindows=false
 
 [display]
 

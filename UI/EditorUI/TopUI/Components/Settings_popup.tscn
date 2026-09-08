@@ -182,27 +182,27 @@ layout_mode = 2
 tooltip_text = "TR_SETTINGS_POPUP_OUT_OF_BOUNDS_TOOLTIP"
 text = "TR_SNAP_OUT_OF_BOUNDS"
 
-[node name="Sp4" type="HSeparator" parent="SettingVbox/SettingsTab/Model/VBoxContainer"]
+[node name="Sp4" type="HSeparator" parent="SettingVbox/SettingsTab/Model/VBoxContainer" unique_id=1705144640]
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="HotkeyItemList" type="VBoxContainer" parent="SettingVbox/SettingsTab/Model/VBoxContainer"]
+[node name="HotkeyItemList" type="VBoxContainer" parent="SettingVbox/SettingsTab/Model/VBoxContainer" unique_id=1057465729]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 
-[node name="HotkeyTitleHBox" type="HBoxContainer" parent="SettingVbox/SettingsTab/Model/VBoxContainer/HotkeyItemList"]
+[node name="HotkeyTitleHBox" type="HBoxContainer" parent="SettingVbox/SettingsTab/Model/VBoxContainer/HotkeyItemList" unique_id=925841812]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="HotkeyNameLabel" type="Label" parent="SettingVbox/SettingsTab/Model/VBoxContainer/HotkeyItemList/HotkeyTitleHBox"]
+[node name="HotkeyNameLabel" type="Label" parent="SettingVbox/SettingsTab/Model/VBoxContainer/HotkeyItemList/HotkeyTitleHBox" unique_id=1540159526]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.7
 text = "TR_HOTKEY_NAME_COLUMN"
 vertical_alignment = 1
 
-[node name="HotkeyMapLabel" type="Label" parent="SettingVbox/SettingsTab/Model/VBoxContainer/HotkeyItemList/HotkeyTitleHBox"]
+[node name="HotkeyMapLabel" type="Label" parent="SettingVbox/SettingsTab/Model/VBoxContainer/HotkeyItemList/HotkeyTitleHBox" unique_id=841469307]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 1.3
