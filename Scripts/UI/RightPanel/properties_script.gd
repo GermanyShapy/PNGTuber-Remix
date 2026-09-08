@@ -201,7 +201,7 @@ func update_pos_spins():
 	should_change = false
 	for i in Global.held_sprites:
 		%PosXSpinBox.value = i.sprite_data.position.x
-		%PosYSpinBox.value =i.sprite_data.position.y
+		%PosYSpinBox.value = i.sprite_data.position.y
 		%RotSpinBox.value = rad_to_deg(i.sprite_data.rotation)
 		i.save_state(Global.current_state)
 	should_change = was_should_change

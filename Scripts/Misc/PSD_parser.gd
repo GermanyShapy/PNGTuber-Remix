@@ -107,7 +107,8 @@ static func open_photoshop_file(path: String) -> Array:
 			var name_length := psd_file.get_8()
 			@warning_ignore("integer_division") var padded_length := (((name_length + 4) / 4) * 4) - 1
 			if padded_length > 0 and psd_file.get_position() + padded_length <= extra_end:
-				layer["name"] = psd_file.get_buffer(padded_length).get_string_from_utf8()
+				var bytes = psd_file.get_buffer(padded_length)
+				layer["name"] = bytes.get_string_from_multibyte_char()
 			else:
 				layer["name"] = ""
 

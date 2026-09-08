@@ -38,7 +38,7 @@ func toggle_cycle(cycle):
 		for sprite in get_tree().get_nodes_in_group("Sprites"):
 			if sprite.sprite_id in cycle.sprites and sprite.get_value("is_cycle"):
 				if sprite.was_active_before:
-					ReactionConfig.sprite_hide(sprite, sprite.get_node("%Sprite2D"))
+					ReactionConfig.sprite_hide(sprite)
 
 func toggle_forward(cycle):
 	toggle_to(cycle, wrap(cycle.pos + 1, 0, cycle.sprites.size()))
@@ -54,8 +54,8 @@ func toggle_to(cycle, pos):
 		#target
 		if sprite.sprite_id == cycle.last_sprite and sprite.get_value("is_cycle"):
 			if !sprite.was_active_before:
-				ReactionConfig.sprite_show(sprite, sprite.get_node("%Sprite2D"))
+				ReactionConfig.sprite_show(sprite)
 		#other sprites
 		elif sprite.sprite_id in cycle.sprites and sprite.get_value("is_cycle"):
 			if sprite.was_active_before:
-				ReactionConfig.sprite_hide(sprite, sprite.get_node("%Sprite2D"))
+				ReactionConfig.sprite_hide(sprite)
