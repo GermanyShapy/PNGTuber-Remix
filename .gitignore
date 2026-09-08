@@ -71,3 +71,6 @@ Icon
 # Local AI workspace: AGENTS.md pointer + .ai/ doc space (personal, separate git)
 /AGENTS.md
 /.ai/
+
+# Local Godot user dir accidentally created under project root (editor settings / templates / app_userdata)
+/Godot/
