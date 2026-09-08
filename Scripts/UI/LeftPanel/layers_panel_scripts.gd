@@ -91,8 +91,6 @@ func _on_delete_button_pressed():
 				InputMap.erase_action(i.disappear_keys)
 			if InputMap.has_action(str(i.sprite_id)):
 				InputMap.erase_action(str(i.sprite_id))
-			if i.sprite_data.is_cycle and i.sprite_data.cycle != 0:
-				pass
 			i.treeitem.free()
 			i.free()
 	Global.deselect.emit()

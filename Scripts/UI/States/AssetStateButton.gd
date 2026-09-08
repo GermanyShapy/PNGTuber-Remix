@@ -100,12 +100,12 @@ func _on_is_asset_check_toggled(toggled_on):
 		if toggled_on:
 			if !InputMap.has_action(action):
 				InputMap.add_action(action)
-				ReactionConfig.sprite_show(Global.held_sprites[0], Global.held_sprites[0].sprite_object)
+				ReactionConfig.sprite_show(Global.held_sprites[0])
 		else:
 			if InputMap.has_action(action):
 				InputMap.erase_action(action)
 				Global.held_sprites[0].saved_event = null
-				ReactionConfig.sprite_show(Global.held_sprites[0], Global.held_sprites[0].sprite_object)
+				ReactionConfig.sprite_show(Global.held_sprites[0])
 				update_key_text()
 				%IsAssetButton.release_focus()
 

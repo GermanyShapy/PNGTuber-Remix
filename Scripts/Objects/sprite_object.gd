@@ -118,7 +118,7 @@ func _process(_delta):
 
 		if get_value("wiggle"):
 			%WiggleOrigin.show()
-			var pos = (sprite_object.material.get_shader_parameter("rotation_offset") * sprite_object.texture.get_size())/2
+			var pos = (sprite_object.material.get_shader_parameter("rotation_offset") - Vector2.ONE / 2)* sprite_object.texture.get_size()
 			%WiggleOrigin.position = Vector2(pos.x, pos.y)
 			%Selection.material.set_shader_parameter("wiggle", true)
 			%Selection.material.set_shader_parameter("rotation_offset", sprite_object.material.get_shader_parameter("rotation_offset"))
@@ -211,8 +211,6 @@ func advanced_lipsyc():
 			sprite_object.frame_coords.x = 13
 
 func save_state(id):
-	if sprite_name == "按左":
-		pass
 	var dict : Dictionary = sprite_data.duplicate(true)
 	states[id] = dict
 
@@ -313,6 +311,6 @@ func apply_transform():
 		position = get_value("position")
 		rotation = get_value("rotation")
 		scale = get_value("scale")
-		var skew = get_value("skew")
-		transform.x = transform.x.rotated(deg_to_rad(skew.x) )
-		transform.y = transform.y.rotated(deg_to_rad(skew.y) )
+		var skew_vector = get_value("skew")
+		transform.x = transform.x.rotated(deg_to_rad(skew_vector.x) )
+		transform.y = transform.y.rotated(deg_to_rad(skew_vector.y) )

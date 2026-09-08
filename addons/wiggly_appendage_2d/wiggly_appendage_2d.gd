@@ -344,7 +344,6 @@ func _update_line():
 
 	# base array from physics
 	for point in physics_points:
-		#new_line_points.append(to_local(point[POSITION]))
 		new_line_points.append(point[POSITION])
 
 	# insert a dynamic "extra start segment" before the root
@@ -407,7 +406,8 @@ func _signed_sqrt(value: float) -> float:
 	return sqrt(abs(value)) * sign(value)
 
 func _get_true_segment_length() -> float:
-	return segment_length #* get_global_scale().x
+	return segment_length 
+	#return segment_length * get_global_scale().x
 
 func _get_true_curvature() -> float:
 	var gt = get_global_transform()
