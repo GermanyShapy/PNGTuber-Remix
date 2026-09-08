@@ -10,7 +10,7 @@
 
 | 项 | 值 |
 |---|---|
-| 合流产物分支 | `ec121415-merge-14x`（本工作区），HEAD `6295d64` |
+| 合流产物分支 | `ec121415-merge-14x`（本工作区），HEAD `c448b93`（2026-09-09；`6295d64` 之后修复提交见附录续表） |
 | 合流提交 | `65dba08` Merge Branch_ec121415 into 1.4.x（2026-09-02） |
 | 1.4.x 侧（P1） | `c45aa8f`（合流时 tip） |
 | Branch 侧（P2） | `024e51c`（合流时 tip；本地分支现指针 `1bee220` 为合流后 4.4 侧 1 个同步提交，该分支已弃维护） |
@@ -128,6 +128,7 @@
 | Branch 现指针 | `1bee220` | 合流后 4.4 侧 1 个同步提交（D2 的 4.4 版），分支已弃维护 |
 | **合流提交** | `65dba08` | Merge Branch_ec121415 into 1.4.x（含裁决说明） |
 | 合流后修复链 | `1eb18e4 → b8918d5 → a3077ac → 10c4044 → 84d2b3e → 9d7eb5b → c49d188 → f2fbab3 → 6295d64` | D 区对应提交 |
+| 6295d64 后收尾（09-04→09-09） | `4955a52`(assets_box 合流布局重建 + cycle tr 恢复) ／ `af13c49`(effect size 标签同步、lipsync 守卫) ／ `4f8360c`(合流 changelog + assets_box 双源审查报告) ／ `4bef687`(translations 增 zh_CN 列 B14) ／ `23c9b23`(恢复 Branch 丢失的状态重映射控件 %StateHoldToShowCheck 等 + 三处鼠标绑定捕获区) ／ `978bdc7`(miniaudio UTF-8 设备名修复 DLL 落地) ／ `20227cc`(Grid 菜单中文化、Window 菜单 id 与枚举对齐) ／ `8e041fe`(movement 栈移除、sprite_show/hide 签名简化、调试残留清理) ／ `54ffc1b`(场景 unique_id 补全、wiggle 面板参数修正、project 设置) ／ `c448b93`(extra window 居中/非 transient 显示) | 合流回归收尾 |
 
 **Branch 侧 19 提交功能索引**（B/C 区来源依据）：`3417fa5`（资产/状态/动画特性、自定义热键、Multiply shader、翻译、右面板滚动）、`a726107`（apply_transform 统一 + wiggly 跟随）、`43aa18e`（Masking 蒙版、raw mouse 准备）、`1295a53`（启动音频时序、raw mouse、BlendMode bug）、`f8a0f4e`/`59a71d6`（性能优化）、`19e8f75`（movement 语义，裁决未入产物见 C6）、`ec12141`（跟随运动/窗口穿透/长按拖动）、`61d4186`（窗口拉伸/状态锁死/撤销还原/Skew 修复）、`ab409c9`/`0115e3c`/`70c3fb0`/`36b75d4`（状态/ZIndex 持久化系列）、`abaed1a`（StandGlobalInput 修复）、`0577df9`/`2ea1194`/`2b0b501`/`02842fb`/`024e51c`（merge/杂项）。
 
