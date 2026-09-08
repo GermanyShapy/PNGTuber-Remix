@@ -584,6 +584,13 @@ value_to_update = "chain_rot_max"
 layout_mode = 2
 size_flags_vertical = 1
 
+[node name="LabelMouseInputArea" type="Button" parent="MainSplit/SecondarySplit/RightSide/RightPanel/Margin/VBoxContainer/VSplit/StatePanel" unique_id=3617299567]
+custom_minimum_size = Vector2(350, 30)
+layout_mode = 2
+mouse_filter = 2
+button_mask = 0
+text = "TR_MOUSE_INPUT_AREA"
+
 [node name="MeshPanel" type="Panel" parent="MainSplit/SecondarySplit/RightSide" unique_id=1258810069]
 unique_name_in_owner = true
 visible = false
