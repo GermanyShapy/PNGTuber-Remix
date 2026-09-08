@@ -97,7 +97,7 @@ focus_mode = 1
 focus_behavior_recursive = 1
 text = "TR_DONT_HIDE"
 
-[node name="InclusiveKeyCheck" type="CheckBox" parent="Buttons"]
+[node name="InclusiveKeyCheck" type="CheckBox" parent="Buttons" unique_id=2027350795]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
@@ -117,13 +117,13 @@ focus_mode = 1
 focus_behavior_recursive = 1
 text = "TR_HOLD_TO_SHOW"
 
-[node name="HBoxMinDuration" type="HBoxContainer" parent="Buttons"]
+[node name="HBoxMinDuration" type="HBoxContainer" parent="Buttons" unique_id=317173065]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 1
 focus_behavior_recursive = 1
 
-[node name="MinDurationLabel" type="Label" parent="Buttons/HBoxMinDuration"]
+[node name="MinDurationLabel" type="Label" parent="Buttons/HBoxMinDuration" unique_id=956997576]
 custom_minimum_size = Vector2(74, 0)
 layout_mode = 2
 tooltip_text = "TR_MIN_DURATION_TOOLTIP"
@@ -131,7 +131,7 @@ mouse_filter = 1
 theme_override_font_sizes/font_size = 15
 text = "TR_MIN_DURATION"
 
-[node name="MinDurationSpinBox" type="SpinBox" parent="Buttons/HBoxMinDuration"]
+[node name="MinDurationSpinBox" type="SpinBox" parent="Buttons/HBoxMinDuration" unique_id=839950018]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -141,7 +141,7 @@ max_value = 1000.0
 step = 0.01
 script = ExtResource("4_olugq")
 
-[node name="IgnoreIfRestCheck" type="CheckBox" parent="Buttons"]
+[node name="IgnoreIfRestCheck" type="CheckBox" parent="Buttons" unique_id=646076491]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
@@ -151,13 +151,13 @@ focus_mode = 1
 focus_behavior_recursive = 1
 text = "TR_IGNORE_IF_REST"
 
-[node name="HBoxCastTime" type="HBoxContainer" parent="Buttons"]
+[node name="HBoxCastTime" type="HBoxContainer" parent="Buttons" unique_id=1761560323]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 1
 focus_behavior_recursive = 1
 
-[node name="CastTimeLabel" type="Label" parent="Buttons/HBoxCastTime"]
+[node name="CastTimeLabel" type="Label" parent="Buttons/HBoxCastTime" unique_id=10617719]
 custom_minimum_size = Vector2(74, 0)
 layout_mode = 2
 tooltip_text = "TR_CAST_TIME_TOOLTIP"
@@ -165,7 +165,7 @@ mouse_filter = 1
 theme_override_font_sizes/font_size = 15
 text = "TR_CAST_TIME"
 
-[node name="CastTimeSpinBox" type="SpinBox" parent="Buttons/HBoxCastTime"]
+[node name="CastTimeSpinBox" type="SpinBox" parent="Buttons/HBoxCastTime" unique_id=1224521450]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -175,7 +175,7 @@ max_value = 1000.0
 step = 0.01
 script = ExtResource("4_olugq")
 
-[node name="AutoShowCheck" type="CheckBox" parent="Buttons"]
+[node name="AutoShowCheck" type="CheckBox" parent="Buttons" unique_id=1002072230]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
@@ -328,7 +328,7 @@ icon = SubResource("AtlasTexture_u22l2")
 icon_alignment = 1
 expand_icon = true
 
-[node name="CycleDeleteTip" type="PanelContainer" parent="."]
+[node name="CycleDeleteTip" type="PanelContainer" parent="." unique_id=1927201522]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
@@ -336,7 +336,7 @@ size_flags_horizontal = 8
 focus_mode = 1
 focus_behavior_recursive = 1
 
-[node name="Label" type="Label" parent="CycleDeleteTip"]
+[node name="Label" type="Label" parent="CycleDeleteTip" unique_id=1801152851]
 layout_mode = 2
 text = "TR_CYCLE_DELETE_TIP"
 
@@ -350,18 +350,18 @@ theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 5
 theme_override_constants/margin_bottom = 5
 
-[node name="CycleData" type="PanelContainer" parent="CycleMargin"]
+[node name="CycleData" type="PanelContainer" parent="CycleMargin" unique_id=1370477811]
 layout_mode = 2
 focus_mode = 1
 focus_behavior_recursive = 1
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CycleMargin/CycleData"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CycleMargin/CycleData" unique_id=1491880732]
 layout_mode = 2
 focus_mode = 1
 focus_behavior_recursive = 1
 theme_override_constants/separation = 5
 
-[node name="Margin2" type="MarginContainer" parent="CycleMargin/CycleData/VBoxContainer"]
+[node name="Margin2" type="MarginContainer" parent="CycleMargin/CycleData/VBoxContainer" unique_id=201181937]
 layout_mode = 2
 focus_mode = 1
 focus_behavior_recursive = 1
@@ -370,24 +370,24 @@ theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 5
 theme_override_constants/margin_bottom = 5
 
-[node name="Grid" type="GridContainer" parent="CycleMargin/CycleData/VBoxContainer/Margin2"]
+[node name="Grid" type="GridContainer" parent="CycleMargin/CycleData/VBoxContainer/Margin2" unique_id=1126305111]
 layout_mode = 2
 focus_mode = 1
 focus_behavior_recursive = 1
 columns = 2
 
-[node name="Label" type="Label" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid"]
+[node name="Label" type="Label" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid" unique_id=1094009756]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "TR_CYCLE_TOGGLE_LABEL"
 
-[node name="HBoxAsset" type="HBoxContainer" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid"]
+[node name="HBoxAsset" type="HBoxContainer" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid" unique_id=1330109429]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 1
 focus_behavior_recursive = 1
 
-[node name="CycleKey" type="Button" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset"]
+[node name="CycleKey" type="Button" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset" unique_id=1793732844]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -398,7 +398,7 @@ toggle_mode = true
 text = "TR_BIND_KEY"
 script = ExtResource("7_hf4n0")
 
-[node name="CycleDel" type="Button" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset"]
+[node name="CycleDel" type="Button" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset" unique_id=466361896]
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 2
 size_flags_horizontal = 0
@@ -409,18 +409,18 @@ icon = SubResource("AtlasTexture_ef4gi")
 icon_alignment = 1
 expand_icon = true
 
-[node name="Label2" type="Label" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid"]
+[node name="Label2" type="Label" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid" unique_id=1181255244]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "TR_CYCLE_FORWARD_LABEL"
 
-[node name="HBoxAsset2" type="HBoxContainer" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid"]
+[node name="HBoxAsset2" type="HBoxContainer" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid" unique_id=1785957339]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 1
 focus_behavior_recursive = 1
 
-[node name="CycleForward" type="Button" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset2"]
+[node name="CycleForward" type="Button" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset2" unique_id=1464949219]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -431,7 +431,7 @@ toggle_mode = true
 text = "TR_BIND_KEY"
 script = ExtResource("8_u22l2")
 
-[node name="CycleForDel" type="Button" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset2"]
+[node name="CycleForDel" type="Button" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset2" unique_id=211731187]
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 2
 size_flags_horizontal = 0
@@ -442,18 +442,18 @@ icon = SubResource("AtlasTexture_2cqhf")
 icon_alignment = 1
 expand_icon = true
 
-[node name="Label3" type="Label" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid"]
+[node name="Label3" type="Label" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid" unique_id=1550537619]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "TR_CYCLE_BACKWARD_LABEL"
 
-[node name="HBoxAsset3" type="HBoxContainer" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid"]
+[node name="HBoxAsset3" type="HBoxContainer" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid" unique_id=1187939917]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 1
 focus_behavior_recursive = 1
 
-[node name="CycleBackward" type="Button" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset3"]
+[node name="CycleBackward" type="Button" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset3" unique_id=98570447]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -464,7 +464,7 @@ toggle_mode = true
 text = "TR_BIND_KEY"
 script = ExtResource("9_olugq")
 
-[node name="CycleBackDel" type="Button" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset3"]
+[node name="CycleBackDel" type="Button" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset3" unique_id=398196383]
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 2
 size_flags_horizontal = 0
@@ -475,14 +475,14 @@ icon = SubResource("AtlasTexture_2cqhf")
 icon_alignment = 1
 expand_icon = true
 
-[node name="Panel2" type="PanelContainer" parent="CycleMargin/CycleData/VBoxContainer"]
+[node name="Panel2" type="PanelContainer" parent="CycleMargin/CycleData/VBoxContainer" unique_id=1043491771]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_vertical = 3
 focus_mode = 1
 focus_behavior_recursive = 1
 
-[node name="CycleItemTree" type="Tree" parent="CycleMargin/CycleData/VBoxContainer/Panel2"]
+[node name="CycleItemTree" type="Tree" parent="CycleMargin/CycleData/VBoxContainer/Panel2" unique_id=268916428]
 unique_name_in_owner = true
 layout_mode = 2
 columns = 2
