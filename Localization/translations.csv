@@ -267,6 +267,7 @@ TR_MERGE_POINTS_SPACE,Point Merge Distance,Расстояние слияния �
 TR_MESH_CONTROL,Mesh Control,Управление сеткой,网格控制
 TR_MESH_TEXTURE,Mesh Texture,Текстура сетки,网格纹理
 TR_MICROPHONE_LABEL,Microphone,Микрофон,麦克风
+TR_MOUSE_INPUT_AREA,(Mouse Bind Capture Area),(Область захвата ввода мыши),(鼠标绑定捕获区)
 TR_MINI_TUTORIAL,Mini Tutorial (WIP),Мини-руководство (в разработке),迷你教程 (WIP)
 TR_MINI_VIEW,Mini-View,Мини‑вид,迷你视图
 TR_MINI_VIEW_TOOLTIP,Mini-View,Мини‑вид,迷你视图
