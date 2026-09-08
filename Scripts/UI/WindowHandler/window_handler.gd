@@ -22,7 +22,7 @@ func new_window() -> void:
 	var window := ExtraWindow.new(%SubViewport.world_2d, remove_window, lock_window, %Camera2D, %SubViewportContainer.material, %Effects.material)
 	windows.append(window)
 	add_child(window)
-	window.popup_centered()
+	window.show() #popup_centered()
 
 func remove_window(window: ExtraWindow) -> void:
 	windows.erase(window)

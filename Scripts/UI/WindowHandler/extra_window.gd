@@ -22,6 +22,7 @@ var update_buffer_lock :bool = false
 #var test_frame = 0
 
 func _init(world: World2D, remove_window: Callable, lock_window: Callable, other_camera: Camera2D, container_material: ShaderMaterial, effects_material: ShaderMaterial) -> void:
+	initial_position = Window.WINDOW_INITIAL_POSITION_CENTER_MAIN_WINDOW_SCREEN
 	content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
 	content_scale_aspect = Window.CONTENT_SCALE_ASPECT_IGNORE
 	content_scale_stretch = Window.CONTENT_SCALE_STRETCH_FRACTIONAL
@@ -44,6 +45,7 @@ func _init(world: World2D, remove_window: Callable, lock_window: Callable, other
 	hide()
 	size = WINDOW_SIZE
 	title = "Window " + str(len(WindowHandler.windows) + 1)
+	transient = false
 	always_on_top = true
 	transparent = true
 	transparent_bg = true
@@ -82,7 +84,7 @@ func _process(_delta: float) -> void:
 	if dragging:
 		position = mouse_pos - offset
 	
-func _physics_process(delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	if borderless and mouse_pos == mouse_pos.clamp(position, position + size) and !dragging and !camera.panning:
 		update_buffer_lock = !update_buffer_lock
 		if !update_buffer_lock:
