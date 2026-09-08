@@ -50,7 +50,7 @@ TR_AUTO_LOAD_MODEL,Auto-Load Model,Автозагрузка модели,自动�
 TR_AUTO_ROTATION,Auto Rotation,Автоповорот,自动旋转
 TR_AUTO_SAVE,Auto-Save,Автосохранение,自动保存
 TR_AUTO_START,Auto-Start,Автозапуск,自动启动
-TR_AUTO_WAG,Auto Wag,Автопокачивание,自动摇摆
+TR_AUTO_WAG,Auto Wag,Автопокачивание,自动摆动
 TR_AWAITING_INPUT,Awaiting Input…,Ожидание ввода…,...等待输入...
 TR_BACKEND,Backend,Бэкенд,后端
 TR_BASIC_CONCEPTS_FULL,"Some sliders use Amp and Freq. Here is a basic explanation: Amplitude controls how far the object moves, and Frequency controls how fast it moves from + to - over time.","Некоторые ползунки используют амплитуду и частоту. Амплитуда задаёт силу отклонения, а частота — скорость движения от + к - со временем.",好的，请耐心听我说！您可能已经注意到这里的许多的频率和振幅滑块。如果您不知道它们是如何工作的，这里有一个非常基本的解释！振幅是主要值，物体将达到多高或多低，频率是放大器在给定时间内从+到-的速度。
@@ -189,7 +189,7 @@ TR_FOLLOW_SCALE_LABEL,Follow Option (Scale),Масштаб,跟随选项（比例
 TR_FOLLOW_SCALE_NOT,Small note:\nscale changes based on mouse position still need work and may change in future releases.,Примечание:\nмасштабирование по положению мыши ещё дорабатывается и может измениться в будущих версиях.,小提示\n根据鼠标位置的缩放变化效果仍需要一些改进，在以后的版本中可能会感觉或看起来有点不同。
 TR_FOLLOW_SPEED,Follow Speed,Скорость слежения,跟随速度
 TR_FOLLOW_THROUGH,Follow Through,Последействие,跟随对象
-TR_FOLLOW_WOBBLE,Wobble Movement,Покачивание,摇摆移动
+TR_FOLLOW_WOBBLE,Wobble Movement,Покачивание,摆动移动
 TR_FOR_TESTING_LABEL,For testing only,Только для тестирования,仅供测试
 TR_FRAME_LABEL,Frame,Кадр,帧
 TR_FRUTIGER_AERO,Frutiger Aero,Фрутигер аэро,Frutiger Aero
@@ -486,7 +486,7 @@ TR_TAB_PROPERTIES,Properties,Свойства,属性
 TR_TAB_REMIX,Remix,Ремикс,Remix
 TR_TAB_TESTS,Tests,Тесты,测试
 TR_TAB_WEBSOCKET,WebSocket,Вебсокет,WebSocket
-TR_TAB_WIGGLE,Wiggle,Покачивание,摇摆
+TR_TAB_WIGGLE,Wiggle,Покачивание,摆动
 TR_TARGET_MESH,Target Mesh,Целевая сетка,目标网格
 TR_TARGET_STRENGTH,Target Strength,Целевая сила,目标强度
 TR_TEST,Test,Тест,测试
@@ -549,8 +549,8 @@ TR_VISIBILITY,Visibility,Видимость,可见性
 TR_VISIBLE,Visible,Видимый,可见性
 TR_VOLUME,Volume,Громкость,音量
 TR_VOLUME_SENSITIVITY,Volume Sensitivity,Чувствительность громкости,音量灵敏度
-TR_WAG_FREQ_LABEL,Wag Freq,Частота покачивания,摇摆频率
-TR_WAG_SPEED_SLIDER,Wag Speed,Скорость покачивания,摇摆速度
+TR_WAG_FREQ_LABEL,Wag Freq,Частота покачивания,摆动频率
+TR_WAG_SPEED_SLIDER,Wag Speed,Скорость покачивания,摆动速度
 TR_WARNING_IF_KNOW,DON'T USE UNLESS YOU KNOW WHAT YOU ARE DOING,"ИСПОЛЬЗУЙТЕ ТОЛЬКО ЕСЛИ ВЫ ЗНАЕТЕ, ЧТО ДЕЛАЕТЕ",除非你明确知道自己在做什么，否则请勿使用
 TR_WASD,WASD,WASD,WASD
 TR_WASD_AD,WASD (A/D),WASD (A/D),WASD (AD)
@@ -560,17 +560,17 @@ TR_WELCOME,Welcome!,Добро пожаловать!,欢迎！
 TR_WHAT_IS_PNG_TUBING_FULL,"PNGTubing is a form of Vtubing. However, unlike Vtubing, it is much simpler and less costly. This is why it gained popularity in recent years. There are some different types of PNGTubing, this includes Static (like the model shown), Toon and Rigged. In this software -PNGTube-Remix, you can create both Static and Rigged! Even mix them up if needed. Hope you have fun!","PNGTubing — разновидность Vtubing, но гораздо проще и дешевле, поэтому он стал так популярен в последние годы. Есть разные виды PNGTubing: статичный (как показано), мультяшный и «риггед». В PNGTube-Remix можно делать и статичные, и риггед‑модели, а при желании смешивать подходы. Удачи и приятного творчества!",PNGTubing是Vtubing的一种形式。然而，与Vtubing不同，它更简单，成本更低。这就是为什么它近年来越来越受欢迎。有一些不同类型的PNGTubing，包括静态（如图所示）、Toon和Rigged。在这个软件-PNGTube Remix中，您可以创建静态和装配！如果需要，甚至把它们混合在一起。希望你玩得开心！
 TR_WHITE,White,Светлый,白色
 TR_WIDTH,Width,Ширина,宽度
-TR_WIGGLE_APPENDAGE,Wiggle Appendage,Покачивание придатка,摇摆附件
-TR_WIGGLE_PHYSICS,Wiggle Physics,Физика покачивания,摇摆物理
-TR_WIGGLE_SPRITE,Wiggle Sprite,Покачивание спрайта,摇摆精灵
+TR_WIGGLE_APPENDAGE,Wiggle Appendage,Покачивание придатка,摆动附件
+TR_WIGGLE_PHYSICS,Wiggle Physics,Физика покачивания,摆动物理
+TR_WIGGLE_SPRITE,Wiggle Sprite,Покачивание спрайта,摆动精灵
 TR_WIGGLE_STRETCH_TO_ANCHOR,Keeps its length when linked to an anchor,Сохраняет свою длину при привязке к якорю,连接到锚点时保持其长度
 TR_WINDOW,Window,Окно,窗口
 TR_WINDOW_DEFAULT,Reset Window To Default,Сбросить настройки окна,将窗口重置为默认值
 TR_WINDOW_SIZE,Window Size,Размер окна,窗口大小
 TR_WOBBLE_FREQ_TOOLTIP,Affects wobble and squish,Влияет на покачивание и сжатие,影响摇晃和挤压
-TR_WS_SYNC_EFFECT_TOOLTIP,Syncs the wiggle effect of the Sprite with the Parent's Wiggle effect (Both must be Sprite Objects),Синхронизирует эффект покачивания спрайта с родительским (оба должны быть спрайтами),将精灵的摇摆效果与父对象的摇摆效果同步（两者都必须是精灵对象）
-TR_WS_WIGGLE_AMP,Wiggle-Amp,Амплитуда покачивания,摇摆幅度
-TR_WS_WIGGLE_FREQUENCY,Wiggle-Freq,Частота покачивания,摇摆频率
+TR_WS_SYNC_EFFECT_TOOLTIP,Syncs the wiggle effect of the Sprite with the Parent's Wiggle effect (Both must be Sprite Objects),Синхронизирует эффект покачивания спрайта с родительским (оба должны быть спрайтами),将精灵的摆动效果与父对象的摆动效果同步（两者都必须是精灵对象）
+TR_WS_WIGGLE_AMP,Wiggle-Amp,Амплитуда покачивания,摆动幅度
+TR_WS_WIGGLE_FREQUENCY,Wiggle-Freq,Частота покачивания,摆动频率
 TR_XY_MOVEMENTS,X-Y Movements,Движения по X-Y,X-Y 运动
 TR_XY_MOVEMENTS_X_AMP,X-Amp,Амплитуда X,X-幅度
 TR_XY_MOVEMENTS_X_FREQUENCY,X-Freq,Частота X,X-频率
@@ -585,7 +585,7 @@ TR_Y_AMPLITUDE_WOBBLE,Y-Amplitude Wobble {value},Амплитуда колеба
 TR_Y_FREQUENCY_WOBBLE,Y-Frequency Wobble {value},Частота колебаний по Y {value},Y-频率 摇晃
 TR_Y_OFFSET,Y-Offset,Смещение Y,原点偏移 Y
 TR_Z_ORDER,Z Order,Порядок по Z,Z 图层排序
-Wiggle,Wiggle,Покачивание,摇摆
+Wiggle,Wiggle,Покачивание,摆动
 Window,Window,Окно,窗口
 EXPORT_SPRITES,Export Sprite(s),Экспортировать спрайты,导出精灵
 TR_PHYS_EFF,Physics Effect,Physics Effect,物理效果
@@ -616,3 +616,8 @@ TR_SKEW_Y,Skew-Y,Skew-Y,斜切-Y
 TR_FILE_OPEN,Open,Open,打开
 TR_REDO,Redo,Redo,重做
 TR_UNDO,Undo,Undo,撤销
+TR_GRID,Grid,Grid,网格
+TR_SHOW_GRID,Show Grid,Show Grid,显示网格
+TR_SNAP_POSITION,Snap Position,Snap Position,吸附位置
+TR_SNAP_SIZE,Snap Size,Snap Size,吸附间距
+TR_SNAP_SIZE_TITLE,Grid Snap Size,Grid Snap Size,网格吸附间距
