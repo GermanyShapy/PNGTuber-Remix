@@ -29,6 +29,7 @@ func nullfy():
 	%ShouldDisListContainer.hide()
 	%CycleChoiceSprite.disabled = true
 	#%CycleMargin.hide()
+	_on_cycle_choice_item_selected(%CycleChoice.selected)
 
 func enable():
 	if Global.held_sprites.size() == 1:
@@ -177,10 +178,3 @@ func _on_is_cycle_checkbox_changed(button_changed):
 		for i in Global.held_sprites:
 			if i != null && is_instance_valid(i):
 				i.sync_sprite_cycle_in_states()
-
-
-func _on_delete_cycle_mouse_entered() -> void:
-	%CycleDeleteTip.show()
-
-func _on_delete_cycle_mouse_exited() -> void:
-	%CycleDeleteTip.hide()

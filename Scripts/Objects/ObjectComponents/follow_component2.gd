@@ -35,7 +35,7 @@ var axis_shoulderr : Vector2 = Vector2.ZERO
 var axis_lr_3 : Vector2 = Vector2.ZERO
 
 func _physics_process(delta: float) -> void:
-	if Global.static_view or actor.rest_mode == 5:
+	if Global.static_view or actor.rest_mode in [5,6]:
 		return
 	if actor.rest_mode in [1,3] and rest:
 		reset_modifier()

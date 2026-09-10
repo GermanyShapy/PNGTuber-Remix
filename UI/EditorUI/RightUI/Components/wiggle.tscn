@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://0pdcrfa5cxci" path="res://UI/EditorUI/RightUI/Components/MiniComponents/wiggle_appendage_panel.tscn" id="2_35g5m"]
 
 [node name="Wiggle" type="ScrollContainer" unique_id=1000856462]
+propagate_maximum_size = true
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

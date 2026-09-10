@@ -429,7 +429,6 @@ tab_8/title = "TR_TAB_TESTS"
 [node name="Properties" parent="MainSplit/SecondarySplit/RightSide/RightPanel/Margin/VBoxContainer/VSplit/Inspector" unique_id=1209265079 instance=ExtResource("8_i4djb")]
 light_mask = 0
 layout_mode = 2
-mouse_filter = 1
 metadata/_tab_index = 0
 metadata/_tab_name = "TR_TAB_PROPERTIES"
 
@@ -461,7 +460,6 @@ metadata/_tab_name = "TR_TAB_ANIMATION"
 visible = false
 light_mask = 0
 layout_mode = 2
-mouse_filter = 1
 metadata/_tab_index = 4
 metadata/_tab_name = "TR_TAB_MODEL"
 
@@ -491,6 +489,7 @@ metadata/_tab_name = "Fun (Test)"
 
 [node name="Tests" type="ScrollContainer" parent="MainSplit/SecondarySplit/RightSide/RightPanel/Margin/VBoxContainer/VSplit/Inspector" unique_id=1993124440]
 visible = false
+propagate_maximum_size = true
 layout_mode = 2
 mouse_filter = 2
 horizontal_scroll_mode = 0
@@ -584,7 +583,7 @@ value_to_update = "chain_rot_max"
 layout_mode = 2
 size_flags_vertical = 1
 
-[node name="LabelMouseInputArea" type="Button" parent="MainSplit/SecondarySplit/RightSide/RightPanel/Margin/VBoxContainer/VSplit/StatePanel" unique_id=3617299567]
+[node name="LabelMouseInputArea" type="Button" parent="MainSplit/SecondarySplit/RightSide/RightPanel/Margin/VBoxContainer/VSplit/StatePanel" unique_id=-677667729]
 custom_minimum_size = Vector2(350, 30)
 layout_mode = 2
 mouse_filter = 2

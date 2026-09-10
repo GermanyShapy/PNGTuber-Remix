@@ -160,7 +160,7 @@ const DEFAULT_DATA := {
 	
 	
 	# Other stuff idk
-	blend_mode = "TR_BLEND_NORMAL",
+	blend_mode = "Normal",
 	visible = true,
 	colored = Color.WHITE,
 	tint = Color.WHITE,
