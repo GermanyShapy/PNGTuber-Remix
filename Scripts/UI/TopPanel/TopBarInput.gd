@@ -111,7 +111,7 @@ func _update_window_button() -> void:
 	for window in WindowHandler.windows:
 		if not window.borderless:
 			continue
-		menu.add_item("Edit Windows", WindowMenuId.EDIT_WINDOWS)
+		menu.add_item(tr("TR_EDIT_WINDOWS"), WindowMenuId.EDIT_WINDOWS)
 		break
 
 

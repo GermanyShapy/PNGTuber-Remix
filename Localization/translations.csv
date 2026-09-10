@@ -303,6 +303,8 @@ TR_MOVE_WITH_MOUSE,Move with Follow,Движение при следовании
 TR_MOVE_WITH_MOUSE_TOOLTIP,"Animate to Follow Movement must be enabled for this feature to work. When disabled, the sprite stops moving on the X and Y axes, but Animate to Mouse still works.","Для работы этой функции нужно включить «Анимацию следования». При отключении спрайт перестаёт двигаться по осям X и Y, но анимация по мыши продолжает работать.",必须启用动画跟随才能使此功能在关闭时工作，它会阻止角色在x和y轴上移动，但会保持动画跟随鼠标而移动的工作状态。
 TR_MULTISTATE_EDITING_CUE_LABEL,*Multi-State Editing On,*Множественное редактирование включено,*多状态编辑
 TR_NAME,Name,Имя,名称
+TR_NEVER_RESET,Never Reset,Никогда не сбрасывать,从不重置
+TR_NEVER_RESET_TOOLTIP,Never resets the animation,Никогда не сбрасывает анимацию,从不重置动画
 TR_NEW,New,Новый,新建
 TR_NEW_FILE,New File,Новый файл,新文件
 TR_NEW_PNGTUBER_TEXT,Do you want to make a new PNGTuber model?,Создать новую PNGTuber‑модель?,你想制作一个新的PNGTuber模型吗？
@@ -624,3 +626,4 @@ TR_SNAP_SIZE_TITLE,Grid Snap Size,Grid Snap Size,网格吸附间距
 TR_SNAP_SIZE_INFO,Snap distance (0.1 to 100 pixels):,Snap distance (0.1 to 100 pixels):,吸附距离 (0.1 ~ 100 像素)
 TR_ALWAYS_ACTIVE,Always Active,Always Active,始终激活
 TR_DISABLE_BOTH,Disable Both,Disable Both,禁用两者
+TR_EDIT_WINDOWS,Edit Windows,Edit Windows,解锁窗口尺寸
