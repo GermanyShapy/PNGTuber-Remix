@@ -132,7 +132,7 @@ layout_mode = 2
 size_flags_vertical = 0
 text = "TR_HOLD_TO_SHOW"
 
-[node name="StateInclusiveKeyCheckCheck" type="CheckBox" parent="StateRemapPopup/Margin/Panel/VBox" unique_id=3031733840]
+[node name="StateInclusiveKeyCheckCheck" type="CheckBox" parent="StateRemapPopup/Margin/Panel/VBox" unique_id=-1263233456]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
@@ -152,7 +152,7 @@ theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 5
 theme_override_constants/margin_bottom = 5
 
-[node name="LabelMouseInputArea" type="Button" parent="StateRemapPopup/Margin2" unique_id=3239369429]
+[node name="LabelMouseInputArea" type="Button" parent="StateRemapPopup/Margin2" unique_id=-1055597867]
 layout_mode = 2
 mouse_filter = 2
 button_mask = 0
