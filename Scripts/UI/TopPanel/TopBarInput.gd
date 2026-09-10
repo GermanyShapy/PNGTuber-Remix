@@ -337,7 +337,7 @@ func _show_grid_size_dialog() -> void:
 	grid_size_dialog = AcceptDialog.new()
 	grid_size_dialog.theme = Settings.current_theme
 	grid_size_dialog.title = tr("TR_SNAP_SIZE_TITLE")
-	grid_size_dialog.ok_button_text = "Apply"
+	grid_size_dialog.ok_button_text = tr("TR_APPLY")
 	grid_size_dialog.min_size = Vector2i(320, 130)
 
 	var container: VBoxContainer = VBoxContainer.new()
@@ -345,7 +345,7 @@ func _show_grid_size_dialog() -> void:
 	grid_size_dialog.add_child(container)
 
 	var label: Label = Label.new()
-	label.text = "Snap distance (0.1 to 100 pixels):"
+	label.text = tr("TR_SNAP_SIZE_INFO")
 	container.add_child(label)
 
 	grid_size_spinbox = SpinBox.new()

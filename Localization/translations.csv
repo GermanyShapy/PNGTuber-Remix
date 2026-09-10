@@ -382,7 +382,7 @@ TR_RESIZE,Resize,Изменить размер,调整大小
 TR_RESTORE_BRUSH,Restore Brush,Восстанавливающая кисть,还原笔刷
 TR_REST_BOTH,Rest Both,Покой обоих,休眠两者
 TR_REST_FOLLOW,Rest Follow Movement,Режим покоя для слежения,休眠跟随运动
-TR_REST_MODE,Rest Mode,Режим покоя,休止模式
+TR_REST_MODE,Rest Mode,Режим покоя,运动休眠模式
 TR_REST_MODE_TOOLTIP,"Rests or disables movement types. Rest means the feature stops when invisible, while disable turns it off completely.\nThis can improve performance, especially for heavier models that do not use a specific movement type.","Приостанавливает или отключает типы движения. Покой останавливает функцию, когда объект невидим, а отключение выключает её полностью.\nЭто помогает производительности, особенно у тяжёлых моделей, которым не нужен конкретный тип движения.",休眠/禁用运动类型。\n休眠意味着在列表中不可见或父精灵隐藏时，该功能将不起作用\n（如果你使用资源热键进行隐藏，而在列表中仍是可见的，那么该精灵不会休眠）。\n禁用则代表完全禁用该功能，即使在可见时也是如此。\n这可能有助于提高性能，特别是对于不使用特定运动类型的大型模型。
 TR_REST_MOVE,Rest Movement,Режим покоя для движения,休眠运动
 TR_RIGHT_EYE,Right eye,Правый глаз,右眼
@@ -576,13 +576,13 @@ TR_XY_MOVEMENTS_X_AMP,X-Amp,Амплитуда X,X-幅度
 TR_XY_MOVEMENTS_X_FREQUENCY,X-Freq,Частота X,X-频率
 TR_XY_MOVEMENTS_Y_AMP,Y-Amp,Амплитуда Y,Y-幅度
 TR_XY_MOVEMENTS_Y_FREQUENCY,Y-Freq,Частота Y,Y-频率
-TR_X_AMPLITUDE_WOBBLE,X-Amplitude Wobble {value},Амплитуда колебаний по X {value},X-幅度 摇晃
-TR_X_FREQUENCY_WOBBLE,X-Frequency Wobble {value},Частота колебаний по X {value},X-频率 摇晃
+TR_X_AMPLITUDE_WOBBLE,X-Amplitude Wobble {value},Амплитуда колебаний по X {value},X-幅度 摇晃 {value}
+TR_X_FREQUENCY_WOBBLE,X-Frequency Wobble {value},Частота колебаний по X {value},X-频率 摇晃 {value}
 TR_X_FREQUENCY_WOBBLE_TOOLTIP,Affects the Wobbling,Влияет на покачивание,影响摇晃
 TR_X_OFFSET,X-Offset,Смещение X,原点偏移 X
 TR_YES,Yes,Да,是
-TR_Y_AMPLITUDE_WOBBLE,Y-Amplitude Wobble {value},Амплитуда колебаний по Y {value},Y-幅度 摇晃
-TR_Y_FREQUENCY_WOBBLE,Y-Frequency Wobble {value},Частота колебаний по Y {value},Y-频率 摇晃
+TR_Y_AMPLITUDE_WOBBLE,Y-Amplitude Wobble {value},Амплитуда колебаний по Y {value},Y-幅度 摇晃 {value}
+TR_Y_FREQUENCY_WOBBLE,Y-Frequency Wobble {value},Частота колебаний по Y {value},Y-频率 摇晃 {value}
 TR_Y_OFFSET,Y-Offset,Смещение Y,原点偏移 Y
 TR_Z_ORDER,Z Order,Порядок по Z,Z 图层排序
 Wiggle,Wiggle,Покачивание,摆动
@@ -621,3 +621,6 @@ TR_SHOW_GRID,Show Grid,Show Grid,显示网格
 TR_SNAP_POSITION,Snap Position,Snap Position,吸附位置
 TR_SNAP_SIZE,Snap Size,Snap Size,吸附间距
 TR_SNAP_SIZE_TITLE,Grid Snap Size,Grid Snap Size,网格吸附间距
+TR_SNAP_SIZE_INFO,Snap distance (0.1 to 100 pixels):,Snap distance (0.1 to 100 pixels):,吸附距离 (0.1 ~ 100 像素)
+TR_ALWAYS_ACTIVE,Always Active,Always Active,始终激活
+TR_DISABLE_BOTH,Disable Both,Disable Both,禁用两者

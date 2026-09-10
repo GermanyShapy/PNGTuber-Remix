@@ -56,10 +56,10 @@ func _drop_data(at_position: Vector2, data: Variant) -> void:
 	var cycle_id = %CycleChoice.get_selected_id() - 1
 	var cycle = Global.settings_dict.cycles[cycle_id]
 	var dragged_index = (data as TreeItem).get_index()
-	var target_index = (item as TreeItem).get_index() if n != -100 else cycle.sprites.size() - 1
+	var target_index = (item as TreeItem).get_index() if n != -100 else 0
 	var temp_sprite_id = cycle.sprites[dragged_index]
 	
-	if n == 1 or n == -100:
+	if n == 1:
 		target_index += 1
 	
 	(cycle.sprites as Array).remove_at(dragged_index)

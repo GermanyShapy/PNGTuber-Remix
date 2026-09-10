@@ -1,7 +1,37 @@
 extends Node
 
+# This dictionary record the mapping between blend_mode names and indexs.
+# Please supplement here when adding options for %BlendMode OptionButton.
+# In SpriteObject, blend_mode stores the string of the blend mode.
+const _BLEND_MODE_NAME_TO_ID := {
+	&"Normal":   0,
+	&"Add":      1,
+	&"Subtract": 2,
+	&"Multiply": 3,
+	&"Burn":     4,
+	&"HardMix":  5,
+	&"Cursed":   6,
+	&"Masking":  101,
+}
+
+static var _BLEND_MODE_ID_TO_NAME: Dictionary
 var should_change : bool = false
 var undo_redo_data = []
+
+static func _static_init() -> void:
+	_BLEND_MODE_ID_TO_NAME = {}
+	for n in _BLEND_MODE_NAME_TO_ID:
+		_BLEND_MODE_ID_TO_NAME[_BLEND_MODE_NAME_TO_ID[n]] = n
+	_BLEND_MODE_ID_TO_NAME.make_read_only()   # LOCK
+
+static func blend_mode_to_id(string_name: StringName) -> int:
+	return _BLEND_MODE_NAME_TO_ID.get(string_name, 0)
+
+static func blend_mode_to_name(id: int) -> StringName:
+	return _BLEND_MODE_ID_TO_NAME.get(id, &"Normal")
+
+static func blend_mode_is_valid_id(id: int) -> bool:
+	return _BLEND_MODE_ID_TO_NAME.has(id)
 
 func _ready() -> void:
 	%ColorPickerButton.get_picker().picker_shape = 1
@@ -101,7 +131,7 @@ func set_data():
 		else:
 			%ClipChildren.button_pressed = true
 		
-		%BlendMode.selected = %BlendMode.get_item_index(get_item_id_by_blend_mode(i.get_value("blend_mode")))
+		%BlendMode.selected = %BlendMode.get_item_index(blend_mode_to_id(i.get_value("blend_mode")))
 		
 		%OffsetXSpinBox.value = i.get_value("offset").x
 		%OffsetYSpinBox.value = i.get_value("offset").y
@@ -186,8 +216,8 @@ func get_blend_mode_by_id(id) -> String:
 func _on_blend_state_pressed(id):
 	undo_redo_data = []
 	for i in Global.held_sprites:
-		var d = submit_to_undo_redo_manager(i, "blend_mode", Global.current_state, i.sprite_data.blend_mode, get_blend_mode_by_id(id))
-		i.sprite_data.blend_mode = get_blend_mode_by_id(id)
+		var d = submit_to_undo_redo_manager(i, "blend_mode", Global.current_state, i.sprite_data.blend_mode, blend_mode_to_name(id))
+		i.sprite_data.blend_mode = blend_mode_to_name(id)
 		StateButton.multi_edit(i.sprite_data.blend_mode, "blend_mode", i, i.states)
 		
 		i.set_blend(i.get_value("blend_mode"))
@@ -238,7 +268,7 @@ func push_undo_redo_on_focus(spin_box: SpinBox):
 
 func _on_color_picker_button_color_changed(color: Color) -> void:
 	if should_change:
-		var undo_redo_data : Array = []
+		undo_redo_data = []
 		for i in Global.held_sprites:
 			var d = submit_to_undo_redo_manager(i, "modulate", Global.current_state, i.sprite_data.colored , color)
 			i.modulate = color
@@ -256,7 +286,7 @@ func _on_color_picker_button_focus_exited() -> void:
 
 func _on_tint_picker_button_color_changed(ncolor: Color) -> void:
 	if should_change:
-		var undo_redo_data : Array = []
+		undo_redo_data = []
 		for i in Global.held_sprites:
 			var d = submit_to_undo_redo_manager(i, "tint", Global.current_state, i.get_value("tint") , ncolor)
 			i.sprite_data.tint = ncolor
@@ -316,7 +346,7 @@ func _on_rot_spin_box_value_changed(value):
 
 func _on_visible_toggled(toggled_on):
 	if should_change:
-		var undo_redo_data : Array = []
+		undo_redo_data = []
 		for i in Global.held_sprites:
 			var d = submit_to_undo_redo_manager(i, "visible", Global.current_state, i.sprite_data.visible , toggled_on)
 			if toggled_on:

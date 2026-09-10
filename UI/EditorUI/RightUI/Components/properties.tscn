@@ -155,38 +155,38 @@ step = 0.01
 value = 1.0
 script = ExtResource("1_tcd20")
 
-[node name="SkewXLabel" type="Label" parent="VBoxContainer/Layouts"]
+[node name="SkewXLabel" type="Label" parent="VBoxContainer/Layouts" unique_id=137914531]
 custom_minimum_size = Vector2(74, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_font_sizes/font_size = 15
 text = "TR_SKEW_X"
 
-[node name="SkewSpinXBox" type="SpinBox" parent="VBoxContainer/Layouts"]
+[node name="SkewSpinXBox" type="SpinBox" parent="VBoxContainer/Layouts" unique_id=278682831]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = -89.9
 max_value = 89.9
 step = 0.1
-value = 0.1
+value = 0.09999999999999432
 script = ExtResource("1_tcd20")
 
-[node name="SkewYLabel" type="Label" parent="VBoxContainer/Layouts"]
+[node name="SkewYLabel" type="Label" parent="VBoxContainer/Layouts" unique_id=667535888]
 custom_minimum_size = Vector2(74, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_font_sizes/font_size = 15
 text = "TR_SKEW_Y"
 
-[node name="SkewSpinYBox" type="SpinBox" parent="VBoxContainer/Layouts"]
+[node name="SkewSpinYBox" type="SpinBox" parent="VBoxContainer/Layouts" unique_id=1099607280]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = -89.9
 max_value = 89.9
 step = 0.1
-value = 0.1
+value = 0.09999999999999432
 script = ExtResource("1_tcd20")
 
 [node name="Sp3" type="HSeparator" parent="VBoxContainer" unique_id=690604835]
@@ -421,8 +421,8 @@ size_flags_horizontal = 3
 tooltip_text = "TR_REST_MODE_TOOLTIP"
 theme_override_font_sizes/font_size = 16
 selected = 0
-item_count = 7
-popup/item_0/text = "TR_DISABLED"
+item_count = 8
+popup/item_0/text = "TR_ALWAYS_ACTIVE"
 popup/item_0/id = 0
 popup/item_1/text = "TR_REST_FOLLOW"
 popup/item_1/id = 1
@@ -430,12 +430,14 @@ popup/item_2/text = "TR_REST_MOVE"
 popup/item_2/id = 2
 popup/item_3/text = "TR_REST_BOTH"
 popup/item_3/id = 3
-popup/item_4/text = "TR_DISABLE_FOLLOW"
+popup/item_4/text = "TR_DISABLE_MOVE"
 popup/item_4/id = 4
-popup/item_5/text = "TR_DISABLE_MOVE"
+popup/item_5/text = "TR_DISABLE_FOLLOW"
 popup/item_5/id = 5
-popup/item_6/text = "TR_REST_MOVE_AND_RESET"
+popup/item_6/text = "TR_DISABLE_BOTH"
 popup/item_6/id = 6
+popup/item_7/text = "TR_REST_MOVE_AND_RESET"
+popup/item_7/id = 7
 
 [node name="HiddenItem" type="CheckBox" parent="VBoxContainer/GridContainer" unique_id=203437404]
 unique_name_in_owner = true

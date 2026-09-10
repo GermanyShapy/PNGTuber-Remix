@@ -63,27 +63,35 @@ func _ready() -> void:
 	dragger.global_position = modifier_node.global_position
 
 func _physics_process(delta: float) -> void:
+	apply_static_object_pin.call_deferred()
+
 	modifier_global = modifier1_node.global_position
 	placeholder_position = modifier1_node.position
 	applied_pos =  placeholder_position
 
-	if !Global.static_view && actor.rest_mode != 4:
-		if (actor.rest_mode == 2 or actor.rest_mode == 3) && rest:
-			rest_mode_movements(delta)
-		else:
-			if actor.get_value("should_rotate"):
-				auto_rotate()
-			else:
-				should_rot_rotation = 0.0
-			rainbow(delta)
-			movements(delta)
-	elif Global.static_view:
+	if Global.static_view:
 		static_prev()
-	else:
-		modifier_node.position = Vector2(0,0)
+	elif actor.rest_mode in [4,6]:	# Disable
+		modifier_node.position = Vector2.ZERO
 		modifier_node.rotation = 0.0
-		modifier_node.scale = Vector2(1,1)
+		modifier_node.scale = Vector2.ONE
 		sprite_node.self_modulate = actor.get_value("tint")
+		return
+	elif (actor.rest_mode in [2,3,6]) && rest:
+		if actor.rest_mode == 6:
+			last_wobble_pos = Vector2.ZERO
+			paused_wobble = Vector2.ZERO
+			paused_rotation = 0.0
+			should_rot_rotation = 0.0
+		rest_mode_movements(delta)
+	else:	# Active movements
+		if actor.get_value("should_rotate"):
+			auto_rotate()
+		else:
+			should_rot_rotation = 0.0
+		rainbow(delta)
+		movements(delta)
+
 	if !actor.get_value("follow_wa_tip"):
 		follow_point_rot = 0.0
 	else:
@@ -159,17 +167,21 @@ func chained_hit_reaction():
 			final_hit = wrapf(final_hit, -PI, PI)
 			hit_rotation += final_hit
 
-func _process(_delta : float) -> void:
-	if actor.get_value("static_obj"):
-		var object_pos = actor.get_value("position")
-		var pos = Global.main.get_node("%Node2D").to_global(actor.get_value("position"))
-		var p = actor.get_parent()
-		if (p is Sprite2D or p is WigglyAppendage2D or p is CustomMesh)  && is_instance_valid(p):
-			var parent = p.owner
-			if parent.get_value("static_obj"):
-				pos = p.to_global(object_pos)
+func apply_static_object_pin() -> void:
+	if !actor.get_value("static_obj") or actor.dragging:
+		return
 
-		%Rotation.global_position = pos
+	# Position is stored in the container's space, except for a sprite nested in
+	# another static sprite, where it stays relative to that parent.
+	var object_pos : Vector2 = actor.get_value("position")
+	var pos : Vector2 = Global.main.get_node("%Node2D").to_global(object_pos)
+	var p : Node = actor.get_parent()
+	if p is Node2D && (p is Sprite2D or p is WigglyAppendage2D or p is CustomMesh):
+		var parent : Node = p.owner
+		if parent is SpriteObject && is_instance_valid(parent) && parent.get_value("static_obj"):
+			pos = (p as Node2D).to_global(object_pos)
+
+	%Rotation.global_position = pos
 
 func static_prev() -> void:
 	modifier_node.position = Vector2.ZERO
@@ -268,57 +280,41 @@ func drag(_delta : float):
 		dragger.global_position = target
 
 func wobble(delta: float) -> void:
-	if actor.is_default("xFrq"):
-		if actor.get_value("pause_movement"):
-			if actor.is_all_default("xFrq"):
-				last_wobble_pos.x = lerp(last_wobble_pos.x, 0.0, 0.5)
-			else:
-				paused_wobble.x += delta if Global.settings_dict.should_delta else 1.
+	# pause_movement is always false.
+	# Can't find out any input to pause_movement. Maybe it's a deprecated toggle instead by Global.static_view.
+	if true: # !actor.get_value("pause_movement"):
+		var offset = delta if Global.settings_dict.should_delta else 1.0
+		
+		if actor.get_value("xAmp") != 0.0:
+			paused_wobble.x += offset
+			last_wobble_pos.x = actor.get_value("xAmp") * sin(paused_wobble.x * actor.get_value("xFrq"))
 		else:
-			var wob_x : float = sin((Global.tick-paused_wobble.x)*actor.get_value("xFrq"))*actor.get_value("xAmp")
-			last_wobble_pos.x = lerp(last_wobble_pos.x, wob_x, 0.5)
-	else:
-		var wob_x : float = sin((Global.tick)*actor.get_value("xFrq"))*actor.get_value("xAmp")
-		last_wobble_pos.x = lerp(last_wobble_pos.x, wob_x, 0.5)
-
-	if actor.is_default("yFrq"):
-		if actor.get_value("pause_movement"):
-			if actor.is_all_default("yFrq"):
-				last_wobble_pos.y = lerp(last_wobble_pos.y, 0.0, 0.5)
-
-			else:
-				paused_wobble.y += delta if Global.settings_dict.should_delta else 1.
+			last_wobble_pos.x = 0
+		if actor.get_value("yAmp") != 0.0:
+			paused_wobble.y += offset
+			last_wobble_pos.y = actor.get_value("yAmp") * sin(paused_wobble.y * actor.get_value("yFrq"))
 		else:
-			var wob_y : float = sin((Global.tick-paused_wobble.y)*actor.get_value("yFrq"))*actor.get_value("yAmp")
-			last_wobble_pos.y = lerp(last_wobble_pos.y, wob_y, 0.5)
-	else:
-		var wob_y : float = sin((Global.tick)*actor.get_value("yFrq"))*actor.get_value("yAmp")
-		last_wobble_pos.y = lerp(last_wobble_pos.y, wob_y, 0.5)
-
-	applied_pos.x += last_wobble_pos.x
-	applied_pos.y += last_wobble_pos.y
+			last_wobble_pos.y = 0
+	
+	applied_pos += last_wobble_pos
 
 func rotational_drag(length, delta: float):
-	if actor.is_default("rot_frq"):
-		if actor.get_value("pause_movement"):
-			if actor.is_all_default("rot_frq"):
-				last_rot = 0
-			else:
-				paused_rotation += delta if Global.settings_dict.should_delta else 1.
-		else:
-			last_rot = sin((Global.tick-paused_rotation) * actor.get_value("rot_frq"))
-			last_rot *= deg_to_rad(actor.get_value("rdragStr"))
+	var rdrag_str = actor.get_value("rdragStr")
+	
+	if 0.0 == actor.get_value("rot_frq"):
+		last_rot = 0.0
+		if 0.0 == rot_drag and 0.0 == rdrag_str:
+			return #no need to rotation drag
 	else:
-		last_rot = sin((Global.tick-paused_rotation) * actor.get_value("rot_frq"))
-		last_rot *= deg_to_rad(actor.get_value("rdragStr"))
+		last_rot = sin((Global.tick-paused_rotation) * actor.get_value("rot_frq")) * deg_to_rad(rdrag_str)
 
 	var min_rot : float = deg_to_rad(actor.get_value("rLimitMin"))
 	var max_rot : float = deg_to_rad(actor.get_value("rLimitMax"))
 
-	var final_last_rot : float = clamp(last_rot,min_rot, max_rot)
+	var final_last_rot : float = clamp(last_rot, min_rot, max_rot)
 
 	applied_rotation = lerp_angle(applied_rotation, final_last_rot, 0.15)
-	yvel = ((length * actor.get_value("rdragStr")))*(actor.get_value("phys_eff")/200.0)
+	yvel = ((length * rdrag_str))*(actor.get_value("phys_eff")/200.0)
 
 	yvel = clamp(yvel,min_rot, max_rot)
 	applied_rotation = lerp_angle(applied_rotation,deg_to_rad(yvel),0.15)
@@ -390,4 +386,11 @@ func actor_get_parent():
 	return get_parent()
 
 func _on_sprite_object_visibility_changed() -> void:
-	rest = !actor.is_visible_in_tree()
+	rest = !actor.is_visible_in_tree() if !(actor == null) else false
+	
+	if rest and actor.tween != null:
+		actor.tween.kill()
+		if actor.was_active_before:
+			actor.modulate.a = 1.0
+		else:
+			actor.modulate.a = 0.0

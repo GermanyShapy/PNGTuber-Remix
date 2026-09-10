@@ -521,7 +521,7 @@ func set_common_data(sprite, sprite_obj):
 	sprite_obj.used_image_id = sprite.get("image_id", 0)
 	sprite_obj.used_image_id_normal = sprite.get("normal_id", 0)
 	sprite_obj.sprite_id = sprite.sprite_id
-	sprite_obj.rest_mode = sprite.get("rest_mode", 1)
+	sprite_obj.rest_mode = sprite.get("rest_mode", 0)
 	sprite_obj.flipped_h = sprite.get("flipped_h", false)
 	sprite_obj.flipped_v = sprite.get("flipped_v", false)
 	sprite_obj.rotated = sprite.get("rotated", 0)

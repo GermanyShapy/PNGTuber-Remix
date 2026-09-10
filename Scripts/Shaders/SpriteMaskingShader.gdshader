@@ -53,12 +53,14 @@ void fragment() {
 		vec4 blendColor;
 	   	vec4 output = vec4(1,1,1,1);
 		float gray = 0.0;
-
+		float mask = 1.0;
+		
 		output = Color * modulate;
 		gray = (output.r + output.g + output.b) / 3.0;
-		output.rgb = vec3(gray,gray,gray);
-		output.a = output.a * gray;
-		// needs fix, uauauau
+		mask = mix(1.0, gray, output.a);
+		output.rgb = vec3(mask,mask,mask);
+		output.a = mask; // - output.a * (1.0 - gray);
+		
 		COLOR.rgb = output.rgb;
 		COLOR.a = output.a;
 		output_1 = output.rgb;

@@ -19,7 +19,28 @@ func _ready() -> void:
 	Global.update_anim.connect(set_data)
 	set_data()
 
-func set_data():
+
+# Label keeps the assigned string as its raw value and derives what is displayed
+# from it via atr(). Writing an already translated string therefore destroys the
+# translation key, and the label can no longer follow later locale changes.
+# The wobble labels embed a value, so they must be rebuilt from the keys.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
+		_refresh_wobble_labels()
+
+
+func _refresh_wobble_labels() -> void:
+	%XFreqWobbleLabel.text = _localize_value(KEY_X_FREQ_WOBBLE, %XFreqWobbleSlider.value)
+	%XAmpWobbleLabel.text = _localize_value(KEY_X_AMP_WOBBLE, %XAmpWobbleSlider.value)
+	%YFreqWobbleLabel.text = _localize_value(KEY_Y_FREQ_WOBBLE, %YFreqWobbleSlider.value)
+	%YAmpWobbleLabel.text = _localize_value(KEY_Y_AMP_WOBBLE, %YAmpWobbleSlider.value)
+
+
+func _localize_value(p_key: String, p_value: float) -> String:
+	return tr(p_key).format({ "value": p_value })
+
+
+func set_data() -> void:
 	if type == ModelAnimationType.MouthClosed:
 		%BounceAmountSlider.get_node("%SliderValue").value = Global.sprite_container.state_param_mc.bounce_energy
 		%GravityAmountSlider.get_node("%SliderValue").value = Global.sprite_container.state_param_mc.bounce_gravity
@@ -40,6 +61,8 @@ func set_data():
 		%XAmpWobbleSlider.value = Global.sprite_container.state_param_mo.xAmp
 		%YFreqWobbleSlider.value = Global.sprite_container.state_param_mo.yFrq
 		%YAmpWobbleSlider.value = Global.sprite_container.state_param_mo.yAmp
+
+	_refresh_wobble_labels()
 
 func _on_bounce_amount_slider_value_changed(value):
 	if type == ModelAnimationType.MouthClosed:
@@ -67,7 +90,7 @@ func _on_x_freq_wobble_slider_value_changed(value):
 	if type == ModelAnimationType.MouthOpen:
 		Global.sprite_container.state_param_mo.xFrq = value
 
-	%XFreqWobbleLabel.text = tr(KEY_X_FREQ_WOBBLE).format({ "value": value })
+	_refresh_wobble_labels()
 	Global.sprite_container.save_state(Global.current_state)
 
 func _on_x_amp_wobble_slider_value_changed(value):
@@ -76,7 +99,7 @@ func _on_x_amp_wobble_slider_value_changed(value):
 	if type == ModelAnimationType.MouthOpen:
 		Global.sprite_container.state_param_mo.xAmp = value
 
-	%XAmpWobbleLabel.text = tr(KEY_X_AMP_WOBBLE).format({ "value": value })
+	_refresh_wobble_labels()
 	Global.sprite_container.save_state(Global.current_state)
 
 func _on_y_freq_wobble_slider_value_changed(value):
@@ -85,7 +108,7 @@ func _on_y_freq_wobble_slider_value_changed(value):
 	if type == ModelAnimationType.MouthOpen:
 		Global.sprite_container.state_param_mo.yFrq = value
 
-	%YFreqWobbleLabel.text = tr(KEY_Y_FREQ_WOBBLE).format({ "value": value })
+	_refresh_wobble_labels()
 	Global.sprite_container.save_state(Global.current_state)
 
 func _on_y_amp_wobble_slider_value_changed(value):
@@ -94,5 +117,5 @@ func _on_y_amp_wobble_slider_value_changed(value):
 	if type == ModelAnimationType.MouthOpen:
 		Global.sprite_container.state_param_mo.yAmp = value
 
-	%YAmpWobbleLabel.text = tr(KEY_Y_AMP_WOBBLE).format({ "value": value })
+	_refresh_wobble_labels()
 	Global.sprite_container.save_state(Global.current_state)

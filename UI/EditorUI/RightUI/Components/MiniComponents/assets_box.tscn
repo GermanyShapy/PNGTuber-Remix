@@ -322,23 +322,12 @@ expand_icon = true
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 2
 size_flags_horizontal = 0
+tooltip_text = "TR_CYCLE_DELETE_TIP"
 focus_mode = 1
 focus_behavior_recursive = 1
 icon = SubResource("AtlasTexture_u22l2")
 icon_alignment = 1
 expand_icon = true
-
-[node name="CycleDeleteTip" type="PanelContainer" parent="." unique_id=1927201522]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-size_flags_horizontal = 8
-focus_mode = 1
-focus_behavior_recursive = 1
-
-[node name="Label" type="Label" parent="CycleDeleteTip" unique_id=1801152851]
-layout_mode = 2
-text = "TR_CYCLE_DELETE_TIP"
 
 [node name="CycleMargin" type="MarginContainer" parent="." unique_id=1941641508]
 unique_name_in_owner = true
@@ -514,8 +503,6 @@ script = ExtResource("11_ef4gi")
 [connection signal="item_selected" from="CycleGrid/CycleChoiceSprite" to="." method="_on_cycle_choice_sprite_item_selected"]
 [connection signal="item_selected" from="HBoxContainer/CycleChoice" to="." method="_on_cycle_choice_item_selected"]
 [connection signal="pressed" from="HBoxContainer/AddCycle" to="." method="_on_add_cycle_pressed"]
-[connection signal="mouse_entered" from="HBoxContainer/DeleteCycle" to="." method="_on_delete_cycle_mouse_entered"]
-[connection signal="mouse_exited" from="HBoxContainer/DeleteCycle" to="." method="_on_delete_cycle_mouse_exited"]
 [connection signal="pressed" from="HBoxContainer/DeleteCycle" to="." method="_on_delete_cycle_pressed"]
 [connection signal="pressed" from="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset/CycleDel" to="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset/CycleKey" method="_on_cycle_del_pressed"]
 [connection signal="pressed" from="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset2/CycleForDel" to="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset2/CycleForward" method="_on_cycle_del_pressed"]
