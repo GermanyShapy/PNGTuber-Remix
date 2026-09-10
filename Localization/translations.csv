@@ -621,3 +621,6 @@ TR_NEVER_RESET_TOOLTIP,Never resets the animation,Никогда не сбрас
 TR_EDIT_WINDOWS,Edit Windows,Edit Windows
 TR_NEVER_RESET,Never Reset,Никогда не сбрасывать
 TR_MOUSE_INPUT_AREA,(Mouse Bind Capture Area),(Область захвата ввода мыши)
+TR_SNAP_SIZE_INFO,Snap distance (0.1 to 100 pixels):,Snap distance (0.1 to 100 pixels):
+TR_ALWAYS_ACTIVE,Always Active,Always Active
+TR_DISABLE_BOTH,Disable Both,Disable Both
