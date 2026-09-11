@@ -54,7 +54,12 @@ func _physics_process(delta: float) -> void:
 		target_pos = Vector2.ZERO
 		modifier.position = Vector2.ZERO
 		return
-	if Global.static_view or actor.rest_mode == 5:
+	if Global.static_view:
+		return
+	# rest_mode 5/6 fully disables the follow: snap the modifier back to its rest
+	# transform right away instead of freezing it at the last followed offset.
+	if actor.rest_mode in [5,6]:
+		reset_modifier()
 		return
 	if actor.rest_mode in [1,3] and rest:
 		reset_modifier()
@@ -68,7 +73,15 @@ func reset_modifier() -> void:
 	modifier.scale = Vector2.ONE
 
 func mouse_delay():
-	mouse_delta = last_mouse_position - mouse_coords
+	#get mouse delta with relative movement in mouse inputs
+	if GlobInput.rawMouseInput != null:
+		if GlobInput.is_mouse_relative_movement:
+			mouse_delta = -GlobInput.mouse_relative_movement
+		else:
+			mouse_delta = Vector2.ZERO
+	else:
+		mouse_delta = last_mouse_position - mouse_coords
+	
 	last_mouse_position = mouse_coords
 
 func _process(delta: float) -> void:
