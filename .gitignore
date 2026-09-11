@@ -1,3 +1,10 @@
 # Godot 4+ specific ignores
 .godot/
 /bin
+
+# WorkBuddy local AI memory (do not commit)
+.workbuddy/
+
+# Local AI workspace: AGENTS.md pointer + .ai/ doc space (personal, separate git)
+/AGENTS.md
+/.ai/
