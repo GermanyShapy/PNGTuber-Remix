@@ -13,8 +13,7 @@ TR_ADD_KEY,Add Key,Добавить клавишу,新增按键
 TR_ADD_LAYER,Add Layer,Добавить слой,添加图层
 TR_ADD_MESH,Add Mesh,Добавить сетку,添加网格
 TR_ADD_NEW_STATE,Add new State,Добавить новое состояние,新增状态
-TR_ADD_OBJECT_WITH_OFFSET,Add Object with offset?\n(for Trimmed Images),Добавить объект со смещением?\n(для обрезанных изображений),"使用偏移添加对象？
-(适用于已裁剪的图片)"
+TR_ADD_OBJECT_WITH_OFFSET,Add Object with offset?\n(for Trimmed Images),Добавить объект со смещением?\n(для обрезанных изображений),"使用偏移添加对象？\n(适用于已裁剪的图片)"
 TR_ADD_SPRITES,Add Sprites,Добавить спрайты,添加精灵
 TR_ADD_SPRITE_AS_APPENDAGE,Add Sprite as Appendage,Добавить спрайт как придаток,将精灵添加为摆动附件
 TR_ADD_WINDOW,Add Window,Добавить окно,新增窗口
@@ -292,7 +291,7 @@ TR_MODEL_OPTIMIZER_TRIM_IMAGES,Trim Images,Обрезать изображени
 TR_MOMENTUM_LABEL,Momentum,Инерция,动量
 TR_MOTION_TYPE,Motion Type,Тип движения,运动类型
 TR_MOUSE,Mouse,Мышь,鼠标
-TR_MOUSE_VELOCITY,Mouse Velocity,Скорость мыши,跟随鼠标速度
+TR_MOUSE_VELOCITY,Mouse Velocity,Скорость мыши,跟随基于鼠标速度
 TR_MOUTH,Mouth,Рот,嘴巴
 TR_MOUTH_CLOSED,Mouth Closed,Рот закрыт,嘴巴闭合
 TR_MOUTH_OPEN,Mouth Open,Рот открыт,嘴巴张开
@@ -413,8 +412,8 @@ TR_SAVE_UNUSED_FILES,Save Unused Files,Сохранить неиспользуе
 TR_SAVE_WARNING,Did you make sure to save?,Ты точно сохранил(а) изменения?,你确定已经保存了吗？
 TR_SAVE_WARNING_FULL,"If you clicked quit without making sure your work is saved, you will lose your progress.","Если нажать «Выйти», не убедившись, что работа сохранена, прогресс будет утерян.",如果您在未确保工作已保存的情况下单击了“退出”，您将失去进度。
 TR_SAVE_WINDOW_POSITIONS,"Save Window State (position, size, etc.)","Сохранять состояние окна (позицию, размер и т.п.)",保存窗口(位置、大小等)
-TR_SCALE_POS_X,Invert Scale X,Инвертировать масштаб X,反转缩放 X
-TR_SCALE_POS_Y,Invert Scale Y,Инвертировать масштаб Y,反转缩放 Y
+TR_INVERT_SCALE_X,Invert Scale X,Инвертировать масштаб X,反转缩放 X
+TR_INVERT_SCALE_Y,Invert Scale Y,Инвертировать масштаб Y,反转缩放 Y
 TR_SCALE_X_MAX,Scale X Max,Масштаб X Макс,缩放 X 最大值
 TR_SCALE_X_MIN,Scale X Min,Масштаб X Мин,缩放 X 最小值
 TR_SCALE_Y_MAX,Scale Y Max,Масштаб Y Макс,缩放 Y 最大值
@@ -454,7 +453,7 @@ TR_SOFTNESS,Softness,Мягкость,柔软度
 TR_SOURCE_CODE,Source Code,Исходный код,Source Code
 TR_SPECTRUM,Spectrum,Спектр,频谱
 TR_SPRING,Spring,Пружина,弹簧
-TR_SPRITES,Sprites,Спрайты,精灵
+TR_SPRITES,Sprites,Спрайты,精灵(图层部件)
 TR_SPRITE_ID_LABEL,Sprite ID,ID спрайта,精灵ID
 TR_SPRITE_VIEW,Sprite View,Просмотр спрайтов,精灵视图
 TR_SQUARE_GRID,Square Grid,Квадратная сетка,方形网格
@@ -545,7 +544,7 @@ TR_UNLINK_BUTTON_TOOLTIP,Unlinks a child Object from Parent Object,Откреп�
 TR_UPDATE_MIC_LIST,Update Mic List,Обновить список микрофонов,更新麦克风列表
 TR_USE_DELTA_TIME,Use DeltaTime,Использовать DeltaTime,使用增量时间
 TR_USE_DELTA_TIME_TOOLTIP,"The movement Ticks uses (Tick + 1 every frame),\nwhich could lead to very strong movements even with low\nmovement values.\nUsing DeltaTime makes it slower ( Tick + 0.016 every frame)\nand more forgiving to use higher values.\nThis needs to be set for every model to prevent sharing issues.","Счётчик движения увеличивается на 1 каждый кадр,\nчто может давать слишком сильное движение даже при малых значениях.\nDeltaTime делает шаг ≈0.016 за кадр и позволяет использовать большие значения.\nЭто нужно указывать для каждой модели, чтобы не было проблем при обмене.",运动计数模式（每帧Tick+1），即使移动值较低，也可能导致非常强烈的移动。\n使用增量时间(DeltaTime)会使速度变慢（每帧Tick+0.016），\n并且更宽容地使用更高的值。\n这需要为每个模型设置，以防止共享问题。
-TR_USE_OBJECT_POSITION,Use Object Position,Использовать положение объекта,使用对象位置
+TR_USE_OBJECT_POSITION,Use Object Position,Использовать положение объекта,使用对象位置(作为鼠标跟随移动原点)
 TR_USE_THREADS,Use Threads,Использовать потоки,使用多线程
 TR_VISIBILITY,Visibility,Видимость,可见性
 TR_VISIBLE,Visible,Видимый,可见性
@@ -627,5 +626,6 @@ TR_SNAP_SIZE_INFO,Snap distance (0.1 to 100 pixels):,Snap distance (0.1 to 100 p
 TR_ALWAYS_ACTIVE,Always Active,Always Active,始终激活
 TR_DISABLE_BOTH,Disable Both,Disable Both,禁用两者
 TR_EDIT_WINDOWS,Edit Windows,Edit Windows,解锁窗口尺寸
-TR_USE_SCREEN_EDGE_RANGE,Use Screen Edge as Range,Край экрана как диапазон,以屏幕边缘为跟随范围
-TR_USE_SCREEN_EDGE_RANGE_TOOLTIP,"Off (default): the Range X/Y sliders define how far the mouse must be from the screen centre to reach min/max, so min/max can be hit before the mouse reaches the screen edge. On: min/max is only reached when the mouse touches the screen edge.","Выкл. (по умолчанию): ползунки «Диапазон X/Y» задают расстояние от центра экрана, на котором достигается максимум/минимум, поэтому предел может быть достигнут раньше края экрана. Вкл.: максимум/минимум достигается только у края экрана.",关闭（默认）：鼠标离屏幕中心多远才达到最大/最小值由「范围 X/Y」滑条决定，因此鼠标还没到屏幕边缘就可能已经到达最大/最小值。开启：鼠标移动到屏幕边缘时才达到最大/最小值。
+TR_USE_SCREEN_EDGE_RANGE,Use Screen Edge as Range,Use Screen Edge as Range,以屏幕边缘为跟随范围
+TR_USE_SCREEN_EDGE_RANGE_TOOLTIP,"Off (default): the Range X/Y sliders define how far the mouse must be from the screen centre to reach min/max, so min/max can be hit before the mouse reaches the screen edge.\nOn: min/max is only reached when the mouse touches the screen edge.","Off (default): the Range X/Y sliders define how far the mouse must be from the screen centre to reach min/max, so min/max can be hit before the mouse reaches the screen edge.\nOn: min/max is only reached when the mouse touches the screen edge.",关闭（默认）：鼠标离屏幕中心多远才达到最大/最小值由「范围 X/Y」滑条决定，因此鼠标还没到屏幕边缘就可能已经到达最大/最小值。\n开启：鼠标移动到屏幕边缘时才达到最大/最小值。
+TR_INVERT_TOOLTIP,The effect of following movement will be reversed.,The effect of following the movement will be reversed.,跟随运动的效果会反转
