@@ -627,3 +627,5 @@ TR_SNAP_SIZE_INFO,Snap distance (0.1 to 100 pixels):,Snap distance (0.1 to 100 p
 TR_ALWAYS_ACTIVE,Always Active,Always Active,始终激活
 TR_DISABLE_BOTH,Disable Both,Disable Both,禁用两者
 TR_EDIT_WINDOWS,Edit Windows,Edit Windows,解锁窗口尺寸
+TR_USE_SCREEN_EDGE_RANGE,Use Screen Edge as Range,Край экрана как диапазон,以屏幕边缘为跟随范围
+TR_USE_SCREEN_EDGE_RANGE_TOOLTIP,"Off (default): the Range X/Y sliders define how far the mouse must be from the screen centre to reach min/max, so min/max can be hit before the mouse reaches the screen edge. On: min/max is only reached when the mouse touches the screen edge.","Выкл. (по умолчанию): ползунки «Диапазон X/Y» задают расстояние от центра экрана, на котором достигается максимум/минимум, поэтому предел может быть достигнут раньше края экрана. Вкл.: максимум/минимум достигается только у края экрана.",关闭（默认）：鼠标离屏幕中心多远才达到最大/最小值由「范围 X/Y」滑条决定，因此鼠标还没到屏幕边缘就可能已经到达最大/最小值。开启：鼠标移动到屏幕边缘时才达到最大/最小值。
