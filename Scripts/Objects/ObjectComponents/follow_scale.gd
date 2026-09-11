@@ -189,10 +189,14 @@ func follow_mouse_scale(mouse : Vector2, main_marker) -> Vector2:
 	var screen_size = main_marker.get_screen_size()
 
 	var center = screen_size * 0.5
-	var dist_from_center = mouse.abs() - center
-	
-	var norm_x = clamp(abs(dist_from_center.x) / center.x, 0.0, 1.0)
-	var norm_y = clamp(abs(dist_from_center.y) / center.y, 0.0, 1.0)
+	# `mouse` is the pointer offset relative to the CENTRE of the screen area
+	# (see follow_component.get_mouse_coords), so the distance from the centre is
+	# |mouse| itself: 0 at the centre, 1 at the screen edge. The old formula
+	# subtracted the centre a second time because it used to receive absolute
+	# screen coordinates - that inverted the mapping (max at the centre, min at
+	# the edge) after the origin moved to the screen centre.
+	var norm_x = clamp(abs(mouse.x) / center.x, 0.0, 1.0)
+	var norm_y = clamp(abs(mouse.y) / center.y, 0.0, 1.0)
 
 	var s_min_x : float = actor.get_value("scale_x_min")
 	var s_max_x : float = actor.get_value("scale_x_max")
@@ -219,15 +223,15 @@ func follow_controller_scale(axis: Vector2) -> Vector2:
 	return Vector2(target_scale_x, target_scale_y)
 
 func follow_mouse_vel_scale() -> Vector2:
-	var t = Vector2(abs(%FollowPosition.last_dist.x), 0).normalized()
-	var normalized_mouse = t.x/2
-	normalized_mouse = clamp(normalized_mouse, -1.0, 1.0)
+	# Per-axis share of the smoothed velocity displacement (0..1), so the scale
+	# is proportional to the movement AND returns to rest when the mouse stops.
+	var r: Vector2 = %FollowPosition.velocity_ratio()
 	var s_min_x = actor.get_value("scale_x_min")
 	var s_max_x = actor.get_value("scale_x_max")
 	var s_min_y = actor.get_value("scale_y_min")
 	var s_max_y = actor.get_value("scale_y_max")
-	var scl_x = lerp(float(s_min_x), float(s_max_x), max(0.01, (normalized_mouse) / 2))
-	var scl_y = lerp(float(s_min_y), float(s_max_y), max(0.01, (normalized_mouse) / 2))
+	var scl_x = lerp(float(s_min_x), float(s_max_x), absf(r.x))
+	var scl_y = lerp(float(s_min_y), float(s_max_y), absf(r.y))
 	var _target_scale : Vector2 = Vector2(scl_x, scl_y)
 	return _target_scale
 

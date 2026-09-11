@@ -614,6 +614,14 @@ script = ExtResource("2_qiucb")
 sp_type = ""
 value_to_update = "use_object_pos"
 
+[node name="UseScreenEdgeRange" type="CheckBox" parent="VBoxContainer" unique_id=68965205]
+layout_mode = 2
+tooltip_text = "TR_USE_SCREEN_EDGE_RANGE_TOOLTIP"
+text = "TR_USE_SCREEN_EDGE_RANGE"
+script = ExtResource("2_qiucb")
+sp_type = ""
+value_to_update = "use_screen_edge_range"
+
 [node name="Grid" type="GridContainer" parent="VBoxContainer" unique_id=783457870]
 layout_mode = 2
 theme_override_constants/h_separation = 8
