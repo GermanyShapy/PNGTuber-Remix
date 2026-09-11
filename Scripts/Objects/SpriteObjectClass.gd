@@ -233,6 +233,13 @@ const DEFAULT_DATA := {
 	mesh_phys_y = 75,
 	
 	use_object_pos = false,
+	# Mouse-follow range mapping (position follow only).
+	# false (default) = legacy 1.4.x rule: the Range X/Y sliders define how far
+	#   the mouse must move from the screen centre to reach min/max, so min/max
+	#   can be hit before the mouse reaches the screen edge.
+	# true = the min/max values are only reached when the mouse touches the edge
+	#   of the selected screen area.
+	use_screen_edge_range = false,
 	phys_eff = 25.0,
 	
 	can_be_hit = false,

@@ -136,14 +136,18 @@ func clamp_rotations(value) -> float :
 	return clamped
 
 func follow_mouse_vel_rotation() -> float:
-	var t = Vector2(%FollowPosition.last_dist.x, 0).normalized()
-	var normalized_mouse = t.x/2
-	normalized_mouse = clamp(normalized_mouse, -1.0, 1.0)
-	var rotation_factor = lerp(float(actor.get_value("rot_min")), float(actor.get_value("rot_max")), max(0.01, (normalized_mouse *0.5)))
+	# Same mapping as the mouse-position path (left = rot_min, rest = the
+	# midpoint of rot_min/rot_max, right = rot_max), driven by the smoothed
+	# velocity displacement share, so the tilt is PROPORTIONAL to the movement
+	# and returns to centre smoothly when the mouse stops. (4.4 used a binary
+	# three-state mapping with a dead zone; the signed ratio replaces both.)
+	var ratio: float = %FollowPosition.velocity_ratio().x
+	var rotation_factor = lerp_angle(float(actor.get_value("rot_min")), float(actor.get_value("rot_max")),
+			(ratio + 1.0) / 2.0)
 	var safe_rot_min = clamp(actor.get_value("rLimitMin"), -360, 360)
 	var safe_rot_max = clamp(actor.get_value("rLimitMax"), -360, 360)
-	var _target_rotation = clamp(normalized_mouse * rotation_factor * deg_to_rad(90), deg_to_rad(safe_rot_min), deg_to_rad(safe_rot_max))
-	return _target_rotation
+	return GlobalCalculations.is_nan_or_inf(
+			clamp(clamp_rotations(rotation_factor), deg_to_rad(safe_rot_min), deg_to_rad(safe_rot_max)))
 
 func _on_sprite_object_visibility_changed() -> void:
 	rest = !actor.is_visible_in_tree()
