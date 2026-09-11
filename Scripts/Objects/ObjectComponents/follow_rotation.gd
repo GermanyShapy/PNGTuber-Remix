@@ -23,7 +23,12 @@ func _physics_process(delta: float) -> void:
 	if actor.get_value("follow_type2") == 15:
 		modifier.rotation = 0.0
 		return
-	if Global.static_view or actor.rest_mode in [5,6]:
+	if Global.static_view:
+		return
+	# rest_mode 5/6 fully disables the follow: snap the modifier back to its rest
+	# transform right away instead of freezing it at the last followed offset.
+	if actor.rest_mode in [5,6]:
+		reset_modifier()
 		return
 	if actor.rest_mode in [1,3] and rest:
 		reset_modifier()
