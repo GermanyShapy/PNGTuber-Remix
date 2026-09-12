@@ -15,7 +15,7 @@ var mouse_relative_movement_buffer:Vector2i = Vector2i.ZERO
 var is_mouse_relative_movement_buffer:bool = false
 
 func _ready() -> void:
-	use_physics_frames = true
+	# use_physics_frames = true
 	call_deferred("_rawmouse_init");
 
 func _rawmouse_init():
@@ -33,7 +33,7 @@ func _rawmouse_init():
 		else:
 			print("raw input init end")
 	
-func _physics_process(delta: float) -> void:
+func _process(delta: float) -> void:
 	pressed_before_details = pressed_details
 	pressed_details = get_keys_pressed_detailed()
 	
