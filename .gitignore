@@ -68,6 +68,9 @@ Icon
 # gdmcp CLI 本地工具目录（含二进制可执行文件，不入库）
 .gdmcp/
 
+# Local CLI tool state created in the working directory (e.g. .local/state/gh)
+.local/
+
 # Local AI workspace: AGENTS.md pointer + .ai/ doc space (personal, separate git)
 /AGENTS.md
 /.ai/
