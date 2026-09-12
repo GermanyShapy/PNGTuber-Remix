@@ -71,7 +71,7 @@ func _physics_process(delta: float) -> void:
 
 	if Global.static_view:
 		static_prev()
-	elif actor.rest_mode in [4,6]:	# Disable
+	elif actor.rest_mode in [4,7]:	# Disable
 		modifier_node.position = Vector2.ZERO
 		modifier_node.rotation = 0.0
 		modifier_node.scale = Vector2.ONE
@@ -102,7 +102,14 @@ func _physics_process(delta: float) -> void:
 		var final_position: Vector2 = GlobalCalculations.is_nan_or_inf(applied_pos)
 		if Global.grid_snap:
 			final_position = Global.snap_position(final_position)
-		modifier_node.position = final_position
+		# applied_pos is accumulated in actor-local space, while %Modifier lives under
+		# %Rotation. Write it back as a world-axis offset (legacy behaviour, so neither
+		# %Rotation's IK look-at nor %Modifier1's follow rotation steers the motion)
+		# or as a %Rotation-local offset (merged behaviour, follows the sprite's rotation).
+		if actor.get_value("world_axis_movement"):
+			modifier_node.global_position = modifier1_node.global_position + (final_position - modifier1_node.position)
+		else:
+			modifier_node.position = final_position
 
 	shadow_target = modifier_node.global_position + follow_component.final_target
 	if actor.get_value("index_change") != 0 or actor.get_value("index_change_y") != 0:
