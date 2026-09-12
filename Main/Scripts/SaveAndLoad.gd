@@ -548,10 +548,10 @@ func set_common_data(sprite, sprite_obj):
 		if sprite.has("auto_show"):
 			sprite_obj.auto_show = sprite.auto_show
 		if sprite.is_asset:
-			sprite_obj.get_node("%Sprite2D").visible = sprite.was_active_before
+			sprite_obj.sync_asset_visibility(sprite.was_active_before)
 		else:
 			sprite_obj.get_node("%Sprite2D").visible = true
-		sprite_obj.was_active_before = sprite.was_active_before
+			sprite_obj.was_active_before = sprite.was_active_before
 
 		sprite_obj.disappear_keys = str(sprite.sprite_id) + "Disappear"
 		if !InputMap.has_action(sprite_obj.disappear_keys):

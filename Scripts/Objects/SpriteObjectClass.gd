@@ -178,6 +178,7 @@ const DEFAULT_DATA := {
 	offset = Vector2(0,0),
 	skew = Vector2(0,0),
 	ignore_bounce = false,
+	world_axis_movement = false,
 	clip = 0,
 	fade = false,
 	fade_asset = false,
@@ -541,14 +542,19 @@ func fade_asset(was_visible: bool, node: Node, node_hide: Node) -> bool:
 		self[tween_name].kill()
 	var target = !was_visible
 	node_hide.visible = true  
+	# The "tween" slot is the asset show/hide path: node is the actor root whose
+	# modulate carries the user's colored alpha, so fade to colored.a instead of
+	# overriding it (1.4.x behavior). Mouth/blink slots fade their own layer
+	# nodes and must end at full opacity.
+	var target_a: float = get_value("colored").a if tween_name == "tween" else 1.0
 	if target:
-		if start_a == 1.0:
+		if start_a == target_a:
 			return true
 		node.modulate.a = start_a
 		self[tween_name] = get_tree().create_tween()
-		self[tween_name].tween_property(node, "modulate:a", 1.0, get_value("fade_speed_asset") * (1.0 - start_a))
+		self[tween_name].tween_property(node, "modulate:a", target_a, get_value("fade_speed_asset") * absf(target_a - start_a))
 		await self[tween_name].finished
-		node.modulate.a = 1.0
+		node.modulate.a = target_a
 		return true
 	else:
 		if start_a == 0.0:
@@ -578,6 +584,15 @@ func fade_reset(node: Node = self):
 	if self[tween_name]:
 		self[tween_name].kill()
 	node.modulate.a = 1.0
+
+func sync_asset_visibility(vis: bool) -> void:
+	# Single source of truth for the (modulate.a, %Sprite2D.visible) pair that
+	# fade_asset's start_a short-circuit relies on. Always use this instead of
+	# writing %Sprite2D.visible / was_active_before directly, otherwise a hidden
+	# sprite keeps alpha=1.0 and its first fade-in gets skipped.
+	%Sprite2D.visible = vis
+	was_active_before = vis
+	modulate.a = get_value("colored").a if vis else 0.0
 
 func sync_sprite_cycle_in_states():
 	for s in states:
