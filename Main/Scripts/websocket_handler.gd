@@ -206,6 +206,18 @@ func find_sprite_by_identifier(identifier: String):
 	
 	return null
 
+func _apply_asset_visibility(target: Node, vis: bool) -> void:
+	# Route every websocket-driven visibility write through the shared invariant
+	# (modulate.a <-> %Sprite2D.visible) so fade_asset's start_a short-circuit
+	# stays correct. Non-SpriteObject nodes keep the legacy direct writes.
+	if target is SpriteObject:
+		target.sync_asset_visibility(vis)
+	else:
+		if target.has_node("%Sprite2D"):
+			target.get_node("%Sprite2D").visible = vis
+		if "was_active_before" in target:
+			target.was_active_before = vis
+
 func hide_sprite_by_identifier(identifier: String) -> bool:
 	"""Hide a sprite by its name or ID. If it's a group, hides all children too. Returns true if successful, false if sprite not found"""
 	var sprite = find_sprite_by_identifier(identifier)
@@ -214,10 +226,7 @@ func hide_sprite_by_identifier(identifier: String) -> bool:
 		sprite.sprite_data.visible = false
 		sprite.visible = false
 		sprite.save_state(Global.current_state)
-		if sprite.has_node("%Sprite2D"):
-			sprite.get_node("%Sprite2D").visible = false
-		if "was_active_before" in sprite:
-			sprite.was_active_before = false
+		_apply_asset_visibility(sprite, false)
 		
 		# Hide all children recursively if this is a group
 		var children = get_all_sprite_children_recursive(sprite)
@@ -225,10 +234,7 @@ func hide_sprite_by_identifier(identifier: String) -> bool:
 			child.sprite_data.visible = false
 			child.visible = false
 			child.save_state(Global.current_state)
-			if child.has_node("%Sprite2D"):
-				child.get_node("%Sprite2D").visible = false
-			if "was_active_before" in child:
-				child.was_active_before = false
+			_apply_asset_visibility(child, false)
 		
 		Global.reinfo.emit()
 		Global.update_layer_visib.emit()
@@ -243,10 +249,7 @@ func show_sprite_by_identifier(identifier: String) -> bool:
 		sprite.sprite_data.visible = true
 		sprite.visible = true
 		sprite.save_state(Global.current_state)
-		if sprite.has_node("%Sprite2D"):
-			sprite.get_node("%Sprite2D").visible = true
-		if "was_active_before" in sprite:
-			sprite.was_active_before = true
+		_apply_asset_visibility(sprite, true)
 		
 		# Show all children recursively if this is a group
 		var children = get_all_sprite_children_recursive(sprite)
@@ -254,10 +257,7 @@ func show_sprite_by_identifier(identifier: String) -> bool:
 			child.sprite_data.visible = true
 			child.visible = true
 			child.save_state(Global.current_state)
-			if child.has_node("%Sprite2D"):
-				child.get_node("%Sprite2D").visible = true
-			if "was_active_before" in child:
-				child.was_active_before = true
+			_apply_asset_visibility(child, true)
 		
 		Global.reinfo.emit()
 		Global.update_layer_visib.emit()
@@ -277,10 +277,7 @@ func toggle_sprite_by_identifier(identifier: String) -> Dictionary:
 		sprite.save_state(Global.current_state)
 		
 		# Sync with reaction_config logic
-		if sprite.has_node("%Sprite2D"):
-			sprite.get_node("%Sprite2D").visible = new_visibility
-		if "was_active_before" in sprite:
-			sprite.was_active_before = new_visibility
+		_apply_asset_visibility(sprite, new_visibility)
 		
 		# Toggle all children recursively if this is a group
 		var children = get_all_sprite_children_recursive(sprite)
@@ -288,10 +285,7 @@ func toggle_sprite_by_identifier(identifier: String) -> Dictionary:
 			child.sprite_data.visible = new_visibility
 			child.visible = new_visibility
 			child.save_state(Global.current_state)
-			if child.has_node("%Sprite2D"):
-				child.get_node("%Sprite2D").visible = new_visibility
-			if "was_active_before" in child:
-				child.was_active_before = new_visibility
+			_apply_asset_visibility(child, new_visibility)
 		
 		Global.reinfo.emit()
 		Global.update_layer_visib.emit()
@@ -552,11 +546,8 @@ func _on_message(peer_id: int, message: String):
 							target.sprite_data.visible = new_visible
 							target.visible = new_visible
 							target.save_state(Global.current_state)
-							if target.has_node("%Sprite2D"):
-								target.get_node("%Sprite2D").visible = new_visible
-							if "was_active_before" in target:
-								target.was_active_before = new_visible
-							
+							_apply_asset_visibility(target, new_visible)
+
 							Global.reinfo.emit()
 							Global.update_layer_visib.emit()
 							result = {"success": true, "visible": new_visible}
@@ -633,20 +624,14 @@ func _on_message(peer_id: int, message: String):
 							target.sprite_data.visible = new_visible
 							target.visible = new_visible
 							target.save_state(Global.current_state)
-							if target.has_node("%Sprite2D"):
-								target.get_node("%Sprite2D").visible = new_visible
-							if "was_active_before" in target:
-								target.was_active_before = new_visible
-								
+							_apply_asset_visibility(target, new_visible)
+
 							var children = get_all_sprite_children_recursive(target)
 							for child in children:
 								child.sprite_data.visible = new_visible
 								child.visible = new_visible
 								child.save_state(Global.current_state)
-								if child.has_node("%Sprite2D"):
-									child.get_node("%Sprite2D").visible = new_visible
-								if "was_active_before" in child:
-									child.was_active_before = new_visible
+								_apply_asset_visibility(child, new_visible)
 							
 							Global.reinfo.emit()
 							Global.update_layer_visib.emit()

@@ -270,7 +270,14 @@ func get_state(id):
 		if get_value("fade"):
 			trigger_fade(visible)
 		else:
-			modulate.a = get_value("colored").a
+			# A hidden asset must keep alpha at 0: get_state runs again at load
+			# end (load_sprite_states) after sync_asset_visibility, and setting
+			# a=colored.a here would resurrect the a=1.0 + visible=false pair,
+			# making fade_asset's first show short-circuit (instant pop).
+			if is_asset and !%Sprite2D.visible:
+				modulate.a = 0.0
+			else:
+				modulate.a = get_value("colored").a
 			visible = get_value("visible")
 		animation()
 		set_blend(get_value("blend_mode"))
