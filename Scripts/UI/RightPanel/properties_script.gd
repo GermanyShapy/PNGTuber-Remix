@@ -162,7 +162,7 @@ func set_data():
 			%MouthOption.select(0)
 
 
-		%RestModeOption.select(i.rest_mode)
+		%RestModeOption.select(%RestModeOption.get_item_index(i.rest_mode))
 		if i.sprite_type == "Sprite2D":
 			%FlipSpriteH.button_pressed = i.get_value("flip_sprite_h")
 			%FlipSpriteV.button_pressed = i.get_value("flip_sprite_v")
@@ -581,7 +581,7 @@ func _on_mouth_option_item_selected(index: int) -> void:
 
 func _on_rest_mode_option_item_selected(index: int) -> void:
 	for i in Global.held_sprites:
-		i.rest_mode = index
+		i.rest_mode = %RestModeOption.get_item_id(index)
 		i.save_state(Global.current_state)
 
 func _on_skew_spin_x_box_value_changed(value: float) -> void:
