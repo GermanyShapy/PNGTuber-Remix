@@ -1,6 +1,6 @@
 extends Node
 
-func _physics_process(_delta: float) -> void:
+func _process(_delta: float) -> void:
 	update_cycles()
 
 func update_cycles(settings_dict = Global.settings_dict):

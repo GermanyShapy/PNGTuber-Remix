@@ -4,7 +4,6 @@
 [ext_resource type="Script" uid="uid://wgf4xm32sw07" path="res://Scripts/Global/StandGlobalInput.gd" id="1_jwel8"]
 
 [node name="GlobalInput" type="GlobalInput" unique_id=1541677201]
-use_physics_frames = true
 script = ExtResource("1_jwel8")
 
 [node name="Cycle" type="Node" parent="." unique_id=477030892]
