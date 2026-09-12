@@ -63,9 +63,11 @@ func _ready() -> void:
 	dragger.global_position = modifier_node.global_position
 
 func _physics_process(delta: float) -> void:
-	apply_static_object_pin.call_deferred()
+	# Deferring the call costs a message-queue slot for every sprite; only the
+	# few static-pinned ones actually need it.
+	if actor.get_value("static_obj") and not actor.dragging:
+		apply_static_object_pin.call_deferred()
 
-	modifier_global = modifier1_node.global_position
 	placeholder_position = modifier1_node.position
 	applied_pos =  placeholder_position
 
@@ -98,7 +100,12 @@ func _physics_process(delta: float) -> void:
 		follow_wiggle(delta)
 	if !Global.static_view:
 		var final_rot: float = applied_rotation + rot_drag + follow_point_rot + should_rot_rotation + hit_rotation
-		modifier_node.rotation = GlobalCalculations.is_nan_or_inf(final_rot)
+		final_rot = GlobalCalculations.is_nan_or_inf(final_rot)
+		# A transform write marks the canvas item dirty for physics interpolation
+		# even when the value is unchanged, and with hundreds of sprites that cost
+		# dominates the frame. Skip the write when nothing actually moved.
+		if not is_equal_approx(modifier_node.rotation, final_rot):
+			modifier_node.rotation = final_rot
 		var final_position: Vector2 = GlobalCalculations.is_nan_or_inf(applied_pos)
 		if Global.grid_snap:
 			final_position = Global.snap_position(final_position)
@@ -107,12 +114,16 @@ func _physics_process(delta: float) -> void:
 		# %Rotation's IK look-at nor %Modifier1's follow rotation steers the motion)
 		# or as a %Rotation-local offset (merged behaviour, follows the sprite's rotation).
 		if actor.get_value("world_axis_movement"):
-			modifier_node.global_position = modifier1_node.global_position + (final_position - modifier1_node.position)
-		else:
+			var world_pos: Vector2 = modifier1_node.global_position + (final_position - modifier1_node.position)
+			if not modifier_node.global_position.is_equal_approx(world_pos):
+				modifier_node.global_position = world_pos
+		elif not modifier_node.position.is_equal_approx(final_position):
 			modifier_node.position = final_position
 
-	shadow_target = modifier_node.global_position + follow_component.final_target
+	# Reading global_position forces a transform flush; only do it when the
+	# index-change feature actually needs it (almost never).
 	if actor.get_value("index_change") != 0 or actor.get_value("index_change_y") != 0:
+		shadow_target = modifier_node.global_position + follow_component.final_target
 		var test = (shadow_target - actor.global_position).normalized()
 		var signed_len_x = (test.x)
 		var signed_len_y = (test.y)
@@ -120,8 +131,10 @@ func _physics_process(delta: float) -> void:
 		index_change_len_y = lerp(index_change_len_y, signed_len_y, 0.95)
 		index_change_len = index_change_len * actor.get_value("index_change")
 		index_change_len_y = index_change_len_y * actor.get_value("index_change_y")
-		modifier_node.z_index = clamp(floori(index_change_len + index_change_len_y), -250, 250)
-	else:
+		var new_z: int = clamp(floori(index_change_len + index_change_len_y), -250, 250)
+		if modifier_node.z_index != new_z:
+			modifier_node.z_index = new_z
+	elif modifier_node.z_index != 0:
 		modifier_node.z_index = 0
 
 	chained_hit_reaction()
@@ -216,20 +229,25 @@ func movements(delta: float) -> void:
 	rotational_drag(calc_length, delta)
 
 func apply_recursive_look_at_chain(actor_node: SpriteObject) -> void:
-	if actor_node == null or not is_instance_valid(actor_node):
-		%Rotation.rotation = 0.0
+	var rotation_node: Node2D = %Rotation
+	if actor_node != null and is_instance_valid(actor_node):
+		rotation_node = actor_node.get_node_or_null("%Rotation")
+	if rotation_node == null or actor_node == null or not is_instance_valid(actor_node):
+		# The chain node is this movement's own sprite; fall back to it when the
+		# caller passed nothing usable.
+		set_chain_rotation(%Rotation, 0.0)
 		return
 	if actor_node.target_ik != null and is_instance_valid(actor_node.target_ik):
-		var root = actor_node.get_node("%Origin")
-		var target = actor_node.target_ik.get_node("%Origin")
+		var root = actor_node.get_node_or_null("%Origin")
+		var target = actor_node.target_ik.get_node_or_null("%Origin")
 		if root != null and target != null:
 			var target_pos: Vector2 = target.global_position - root.global_position
-			apply_look_at_ik(target_pos, actor_node.get_node("%Rotation"))
+			apply_look_at_ik(target_pos, rotation_node)
 
 			var ik_chain =  actor_node.target_ik.target_ik
 			if ik_chain != null && is_instance_valid(ik_chain):
 				var target_pos_2: Vector2 = ik_chain.get_node("%Origin").global_position - root.global_position
-				apply_look_at_ik(target_pos_2, actor_node.get_node("%Rotation"))
+				apply_look_at_ik(target_pos_2, rotation_node)
 
 			if actor_node.has_node("%Sprite2D"):
 				var sprite_root = actor_node.get_node("%Sprite2D")
@@ -237,9 +255,17 @@ func apply_recursive_look_at_chain(actor_node: SpriteObject) -> void:
 					if child is SpriteObject && is_instance_valid(child):
 						apply_recursive_look_at_chain(child)
 		else:
-			%Rotation.rotation = 0.0
+			set_chain_rotation(rotation_node, 0.0)
 	else:
-		%Rotation.rotation = 0.0
+		set_chain_rotation(rotation_node, 0.0)
+
+func set_chain_rotation(rotation_node: Node2D, value: float) -> void:
+	# Rotation is only driven by the IK chain, so resetting it every frame is a
+	# no-op for the vast majority of sprites -- skipping the write keeps the
+	# canvas item out of the physics-interpolation update set.
+	if rotation_node == null or is_equal_approx(rotation_node.rotation, value):
+		return
+	rotation_node.rotation = value
 
 func apply_look_at_ik(target_pos: Vector2, rotation_node : Node2D) -> void:
 	var chain_softness: float = actor.get_value("chain_softness")
@@ -281,9 +307,11 @@ func drag(_delta : float):
 	var target = modifier_node.global_position + last_wobble_pos
 	if drag_speed > 0:
 		var t = 1.0 / drag_speed
-		dragger.global_position = dragger.global_position.lerp(target, t)
+		var next: Vector2 = dragger.global_position.lerp(target, t)
+		if not dragger.global_position.is_equal_approx(next):
+			dragger.global_position = next
 		applied_pos = applied_pos.lerp(actor.to_local(dragger.global_position), 0.5)
-	else:
+	elif not dragger.global_position.is_equal_approx(target):
 		dragger.global_position = target
 
 func wobble(delta: float) -> void:
@@ -329,7 +357,9 @@ func rotational_drag(length, delta: float):
 func stretch(length : float) -> void:
 	var syvel : float = (length * actor.get_value("stretchAmount") * 0.01)* (actor.get_value("phys_eff")/200.0)
 	var target : Vector2 = Vector2(1.0 - syvel, 1.0 + syvel)
-	modifier_node.scale = modifier_node.scale.lerp(target, 0.15)
+	var next : Vector2 = modifier_node.scale.lerp(target, 0.15)
+	if not modifier_node.scale.is_equal_approx(next):
+		modifier_node.scale = next
 
 func follow_wiggle(_delta : float) -> void:
 	var parent = actor.get_parent()
@@ -383,8 +413,11 @@ func rainbow(delta : float) -> void:
 			modifier_node.modulate.s = 1.0
 			modifier_node.modulate.h = wrap(modifier_node.modulate.h + h_speed, 0.0, 1.0)
 	else:
-		sprite_node.self_modulate = actor.get_value("tint")
-		modifier_node.modulate.s = 0.0
+		var tint: Color = actor.get_value("tint")
+		if sprite_node.self_modulate != tint:
+			sprite_node.self_modulate = tint
+		if modifier_node.modulate.s != 0.0:
+			modifier_node.modulate.s = 0.0
 
 func auto_rotate():
 	should_rot_rotation += actor.get_value("should_rot_speed")
