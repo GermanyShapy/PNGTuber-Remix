@@ -435,9 +435,9 @@ popup/item_4/id = 4
 popup/item_5/text = "TR_DISABLE_FOLLOW"
 popup/item_5/id = 5
 popup/item_6/text = "TR_DISABLE_BOTH"
-popup/item_6/id = 6
+popup/item_6/id = 7
 popup/item_7/text = "TR_REST_MOVE_AND_RESET"
-popup/item_7/id = 7
+popup/item_7/id = 6
 
 [node name="HiddenItem" type="CheckBox" parent="VBoxContainer/GridContainer" unique_id=203437404]
 unique_name_in_owner = true
