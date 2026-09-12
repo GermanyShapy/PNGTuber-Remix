@@ -19,6 +19,23 @@ var is_disappear_key_just_pressed :bool = false
 var is_trying_to_appear :bool = false
 var is_trying_to_disappear :bool = false
 
+# Per-frame sprite_id -> SpriteObject cache. Rebuilt at most once per rendered
+# frame; sprite add/remove only becomes visible to the cycle logic next frame,
+# which is the same granularity the old per-sprite group scan effectively had.
+static var _sprite_ids: Dictionary = {}
+static var _sprite_ids_frame: int = -1
+
+static func sprite_with_id(p_tree: SceneTree, p_id: Variant) -> Node:
+	if p_tree == null:
+		return null
+	var frame := Engine.get_process_frames()
+	if frame != _sprite_ids_frame:
+		_sprite_ids_frame = frame
+		_sprite_ids.clear()
+		for s in p_tree.get_nodes_in_group("Sprites"):
+			_sprite_ids[s.sprite_id] = s
+	return _sprite_ids.get(p_id)
+
 func _ready() -> void:
 	Global.speaking.connect(speaking)
 	Global.not_speaking.connect(not_speaking)
@@ -101,6 +118,15 @@ func _process(delta: float) -> void:
 	is_rest = actor.movements.rest
 	
 	if !is_rest and was_rest_before:	# Awaken
+		# auto_show makes the sprite appear without its key (1.4.x semantics).
+		# For a hold_to_show sprite the hold branch then raises "no key ->
+		# disappear" every frame; the min_duration timer suppresses it until
+		# min_duration elapses, so the sprite plays out and vanishes. With
+		# min_duration = 0 the sprite is retracted next frame, but that 1-frame
+		# pulse is a functional trigger: its retraction path (toggle_to back to
+		# cycle pos 0) is what shows the next sprite in the model's chain, so
+		# it must NOT be suppressed (suppressing it broke ball/electric-ball
+		# chains -- the whole chain silently stalled).
 		if actor.auto_show:
 			is_trying_to_appear = true
 			cast_timer = 0.0
@@ -138,7 +164,15 @@ func _process(delta: float) -> void:
 	if actor.hold_to_show:
 		if !actor.was_active_before and is_action_pressed:
 			is_trying_to_appear = true
-		elif actor.was_active_before and !is_action_pressed:
+		elif !is_action_pressed and (actor.was_active_before or (is_trying_to_appear and actor.min_duration <= 0.0)):
+			# Raised every frame while visible with no key down; the min_duration
+			# timer below suppresses it until min_duration elapses, which is what
+			# makes the sprite auto-vanish after its minimum duration.
+			# A min_duration==0 sprite that auto-shows on awaken is retracted in
+			# the SAME frame (is_trying_to_appear is still set at this point): its
+			# cycle toggle-to and the retraction toggle-back then both complete
+			# before the frame renders, so the pulse no longer flashes on screen
+			# while still advancing the model's sprite chain.
 			is_trying_to_disappear = true
 		
 	#Timer Tick
@@ -161,10 +195,12 @@ func _process(delta: float) -> void:
 		cycle_sprite_pos = cycle.sprites.find(actor.sprite_id)
 		
 		if !actor.hold_to_show:
-			for sprite in get_tree().get_nodes_in_group("Sprites"):
-				if sprite.sprite_id == cycle.last_sprite and sprite.sprite_data.is_cycle and sprite.hold_to_show and sprite.was_active_before:
-					is_trying_to_appear = false
-					break
+			# This used to walk every sprite in the tree for every cycle sprite
+			# (O(cycle_sprites * sprites) per frame, ~1.4 ms on a 336-sprite
+			# model). Resolve through a per-frame id map instead.
+			var holder: Node = sprite_with_id(get_tree(), cycle.last_sprite)
+			if holder != null and holder.sprite_data.is_cycle and holder.hold_to_show and holder.was_active_before:
+				is_trying_to_appear = false
 	
 	#Finally, Show or Hide
 	if is_trying_to_appear:
@@ -181,7 +217,7 @@ func _process(delta: float) -> void:
 		if cycle != null and actor.was_active_before:
 			if cycle_sprite_pos != 0 and cycle_sprite_pos == cycle.pos:
 				GlobInput.cycle.toggle_to(cycle, 0)
-			
+		
 		if actor.was_active_before:
 			sprite_hide(actor)
 			
@@ -387,13 +423,18 @@ func speaking():
 			actor.fade_reset(%Modifier)
 	currently_speaking = true
 
-func reset_animations(_place_holder : int = 0):
+func reset_animations(_place_holder : int = 0, force : bool = false):
 	if actor.get_value("never_reset"):
 		return
-	
-	if actor.get_value("one_shot") and actor.sprite_object.frame == (actor.get_value("hframes")*actor.get_value("vframes") -1):
+
+	# force=true is used by sprite_show: a shown one_shot sheet must always
+	# restart from frame 0, even when the previous run was cut short by hide
+	# (frame < last), otherwise the sprite "resumes" near the end on the next
+	# press. Signal-driven calls (blink/speak) keep the frame==last guard so a
+	# finished one_shot is not yanked back to frame 0 while it merely sits there.
+	if force or (actor.get_value("one_shot") and actor.sprite_object.frame == (actor.get_value("hframes")*actor.get_value("vframes") -1)):
 		reset_anim()
-	
+
 	if actor.get_value("should_reset"):
 		reset_anim()
 
@@ -467,7 +508,7 @@ static func sprite_show(aim_actor : Node):
 		aim_actor.fade_reset()
 		aim_sprite2d.visible = true
 		aim_actor.was_active_before = aim_sprite2d.visible
-	aim_actor.get_node("ReactionConfig").reset_animations()
+	aim_actor.get_node("ReactionConfig").reset_animations(0, true)
 		
 static func sprite_hide(aim_actor : Node):
 	var aim_sprite2d = aim_actor.sprite_object
