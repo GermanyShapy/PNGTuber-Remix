@@ -311,6 +311,7 @@ var disappear_keys : String = str(sprite_id) + "Disappear"
 var rest_mode : int = 0
 var ignore_if_rest : bool = false
 var auto_show : bool = false
+var auto_hide : bool = false
 
 var last_mouse_position : Vector2 = Vector2(0,0)
 var last_dist : Vector2 = Vector2(0,0)

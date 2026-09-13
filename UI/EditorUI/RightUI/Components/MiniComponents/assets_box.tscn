@@ -183,6 +183,16 @@ focus_mode = 1
 focus_behavior_recursive = 1
 text = "TR_AUTO_SHOW"
 
+[node name="AutoHideCheck" type="CheckBox" parent="Buttons" unique_id=898077194]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "TR_AUTO_HIDE_TOOLTIP"
+focus_mode = 1
+focus_behavior_recursive = 1
+text = "TR_AUTO_HIDE"
+
 [node name="ShouldDisappearCheck" type="CheckBox" parent="Buttons" unique_id=923178878]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
@@ -490,6 +500,7 @@ script = ExtResource("11_ef4gi")
 [connection signal="toggled" from="Buttons/IgnoreIfRestCheck" to="Buttons/HBoxContainer/IsAssetButton" method="_on_ignore_if_rest_on_toggle_check_toggled"]
 [connection signal="value_changed" from="Buttons/HBoxCastTime/CastTimeSpinBox" to="Buttons/HBoxContainer/IsAssetButton" method="_on_cast_time_spin_box_value_changed"]
 [connection signal="toggled" from="Buttons/AutoShowCheck" to="Buttons/HBoxContainer/IsAssetButton" method="_on_auto_show_on_toggle_check_toggled"]
+[connection signal="toggled" from="Buttons/AutoHideCheck" to="Buttons/HBoxContainer/IsAssetButton" method="_on_auto_hide_on_toggle_check_toggled"]
 [connection signal="toggled" from="Buttons/ShouldDisappearCheck" to="Buttons/HBoxContainer/IsAssetButton" method="_on_should_disappear_check_toggled"]
 [connection signal="pressed" from="ShouldDisListContainer/HBoxContainer/ShouldDisAddButton" to="Buttons/HBoxContainer/IsAssetButton" method="_on_should_dis_add_button_pressed"]
 [connection signal="pressed" from="ShouldDisListContainer/HBoxContainer/ShouldDisDelButton" to="Buttons/HBoxContainer/IsAssetButton" method="_on_should_dis_del_button_pressed"]

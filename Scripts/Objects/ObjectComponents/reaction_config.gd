@@ -130,10 +130,24 @@ func _process(delta: float) -> void:
 		if actor.auto_show:
 			is_trying_to_appear = true
 			cast_timer = 0.0
-	
+
+	# Fall asleep: auto_hide is the mirror of auto_show -- entering rest
+	# retracts the sprite without any key. min_duration_timer is cleared
+	# because it is the only gate left that could still suppress the
+	# retraction (see Timer Tick below); the actor is already out of the
+	# visible tree at this point, so retracting at once costs nothing
+	# visually. Non-asset sprites are re-shown by the restore at the end of
+	# the disappear branch, so auto_hide only sticks for assets -- same as
+	# every other hide path in this file.
+	var auto_hide_now : bool = (is_rest and !was_rest_before) and actor.auto_hide
+	if auto_hide_now:
+		is_trying_to_disappear = true
+		min_duration_timer = 0.0
+
 	was_rest_before = is_rest
-	
-	if is_rest and actor.ignore_if_rest:
+
+	# auto_hide is not key input, so ignore_if_rest must not swallow it.
+	if is_rest and actor.ignore_if_rest and !auto_hide_now:
 		if actor.hold_to_show and actor.was_active_before: # one last disapperance
 			is_trying_to_disappear = true
 			min_duration_timer = 0.0
@@ -203,6 +217,14 @@ func _process(delta: float) -> void:
 				is_trying_to_appear = false
 	
 	#Finally, Show or Hide
+	if auto_hide_now:
+		# Takes precedence over everything else in the frame the sprite falls
+		# asleep: no key press, cast timer or cycle decision may resurrect it.
+		# The disappear branch below still runs, so a cycle sprite keeps its
+		# toggle_to(cycle, 0) chain advance.
+		is_trying_to_appear = false
+		is_trying_to_disappear = true
+
 	if is_trying_to_appear:
 		if cycle != null and !actor.was_active_before:
 			if cycle_sprite_pos == 0 and cycle_sprite_pos == cycle.pos:
