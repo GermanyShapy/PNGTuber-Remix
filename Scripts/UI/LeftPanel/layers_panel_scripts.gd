@@ -219,6 +219,7 @@ func copy_common(src, dst):
 	dst.inclusive_key_check = src.inclusive_key_check
 	dst.ignore_if_rest = src.ignore_if_rest
 	dst.auto_show = src.auto_show
+	dst.auto_hide = src.auto_hide
 	dst.is_asset = src.is_asset
 	dst.saved_event = src.saved_event
 	dst.was_active_before = src.was_active_before

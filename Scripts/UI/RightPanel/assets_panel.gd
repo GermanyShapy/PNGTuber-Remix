@@ -21,6 +21,7 @@ func nullfy():
 	%InclusiveKeyCheck.disabled = true
 	%IgnoreIfRestCheck.disabled = true
 	%AutoShowCheck.disabled = true
+	%AutoHideCheck.disabled = true
 	%ShouldDisDelButton.disabled = true
 	%ShouldDisRemapButton.disabled = true
 	%ShouldDisAddButton.disabled = true
@@ -44,6 +45,7 @@ func enable():
 		%InclusiveKeyCheck.disabled = false
 		%IgnoreIfRestCheck.disabled = false
 		%AutoShowCheck.disabled = false
+		%AutoHideCheck.disabled = false
 		%ShouldDisAddButton.disabled = false
 		%ShouldDisDelButton.disabled = false
 		%ShouldDisRemapButton.disabled = false
@@ -73,6 +75,7 @@ func set_data():
 	%InclusiveKeyCheck.button_pressed = Global.held_sprites[0].inclusive_key_check
 	%IgnoreIfRestCheck.button_pressed =  Global.held_sprites[0].ignore_if_rest
 	%AutoShowCheck.button_pressed =  Global.held_sprites[0].auto_show
+	%AutoHideCheck.button_pressed =  Global.held_sprites[0].auto_hide
 	%IsAssetButton.update_key_text()
 	%CycleChoiceSprite.select(Global.held_sprites[0].sprite_data.cycle)
 	if !Global.held_sprites[0].sprite_data.is_cycle:
