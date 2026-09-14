@@ -62,12 +62,34 @@ var held_sprite = null
 var held_sprites : Array[SpriteObject] = []
 var tick = 0
 var current_state : int = 0
-var mouth := Mouth.Closed
+var mouth := Mouth.Closed:
+	set(x):
+		if x == mouth: return
+		mouth = x
+		_refresh_mouth_prefix()
 var editing_for := Mouth.Closed:
 	set(x):
 		if x == editing_for: return
 		editing_for = x
+		_refresh_mouth_prefix()
 		editing_for_changed.emit()
+
+# Mouth-variant prefix cache for SpriteObjectClass.get_value(). The prefix
+# depends only on editing_for / mouth -- never on the sprite -- so resolving it
+# once per change turns the hot path (get_value runs ~35x per sprite per state
+# switch) into a single member read instead of a property read + branch + match.
+# An empty prefix means "no variant lookup, return the plain value", which is
+# exactly what Mouth.Closed used to short-circuit to.
+var mouth_prefix : String = ""
+
+func _refresh_mouth_prefix() -> void:
+	var st : int = editing_for
+	if st == Mouth.Closed:
+		st = mouth
+	match st:
+		Mouth.Open: mouth_prefix = "mo_"
+		Mouth.Screaming: mouth_prefix = "scream_"
+		_: mouth_prefix = ""
 
 var settings_dict : Dictionary = {
 	sensitivity_limit = 1,
@@ -295,10 +317,24 @@ func _apply_state(state):
 		for i in group_sprites:
 			i.save_state(current_state)
 
+	var from := current_state
 	current_state = state
 
 	for i in group_sprites:
-		i.get_state(current_state)
+		# Identical content: get_state() would merge the same values back into
+		# sprite_data and re-write every guarded property with the value it
+		# already holds (measured: the data-driven half is ~57% of get_state,
+		# and 42% of all switches -- ~98% within a cluster -- are identical).
+		# Safe because is_editor just ran save_state(from), so states[from]
+		# mirrors sprite_data; any real difference, including an unsaved edit,
+		# makes the comparison fail and takes the full path instead.
+		var st : Array = i.states
+		if (from < st.size() and state < st.size()
+				and i.has_method("apply_state_side_effects")
+				and st[from] == st[state]):
+			i.apply_state_side_effects(state)
+		else:
+			i.get_state(current_state)
 
 	_emit_state_signals(current_state)
 

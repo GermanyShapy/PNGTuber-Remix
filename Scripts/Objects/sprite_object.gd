@@ -20,6 +20,14 @@ func get_default_object_data() -> Dictionary:
 
 var wiggle_val : float = 0
 
+# get_state() runs for every sprite on every state switch. Resolving a %Name
+# there costs a scene-tree lookup each time; SpriteObjectClass already caches
+# modifier / modifier1 / sprite_object this way, so do the same for the one
+# get_state still resolved per call (measured ~0.4-1.0 ms per switch @336).
+# @onready is required: a plain `var x = %Node` initialiser runs before this
+# node is in the tree, so it resolves to null and every later use errors.
+@onready var hit_detection : StaticBody2D = %HitDetection
+
 func _init() -> void:
 	cached_defaults = DEFAULT_DATA.merged(get_default_object_data(), true)
 	sprite_data = cached_defaults.duplicate(true)
@@ -219,6 +227,29 @@ func save_state(id):
 		return
 	states[id] = sprite_data.duplicate(true)
 
+# Side-effect half of get_state(). Global._apply_state() calls this instead of
+# get_state() when the target state's content is identical to the current one:
+# in that case every value the data-driven half would merge into sprite_data,
+# and every property it would write, already holds the value it would write, so
+# skipping it changes nothing observable.
+# MUST stay in sync with get_state(): each item below also lives there.
+func apply_state_side_effects(id) -> void:
+	if id < 0 or id >= states.size(): return
+	if (states[id] as Dictionary).is_empty():
+		states[id] = sprite_data.duplicate(true)
+		return
+	if get_value("should_reset_state"):
+		reaction_config.reset_anim()
+	if !get_value("should_blink"):
+		modifier1.show()
+	else:
+		reaction_config.update_to_mode_change(Global.mode)
+	animation()
+	advanced_lipsyc()
+	if !get_value("should_blink"):
+		modifier1.modulate.a = 1
+		modifier1.show()
+
 func get_state(id):
 	if !states[id].is_empty():
 		# %Sprite2D equals to get_node("Sprite2D")
@@ -258,7 +289,7 @@ func get_state(id):
 		var want_disabled := not want_hit
 		if static_collision.disabled != want_disabled:
 			static_collision.disabled = want_disabled
-		var hit_detect : Node = %HitDetection
+		var hit_detect := hit_detection
 		if hit_detect.get_collision_layer_value(2) != want_hit:
 			hit_detect.set_collision_layer_value(2, want_hit)
 		apply_transform()
@@ -299,7 +330,7 @@ func get_state(id):
 			# end (load_sprite_states) after sync_asset_visibility, and setting
 			# a=colored.a here would resurrect the a=1.0 + visible=false pair,
 			# making fade_asset's first show short-circuit (instant pop).
-			if is_asset and !%Sprite2D.visible:
+			if is_asset and !sprite_object.visible:
 				if modulate.a != 0.0:
 					modulate.a = 0.0
 			else:
@@ -313,12 +344,16 @@ func get_state(id):
 		set_blend(get_value("blend_mode"))
 		advanced_lipsyc()
 
-		if !get_value("cycle") in range(Global.settings_dict.cycles.size() + 1):
+		# Same check as `!get_value("cycle") in range(cycles.size() + 1)`, but
+		# that form built a fresh Array and linear-scanned it for every sprite
+		# on every switch (measured ~262 us per switch on a 336-sprite model).
+		var cyc : Variant = get_value("cycle")
+		if cyc == null or cyc < 0 or cyc > Global.settings_dict.cycles.size():
 			sprite_data.cycle = 0
 
 		if !get_value("should_blink"):
-			%Modifier1.modulate.a = 1
-			%Modifier1.show()
+			modifier1.modulate.a = 1
+			modifier1.show()
 
 	elif states[id].is_empty():
 		states[id] = sprite_data.duplicate(true)
