@@ -40,29 +40,32 @@ func _localize_value(p_key: String, p_value: float) -> String:
 	return tr(p_key).format({ "value": p_value })
 
 
+# Every write here must go through set_value_no_signal(): the value_changed
+# handlers below call sprite_container.save_state(), a full read -> write ->
+# write-back round trip of the whole state dictionary. set_data() only mirrors
+# values that were just read back from the container, so those handlers have
+# nothing to persist -- they re-serialize identical data. Slider and spin box are
+# both written, so the no-signal path keeps the display consistent.
 func set_data() -> void:
-	if type == ModelAnimationType.MouthClosed:
-		%BounceAmountSlider.get_node("%SliderValue").value = Global.sprite_container.state_param_mc.bounce_energy
-		%GravityAmountSlider.get_node("%SliderValue").value = Global.sprite_container.state_param_mc.bounce_gravity
-		%BounceAmountSlider.get_node("%SpinBoxValue").value = Global.sprite_container.state_param_mc.bounce_energy
-		%GravityAmountSlider.get_node("%SpinBoxValue").value = Global.sprite_container.state_param_mc.bounce_gravity
-		
-		%XFreqWobbleSlider.value = Global.sprite_container.state_param_mc.xFrq
-		%XAmpWobbleSlider.value = Global.sprite_container.state_param_mc.xAmp
-		%YFreqWobbleSlider.value = Global.sprite_container.state_param_mc.yFrq
-		%YAmpWobbleSlider.value = Global.sprite_container.state_param_mc.yAmp
-		
-	if type == ModelAnimationType.MouthOpen:
-		%BounceAmountSlider.get_node("%SliderValue").value = Global.sprite_container.state_param_mo.bounce_energy
-		%GravityAmountSlider.get_node("%SliderValue").value = Global.sprite_container.state_param_mo.bounce_gravity
-		%BounceAmountSlider.get_node("%SpinBoxValue").value = Global.sprite_container.state_param_mo.bounce_energy
-		%GravityAmountSlider.get_node("%SpinBoxValue").value = Global.sprite_container.state_param_mo.bounce_gravity
-		%XFreqWobbleSlider.value = Global.sprite_container.state_param_mo.xFrq
-		%XAmpWobbleSlider.value = Global.sprite_container.state_param_mo.xAmp
-		%YFreqWobbleSlider.value = Global.sprite_container.state_param_mo.yFrq
-		%YAmpWobbleSlider.value = Global.sprite_container.state_param_mo.yAmp
+	var container = Global.sprite_container
+	var p = container.state_param_mc if type == ModelAnimationType.MouthClosed else container.state_param_mo
+
+	_set_better_slider(%BounceAmountSlider, p.bounce_energy)
+	_set_better_slider(%GravityAmountSlider, p.bounce_gravity)
+
+	%XFreqWobbleSlider.set_value_no_signal(p.xFrq)
+	%XAmpWobbleSlider.set_value_no_signal(p.xAmp)
+	%YFreqWobbleSlider.set_value_no_signal(p.yFrq)
+	%YAmpWobbleSlider.set_value_no_signal(p.yAmp)
 
 	_refresh_wobble_labels()
+
+
+# Writes a BetterSlider's HSlider and SpinBox pair without emitting value_changed
+# (see set_data above).
+func _set_better_slider(p_slider: Node, p_value: float) -> void:
+	p_slider.get_node("%SliderValue").set_value_no_signal(p_value)
+	p_slider.get_node("%SpinBoxValue").set_value_no_signal(p_value)
 
 func _on_bounce_amount_slider_value_changed(value):
 	if type == ModelAnimationType.MouthClosed:

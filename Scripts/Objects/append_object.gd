@@ -330,11 +330,21 @@ func _input(event: InputEvent) -> void:
 			dragging = false
 
 func apply_transform():
-	transform.x = Vector2.RIGHT
-	transform.y = Vector2.UP
-	position = get_value("position")
-	rotation = get_value("rotation")
-	scale = get_value("scale")
-	var skew = get_value("skew")
-	transform.x = transform.x.rotated(deg_to_rad(skew.x) )
-	transform.y = transform.y.rotated(deg_to_rad(skew.y) )
+	var want_pos : Vector2 = get_value("position")
+	var want_rot : float = get_value("rotation")
+	var want_scale : Vector2 = get_value("scale")
+	var want_skew : Vector2 = get_value("skew")
+	# Value-guarded for the same reason as sprite_object.gd: the engine's Node2D
+	# transform setters have no guard, so an unchanged transform would still cost
+	# seven dirty-marking writes per object per state switch.
+	var want := Transform2D(want_rot, want_scale, 0.0, want_pos)
+	want.x = want.x.rotated(deg_to_rad(want_skew.x))
+	want.y = want.y.rotated(deg_to_rad(want_skew.y))
+	if transform == want:
+		return
+	skew = 0.0
+	position = want_pos
+	rotation = want_rot
+	scale = want_scale
+	transform.x = transform.x.rotated(deg_to_rad(want_skew.x))
+	transform.y = transform.y.rotated(deg_to_rad(want_skew.y))

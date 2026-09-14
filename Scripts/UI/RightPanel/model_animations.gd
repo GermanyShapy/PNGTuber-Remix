@@ -18,13 +18,18 @@ func set_slider_data(data):
 	%BlinkSpeedSlider.value = data.blink_speed
 
 
+# Mirroring the container into the widgets must not emit their change signals:
+# the toggled / value_changed handlers below call sprite_container.save_state(),
+# which re-serializes the whole state dictionary even though this function only
+# wrote back the values it had just read. The no-signal setters keep the display
+# identical and drop that round trip from Global.update_anim.
 func update_anim():
 	should_change = false
-	%BounceStateCheck.button_pressed = Global.sprite_container.bounce_state
+	%BounceStateCheck.set_pressed_no_signal(Global.sprite_container.bounce_state)
 	%MouthClosedAnim.select(Global.sprite_container.mouth_closed)
 	%MouthOpenAnim.select(Global.sprite_container.mouth_open)
-	%ShouldSquish.button_pressed = Global.sprite_container.should_squish
-	%SquishAmount.get_node("%SliderValue").value = Global.sprite_container.squish_amount
+	%ShouldSquish.set_pressed_no_signal(Global.sprite_container.should_squish)
+	%SquishAmount.get_node("%SliderValue").set_value_no_signal(Global.sprite_container.squish_amount)
 	should_change = true
 
 

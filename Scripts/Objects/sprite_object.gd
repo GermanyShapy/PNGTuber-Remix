@@ -343,11 +343,28 @@ func reposition_plus(parent):
 						state.position = get_value("position")
 
 func apply_transform():
-		transform.x = Vector2.RIGHT
-		transform.y = Vector2.UP
-		position = get_value("position")
-		rotation = get_value("rotation")
-		scale = get_value("scale")
-		var skew_vector = get_value("skew")
-		transform.x = transform.x.rotated(deg_to_rad(skew_vector.x) )
-		transform.y = transform.y.rotated(deg_to_rad(skew_vector.y) )
+		var want_pos : Vector2 = get_value("position")
+		var want_rot : float = get_value("rotation")
+		var want_scale : Vector2 = get_value("scale")
+		var want_skew : Vector2 = get_value("skew")
+		# Node2D transform setters carry no value guard in the engine, so every
+		# write below marks the CanvasItem dirty. Build the transform this call
+		# would produce and bail out when the node already holds it: on the
+		# 336-sprite reference model a real state switch leaves ~90% of the
+		# sprites untouched. The target uses skew 0 because the explicit skew
+		# reset below normalizes the node's own `skew` field first, so the body
+		# is guaranteed to land exactly on it.
+		var want := Transform2D(want_rot, want_scale, 0.0, want_pos)
+		want.x = want.x.rotated(deg_to_rad(want_skew.x))
+		want.y = want.y.rotated(deg_to_rad(want_skew.y))
+		if transform == want:
+			return
+		# Resetting the skew field replaces the old "write a throwaway RIGHT/UP
+		# basis pair and let the position setter decompose it again" trick: same
+		# result, one write less, and the target above matches by construction.
+		skew = 0.0
+		position = want_pos
+		rotation = want_rot
+		scale = want_scale
+		transform.x = transform.x.rotated(deg_to_rad(want_skew.x))
+		transform.y = transform.y.rotated(deg_to_rad(want_skew.y))

@@ -2,6 +2,9 @@ extends Node
 
 var should_change: bool = false
 
+# Sprite list the chain dropdown was last built from; see _sync_chain_target().
+var _chain_names := PackedStringArray()
+
 
 func _ready() -> void:
 	await get_tree().current_scene.ready
@@ -82,27 +85,45 @@ func reinfo() -> void:
 	await get_tree().create_timer(0.01).timeout
 	held_sprite_is_true()
 
-	%ChainTarget.clear()
-	%ChainTarget.add_item("None")
-	%ChainTarget.select(0)
-
-	var sp = null
-	if Global.held_sprites.size() > 0:
-		sp = Global.held_sprites[0]
-
-	var index: int = 1
-	for i in get_tree().get_nodes_in_group("Sprites"):
-		%ChainTarget.add_item(i.sprite_name)
-		%ChainTarget.set_item_metadata(index, i)
-
-		if sp != null and is_instance_valid(sp):
-			if sp.target_ik != null and is_instance_valid(sp.target_ik):
-				if i == sp.target_ik:
-					%ChainTarget.select(index)
-
-		index += 1
-
+	_sync_chain_target()
 	should_change = true
+
+
+# Rebuilding this dropdown costs ~190 us per sprite -- OptionButton.add_item()
+# re-measures the popup's minimum size over all existing items, so the rebuild is
+# O(n^2) and measured 63 ms on a 336-sprite model. reinfo fires on every state
+# switch, undo/redo, layer edit and file import, so only rebuild when the sprite
+# list actually changed; the selected entry is re-synced on every call.
+func _sync_chain_target() -> void:
+	var group : Array = get_tree().get_nodes_in_group("Sprites")
+	var names := PackedStringArray()
+	for i in group:
+		names.append(i.sprite_name)
+
+	if names != _chain_names:
+		_chain_names = names
+		%ChainTarget.clear()
+		%ChainTarget.add_item("None")
+		for idx in group.size():
+			%ChainTarget.add_item(names[idx])
+			%ChainTarget.set_item_metadata(idx + 1, group[idx])
+
+	%ChainTarget.select(_chain_target_index(group))
+
+
+# Dropdown index of the first held sprite's IK target, or 0 for "None".
+func _chain_target_index(p_group: Array) -> int:
+	if Global.held_sprites.is_empty():
+		return 0
+	var sp = Global.held_sprites[0]
+	if sp == null or not is_instance_valid(sp):
+		return 0
+	if sp.target_ik == null or not is_instance_valid(sp.target_ik):
+		return 0
+	for idx in p_group.size():
+		if p_group[idx] == sp.target_ik:
+			return idx + 1
+	return 0
 
 
 func _on_name_text_submitted(new_text) -> void:
