@@ -209,7 +209,7 @@ func _ready():
 	var img = Image.create_empty(32,32, false, Image.FORMAT_RGBA8)
 	folder_texture = ImageTexture.create_from_image(img)
 	create_placeholders()
-	get_window().min_size = Vector2(720,720)
+	get_window().min_size = Vector2(360,360) # For those who want to use the main window as a desktop pet
 	add_child(blink_timer)
 	blinking()
 	get_window().title = "PNGTuber-Remix V" + version
