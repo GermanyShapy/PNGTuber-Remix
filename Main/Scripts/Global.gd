@@ -151,13 +151,29 @@ var over_mesh_tex : bool = false
 var mesh_text_node : Node = null
 
 var save_path : String = ""
+
+# State-switch throttling. When a rendered frame overruns its budget the engine
+# catches up by running several physics ticks in the next one, and StateButton
+# polls its hotkey from _physics_process while StandGlobalInput refreshes
+# just_pressed_details only once per *rendered* frame -- so a single key press
+# used to fire a full switch per tick (~85 ms x 5 on a 336-sprite model).
+# Requests arriving inside the same rendered frame are coalesced here and the
+# last one is applied once, when _process drains it at the end of that frame.
+var _switch_frame : int = -1
+var _coalesced_state : int = -1
+
 var is_editor : bool = true:
 	set(x):
 		if x == is_editor:
 			is_editor = x
 			return
+		var was_editor := is_editor
 		is_editor = x
 		Settings.change_cursor()
+		# Editor panels are not refreshed while in preview mode (see
+		# _emit_state_signals), so push one full refresh on the way back.
+		if x and not was_editor:
+			call_deferred("_refresh_editor_ui")
 
 var image_data = ImageData.new()
 var image_data_normal = ImageData.new()
@@ -243,16 +259,37 @@ func blinking():
 	blinking()
 
 func load_sprite_states(state):
+	# A structural reload (model load / state added / state deleted) is not a
+	# switch, so reset the throttle baseline: a switch issued later in this very
+	# frame must apply immediately instead of being coalesced onto the reload.
+	_switch_frame = -1
+	_coalesced_state = -1
+
 	current_state = state
 	for i in get_tree().get_nodes_in_group("Sprites"):
 		i.get_state(current_state)
 
-	reinfo.emit()
-	animation_state.emit(current_state)
-	light_info.emit(current_state)
-	update_anim.emit()
+	# include_layer_visib stays false: the original load path never repainted
+	# the layer-visibility buttons, only get_sprite_states did.
+	_emit_state_signals(current_state, false)
 
 func get_sprite_states(state):
+	# Coalesce every further request inside the same rendered frame: a physics
+	# catch-up burst must not multiply the cost of one key press.
+	var frame := Engine.get_process_frames()
+	if frame == _switch_frame:
+		_coalesced_state = state
+		return
+	_apply_state(state)
+
+# Unconditional apply. Must stay free of the coalescing guard above: _process
+# drains the pending request within the very same frame the burst arrived in,
+# so re-entering get_sprite_states() there would coalesce onto itself and
+# postpone the switch by a frame.
+func _apply_state(state):
+	_switch_frame = Engine.get_process_frames()
+	_coalesced_state = -1
+
 	var group_sprites: Array[Node] = get_tree().get_nodes_in_group("Sprites")
 	if is_editor:
 		for i in group_sprites:
@@ -263,9 +300,32 @@ func get_sprite_states(state):
 	for i in group_sprites:
 		i.get_state(current_state)
 
+	_emit_state_signals(current_state)
+
+# Signals are split by who consumes them:
+#   * animation_state -> SpritesContainer.get_state + reaction_config.
+#     reset_animations; light_info -> light_source.get_state (LightSource lives
+#     inside the rendered SubViewport). Both drive the model itself.
+#   * update_anim -> model_effects / model_animation_parameters set_data(),
+#     which push values into sliders and those value_changed handlers call
+#     sprite_container.save_state() again. That write-back is a persistence
+#     side effect, not just a repaint, so it stays unconditional.
+#   * reinfo / update_layer_visib only repaint editor panels that do not exist
+#     in preview mode -- and reinfo alone walks every sprite in the model
+#     (336 sel() calls, ~11 ms), so they are skipped there.
+# When the editor comes back, the is_editor setter pushes a full refresh.
+func _emit_state_signals(state : int, include_layer_visib : bool = true) -> void:
+	animation_state.emit(state)
+	light_info.emit(state)
+	update_anim.emit()
+
+	if is_editor:
+		reinfo.emit()
+		if include_layer_visib:
+			update_layer_visib.emit()
+
+func _refresh_editor_ui() -> void:
 	reinfo.emit()
-	animation_state.emit(current_state)
-	light_info.emit(current_state)
 	update_layer_visib.emit()
 	update_anim.emit()
 
@@ -290,6 +350,13 @@ func offset(i):
 	update_offset_spins.emit()
 
 func _process(delta):
+	if _coalesced_state >= 0:
+		var pending := _coalesced_state
+		_coalesced_state = -1
+		# Only apply when the coalesced target actually differs: repeats of a
+		# switch that already happened must not cost another full pass.
+		if pending != current_state:
+			_apply_state(pending)
 	if settings_dict.should_delta:
 		tick = wrap(tick + delta, 0, 922337203685477630)
 	else:

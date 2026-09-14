@@ -85,8 +85,11 @@ func _input(event: InputEvent) -> void:
 			dragging = false
 
 func save_state(id):
-	var dict : Dictionary = sprite_data.duplicate(true)
-	states[id] = dict
+	# Skip the deep copy when nothing changed (editor-side safety net; see
+	# sprite_object.gd save_state for the measurement behind this).
+	if id >= 0 and id < states.size() and states[id] == sprite_data:
+		return
+	states[id] = sprite_data.duplicate(true)
 
 func get_state(id):
 	if !states[id].is_empty():

@@ -127,16 +127,28 @@ func wiggle_sprite():
 	sprite_object.material.set_shader_parameter("rotation", wiggle_val )
 
 func save_state(id):
-	var dict : Dictionary = sprite_data.duplicate()
-	states[id] = dict
+	# Skip the copy when nothing changed (editor-side safety net; see
+	# sprite_object.gd save_state for the measurement behind this).
+	if id >= 0 and id < states.size() and states[id] == sprite_data:
+		return
+	states[id] = sprite_data.duplicate()
 
 func get_state(id):
 	if not states[id].is_empty():
 		var dict = states[id]
 		sprite_data.merge(dict, true)
-		modifier1.z_index = get_value("z_index")
-		modulate = get_value("colored")
-		sprite_object.self_modulate = get_value("tint")
+		# Guarded writes: with physics interpolation on, every redundant write
+		# marks the CanvasItem dirty (measured as the dominant cost of a state
+		# switch on a big model).
+		var want_z : int = get_value("z_index")
+		if modifier1.z_index != want_z:
+			modifier1.z_index = want_z
+		var want_colored : Color = get_value("colored")
+		if modulate != want_colored:
+			modulate = want_colored
+		var want_tint : Color = get_value("tint")
+		if sprite_object.self_modulate != want_tint:
+			sprite_object.self_modulate = want_tint
 	#	global_position = get_value("global_position")
 		if get_value("should_reset_state"):
 			reaction_config.reset_anim()
@@ -150,8 +162,14 @@ func get_state(id):
 			%Dragger.global_position = %Modifier.global_position
 		
 		
-		sprite_object.position = get_value("offset") 
-		sprite_object.scale = Vector2(1,1)
+		var want_offset : Vector2 = get_value("offset")
+		if sprite_object.position != want_offset:
+			sprite_object.position = want_offset
+		var want_scale := Vector2(
+			-1.0 if get_value("flip_h") else 1.0,
+			-1.0 if get_value("flip_v") else 1.0)
+		if sprite_object.scale != want_scale:
+			sprite_object.scale = want_scale
 		
 		sprite_object.closed = get_value("wiggle_closed_loop")
 		sprite_object.gravity = get_value("wiggle_gravity")
@@ -166,21 +184,18 @@ func get_state(id):
 				sprite_object.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
 		
 		sprite_object.keep_length = get_value("keep_length_anchor")
-		static_collision.disabled = !get_value("can_be_hit")
-		%HitDetection.set_collision_layer_value(2, get_value("can_be_hit"))
+		var want_hit : bool = get_value("can_be_hit")
+		var want_disabled := not want_hit
+		if static_collision.disabled != want_disabled:
+			static_collision.disabled = want_disabled
+		var hit_detect : Node = %HitDetection
+		if hit_detect.get_collision_layer_value(2) != want_hit:
+			hit_detect.set_collision_layer_value(2, want_hit)
 		
 		
-		sprite_object.set_clip_children_mode(get_value("clip"))
-		
-
-		if get_value("flip_h"):
-			sprite_object.scale.x = -1
-		else:
-			sprite_object.scale.x = 1
-		if get_value("flip_v"):
-			sprite_object.scale.y = -1
-		else:
-			sprite_object.scale.y = 1
+		var want_clip : int = get_value("clip")
+		if sprite_object.get_clip_children_mode() != want_clip:
+			sprite_object.set_clip_children_mode(want_clip)
 		
 		if !get_value("should_blink"):
 			modifier1.show()
@@ -190,8 +205,12 @@ func get_state(id):
 		if get_value("fade"):
 			trigger_fade(visible)
 		else:
-			modulate.a = get_value("colored").a
-			visible = get_value("visible")
+			var want_a : float = get_value("colored").a
+			if modulate.a != want_a:
+				modulate.a = want_a
+			var want_visible : bool = get_value("visible")
+			if visible != want_visible:
+				visible = want_visible
 			
 		update_wiggle_parts()
 		set_anchor_sprite()
