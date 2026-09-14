@@ -389,28 +389,23 @@ func is_all_default(key: String) -> bool:
 	return true
 
 func get_value(key: String) -> Variant:
-	if key not in sprite_data:
-		return null
-	
-	var default = sprite_data[key]
-	
+	# One hash lookup instead of two: the old form did `key not in sprite_data`
+	# and then `sprite_data[key]`. get_value runs ~19x per sprite per switch.
+	var default = sprite_data.get(key)
+
 	if sprite_data.shared_movement:
 		return default
 	
-	var state := Global.editing_for
-	
-	if state == Global.Mouth.Closed:
+	# The mouth-variant prefix is cached on Global (Global._refresh_mouth_prefix):
+	# it depends only on editing_for / mouth, never on the sprite, so the old
+	# per-call property read + branch + match collapses into one member read.
+	var prefix := Global.mouth_prefix
+	if prefix.is_empty():
 		return default
-		#state = Global.mouth
-	
-	match state:
-		#Global.Mouth.Closed: return default
-		Global.Mouth.Open: key = "mo_" + key
-		Global.Mouth.Screaming: key = "scream_" + key
-	
-	if key in sprite_data:
-		return sprite_data[key]
-	
+	var vkey := prefix + key
+	if vkey in sprite_data:
+		return sprite_data[vkey]
+
 	return default
 
 func set_blend(blend: String) -> void:

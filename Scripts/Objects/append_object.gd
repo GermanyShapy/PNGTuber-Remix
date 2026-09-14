@@ -133,6 +133,22 @@ func save_state(id):
 		return
 	states[id] = sprite_data.duplicate()
 
+# Side-effect half of get_state(); see sprite_object.gd apply_state_side_effects
+# for why it is safe to run this instead of the full get_state().
+# MUST stay in sync with get_state(): each item below also lives there.
+func apply_state_side_effects(id) -> void:
+	if id < 0 or id >= states.size(): return
+	if (states[id] as Dictionary).is_empty():
+		states[id] = sprite_data.duplicate(true)
+		return
+	if get_value("should_reset_state"):
+		reaction_config.reset_anim()
+	if !get_value("should_blink"):
+		modifier1.show()
+	else:
+		reaction_config.update_to_mode_change(Global.mode)
+	update_wiggle_parts()
+
 func get_state(id):
 	if not states[id].is_empty():
 		var dict = states[id]
