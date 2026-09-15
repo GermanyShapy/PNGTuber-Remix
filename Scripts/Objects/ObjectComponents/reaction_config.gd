@@ -115,7 +115,7 @@ func _process(delta: float) -> void:
 	is_trying_to_disappear = false
 	
 	# Rest Check
-	is_rest = actor.movements.rest
+	is_rest = actor.is_rest
 	
 	if !is_rest and was_rest_before:	# Awaken
 		# auto_show makes the sprite appear without its key (1.4.x semantics).

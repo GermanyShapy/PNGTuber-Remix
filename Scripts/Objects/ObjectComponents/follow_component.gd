@@ -39,7 +39,6 @@ var target_pos = Vector2.ZERO
 var screen_half : Vector2 = Vector2.ZERO
 
 var mouse_delta :Vector2 = Vector2.ZERO
-var rest : bool = false
 var axis_left :Vector2 = Vector2.ZERO
 var axis_right :Vector2 = Vector2.ZERO
 var axis_shoulderl :Vector2 = Vector2.ZERO
@@ -61,7 +60,7 @@ func _physics_process(delta: float) -> void:
 	if actor.rest_mode in [5,7]:
 		reset_modifier()
 		return
-	if actor.rest_mode in [1,3] and rest:
+	if actor.rest_mode in [1,3] and actor.is_rest:
 		reset_modifier()
 	else:
 		process_follow(delta)
@@ -361,6 +360,3 @@ func update_sprite_animation(dir: Vector2, dist: float, delta: float) -> void:
 
 	%Sprite2D.frame_coords.x = floori(frame_h)
 	%Sprite2D.frame_coords.y = floori(frame_v)
-
-func _on_sprite_object_visibility_changed() -> void:
-	rest = !actor.is_visible_in_tree()
