@@ -57,10 +57,10 @@ func _process(delta: float) -> void:
 			#print("Move: " + str(mouse_relative_movement) + " is " + str(is_mouse_relative_movement))
 		#if !pressed_details.is_empty() or !pressed_before_details.is_empty():
 			#print("pressed: " + str(pressed_details) + "     pressed_before: " + str(pressed_before_details))
-	if !just_pressed_details.is_empty():
-		print("  just_pressed: " + str(just_pressed_details))
-	if !just_released_details.is_empty():
-		print("  just_released: " + str(just_released_details))
+	#if !just_pressed_details.is_empty():
+		#print("  just_pressed: " + str(just_pressed_details))
+	#if !just_released_details.is_empty():
+		#print("  just_released: " + str(just_released_details))
 	
 func get_stand_key_string(keycode: int) -> String:
 	if KEY_QUOTELEFT == keycode:
