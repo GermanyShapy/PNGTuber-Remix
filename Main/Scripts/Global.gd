@@ -60,6 +60,15 @@ signal dev_mode
 var blink_timer : Timer = Timer.new()
 var held_sprite = null
 var held_sprites : Array[SpriteObject] = []
+
+# Gesture bookkeeping for the undo stack. A WASD nudge or a run of Ctrl+wheel
+# ticks rewrites sprite_data every frame, so the value that existed before the
+# gesture is snapshotted when it starts and settled once it goes idle -- without
+# this the pre-gesture value is already gone by the time Ctrl+Z is pressed.
+var _nudge_recording : bool = false
+var _offset_recording : bool = false
+var _wheel_rotate_last_ms : int = -1
+const WHEEL_ROTATE_SETTLE_MS : int = 600
 var tick = 0
 var current_state : int = 0
 var mouth := Mouth.Closed:
@@ -370,12 +379,16 @@ func _input(_event : InputEvent):
 		if i != null && is_instance_valid(i):
 			if Input.is_action_pressed("ctrl"):
 				if Input.is_action_pressed("scrollup"):
+					i.begin_value_record("rotation")
 					i.sprite_data.rotation -= 0.05
 					rot(i)
+					_wheel_rotate_last_ms = Time.get_ticks_msec()
 
 				elif Input.is_action_pressed("scrolldown"):
+					i.begin_value_record("rotation")
 					i.sprite_data.rotation += 0.05
 					rot(i)
+					_wheel_rotate_last_ms = Time.get_ticks_msec()
 
 func offset(i):
 	i.get_node("%Grab").anchors_preset = Control.LayoutPreset.PRESET_FULL_RECT
@@ -401,7 +414,32 @@ func _process(delta):
 		moving_origin(delta)
 		moving_sprite(delta)
 
+	# A run of Ctrl+wheel ticks has no release event to hang the settle on, so
+	# the record is closed once the wheel has been idle for a moment.
+	if _wheel_rotate_last_ms >= 0 and Time.get_ticks_msec() - _wheel_rotate_last_ms > WHEEL_ROTATE_SETTLE_MS:
+		for i in held_sprites:
+			if i != null && is_instance_valid(i):
+				i.end_value_record("rotation")
+		_wheel_rotate_last_ms = -1
+
+const OFFSET_KEYS : Array[String] = ["up", "down", "left", "right"]
+
 func moving_origin(delta):
+	var key_down := false
+	for k in OFFSET_KEYS:
+		if Input.is_action_pressed(k):
+			key_down = true
+			break
+
+	# offset() rewrites both position and offset, so record both keys: undoing
+	# only one of them would put the sprite back half way.
+	if key_down and not _offset_recording:
+		_offset_recording = true
+		for i in held_sprites:
+			if i != null && is_instance_valid(i):
+				i.begin_value_record("position")
+				i.begin_value_record("offset")
+
 	for i in held_sprites:
 		if i != null && is_instance_valid(i):
 			if Input.is_action_pressed("up"):
@@ -426,18 +464,45 @@ func moving_origin(delta):
 		if main.can_scroll:
 			if Input.is_action_pressed("ctrl"):
 				if Input.is_action_just_pressed("lmb"):
+					i.begin_value_record("position")
+					i.begin_value_record("offset")
 					var of = i.get_parent().get_global_mouse_position() - i.global_position
 					i.global_position += of
 					i.get_node("%Sprite2D").global_position -= of
 
 					offset(i)
+					i.end_value_record("position")
+					i.end_value_record("offset")
+
+	# Arrow keys do have a release edge, so the gesture settles here -- same
+	# shape as the WASD nudge above.
+	if not key_down and _offset_recording:
+		_offset_recording = false
+		for i in held_sprites:
+			if i != null && is_instance_valid(i):
+				i.end_value_record("position")
+				i.end_value_record("offset")
 
 func rot(i):
 	i.rotation = i.get_value("rotation")
 	i.save_state(current_state)
 	update_pos_spins.emit()
 
+const MOVE_KEYS : Array[String] = ["w", "s_move", "a", "d"]
+
 func moving_sprite(delta):
+	var key_down := false
+	for k in MOVE_KEYS:
+		if Input.is_action_pressed(k):
+			key_down = true
+			break
+
+	if key_down and not _nudge_recording:
+		_nudge_recording = true
+		for i in held_sprites:
+			if i != null && is_instance_valid(i):
+				i.begin_value_record("position")
+
 	for i in held_sprites:
 		if i != null && is_instance_valid(i):
 			if Input.is_action_pressed("w"):
@@ -458,6 +523,12 @@ func moving_sprite(delta):
 				i.position.x += 10 * delta
 				i.sprite_data.position.x += 10 * delta
 				update_spins()
+
+	if not key_down and _nudge_recording:
+		_nudge_recording = false
+		for i in held_sprites:
+			if i != null && is_instance_valid(i):
+				i.end_value_record("position")
 
 func update_spins():
 	for i in held_sprites:
