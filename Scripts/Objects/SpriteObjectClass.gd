@@ -327,6 +327,17 @@ var selected : bool = false
 
 var drag_offsets = {} 
 
+# Values sampled when an editor gesture (mouse drag, WASD nudge, wheel rotate,
+# grid snap) starts. Those gestures write sprite_data -- and thus
+# states[current] -- on every frame, overwriting the value that existed before
+# the gesture began, so the only way Ctrl+Z can restore it is to snapshot at
+# start time and hand the whole gesture to the undo stack as one entry on end.
+# Up to a handful of keys per gesture: `offset()` rewrites both position and
+# offset, so a single nudge has to restore both or it comes back half-undone.
+# pending_record_start maps node -> Dictionary{action: start_value}.
+var pending_record_actions : Array[String] = []
+var pending_record_start : Dictionary = {}
+
 var target_ik : SpriteObject = null
 
 var hidden_target_id_check : float = -1
@@ -625,3 +636,71 @@ func sync_sprite_cycle_in_states():
 	for s in states:
 		s.is_cycle = sprite_data.is_cycle
 		s.cycle = sprite_data.cycle
+
+# Start recording a gesture that edits `action` (a sprite_data key such as
+# "position", "rotation" or "offset"). Re-entering with the same action keeps
+# the earliest snapshot, so a run of wheel ticks collapses into one undo entry.
+# Adding a *different* action to a gesture already in progress does not settle
+# the old one -- both keys are snapshotted and restored together, which is what
+# an offset nudge needs (it moves position and offset at once).
+func begin_value_record(action : String) -> void:
+	if action.is_empty() or pending_record_actions.has(action):
+		return
+	pending_record_actions.append(action)
+	if pending_record_start.is_empty():
+		for s in Global.held_sprites:
+			if s == null or not is_instance_valid(s):
+				continue
+			pending_record_start[s] = {action: s.sprite_data[action]}
+	else:
+		for s in pending_record_start.keys():
+			if s == null or not is_instance_valid(s):
+				continue
+			pending_record_start[s][action] = s.sprite_data[action]
+
+# Counterpart of begin_value_record(). The gesture is settled -- and pushed as
+# ONE undo entry covering every recorded key -- only when its last action ends.
+# Idempotent: a second call with nothing pending pushes nothing, which the drag
+# helpers rely on since both the button-up handler and the lmb-release fallback
+# fire for the same gesture.
+func end_value_record(action : String) -> void:
+	if action.is_empty() or not pending_record_actions.has(action) or pending_record_start.is_empty():
+		return
+	pending_record_actions.erase(action)
+	if not pending_record_actions.is_empty():
+		return
+	var record_data : Array = []
+	for s in pending_record_start.keys():
+		if s == null or not is_instance_valid(s):
+			continue
+		for key in pending_record_start[s]:
+			var start_value : Variant = pending_record_start[s][key]
+			var end_value : Variant = s.sprite_data[key]
+			if _value_unchanged(start_value, end_value):
+				continue
+			record_data.append({
+				node = s,
+				action = key,
+				state = Global.current_state,
+				value = start_value,
+				new_val = end_value,
+			})
+	pending_record_start.clear()
+	if record_data.is_empty():
+		return
+	UndoRedoManager.push_data(record_data)
+
+static func _value_unchanged(a : Variant, b : Variant) -> bool:
+	match typeof(a):
+		TYPE_VECTOR2:
+			return (a as Vector2).is_equal_approx(b)
+		TYPE_FLOAT:
+			return is_equal_approx(a as float, b as float)
+	return a == b
+
+# Thin wrappers: mouse drag is the position gesture.
+func begin_drag_record() -> void:
+	begin_value_record("position")
+
+func end_drag_record() -> void:
+	end_value_record("position")

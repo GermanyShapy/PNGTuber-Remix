@@ -169,17 +169,20 @@ func _on_grab_button_down():
 			var mouse_pos = get_parent().to_local(get_global_mouse_position())
 			for s in Global.held_sprites:
 				drag_offsets[s] = mouse_pos - s.position
+			begin_drag_record()
 
 func _on_grab_button_up():
 	if selected && dragging:
 		save_state(Global.current_state)
 		dragging = false
+		end_drag_record()
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_released("lmb"):
 		if selected && dragging:
 			save_state(Global.current_state)
 			dragging = false
+			end_drag_record()
 
 func wiggle_sprite():
 	var length: float = 0.0
