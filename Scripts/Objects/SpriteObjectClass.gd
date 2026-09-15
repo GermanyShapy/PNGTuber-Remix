@@ -312,6 +312,11 @@ var rest_mode : int = 0
 var ignore_if_rest : bool = false
 var auto_show : bool = false
 var auto_hide : bool = false
+# Single source of truth for "this sprite is asleep", i.e. it is out of the
+# visible tree because an ancestor (or itself) is hidden. Every follow /
+# movement component used to keep a private copy of this recomputed by its own
+# visibility_changed handler; the value was always identical, so it lives here.
+var is_rest : bool = false
 
 var last_mouse_position : Vector2 = Vector2(0,0)
 var last_dist : Vector2 = Vector2(0,0)
@@ -589,6 +594,32 @@ func sync_asset_visibility(vis: bool) -> void:
 	%Sprite2D.visible = vis
 	was_active_before = vis
 	modulate.a = get_value("colored").a if vis else 0.0
+
+func _on_visibility_changed() -> void:
+	# The scene root connects its own visibility_changed to this method
+	# (base_object.tscn). CanvasItem propagates that signal down the tree, so it
+	# also fires when an ancestor hides / shows -- which is exactly the state
+	# is_visible_in_tree() reports.
+	is_rest = !is_visible_in_tree()
+	if tween == null:
+		return
+	if is_rest:
+		# Falling asleep: freeze the show/hide fade on the side it belongs to.
+		# A killed tween never resumes, so its trailing write would be lost.
+		tween.kill()
+		modulate.a = 1.0 if was_active_before else 0.0
+	elif !was_active_before and !auto_show:
+		# Waking up while logically hidden. Hiding/showing a sprite only flips
+		# its own %Sprite2D.visible, and children are parented under it, so an
+		# ancestor coming back re-enables this whole subtree mid fade-out: the
+		# sprite would be drawn again at whatever alpha its auto-hide had
+		# reached (~50% for a fade half done) and only then disappear. A hidden
+		# asset must stay hidden (auto_hide is sticky) unless auto_show / its
+		# key brings it back, so finish the pending hide here instead.
+		tween.kill()
+		modulate.a = 0.0
+		if sprite_object != null:
+			sprite_object.visible = false
 
 func sync_sprite_cycle_in_states():
 	for s in states:
