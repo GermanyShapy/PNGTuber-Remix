@@ -5,6 +5,15 @@ var comment_obj = preload("res://Misc/CommentObject/comment_object.tscn")
 var mesh_obj = preload("res://Misc/MeshObject/mesh_object.tscn")
 var append_obj = preload("res://Misc/AppendageObject/Appendage_object.tscn")
 
+# sprite_data keys that hold ANOTHER sprite's id. copy_common() deep-copies
+# sprite_data verbatim, so a copy inherits the link and keeps pointing at the
+# SOURCE's partner: the same class of omission as the cycle member list. Every
+# consumer resolves them by id at runtime (append_object.set_anchor_sprite():
+# `i.sprite_id == get_value("anchor_id")` / `... == get_value("sync_appendage")`),
+# so a copied appendage follows the ORIGINAL anchor, and copying the anchor
+# together with its appendage leaves the new appendage bound to the old body.
+const SPRITE_ID_LINK_KEYS := ["anchor_id", "sync_appendage"]
+
 var has_folder : bool = false
 
 func _ready() -> void:
@@ -91,6 +100,7 @@ func _on_delete_button_pressed():
 				InputMap.erase_action(i.disappear_keys)
 			if InputMap.has_action(str(i.sprite_id)):
 				InputMap.erase_action(str(i.sprite_id))
+			remove_sprite_from_cycles(i.sprite_id)
 			i.treeitem.free()
 			i.free()
 	Global.deselect.emit()
@@ -119,6 +129,10 @@ func _on_duplicate_button_pressed():
 				sprites.append(child)
 	if sprites.is_empty():
 		return
+	# A copy can link to a sprite that is only duplicated LATER in this same
+	# pass (an appendage whose anchor the selection reaches afterwards), so the
+	# remap has to wait until id_map holds the whole operation.
+	remap_duplicate_links(sprites, id_map)
 	await get_tree().physics_frame
 	Global.get_sprite_states(Global.current_state)
 	Global.reparent_layers.emit(sprites)
@@ -264,6 +278,7 @@ func finalize_duplicate(src, obj, id_map):
 	# finalize_child_duplicate() does the same for the children.
 	obj.global_position = src.global_position
 	register_duplicate_input_map(src, obj)
+	register_duplicate_cycle(obj)
 
 func finalize_child_duplicate(parent, t, obj, id_map):
 	obj.sprite_id = randi()
@@ -275,6 +290,7 @@ func finalize_child_duplicate(parent, t, obj, id_map):
 	obj.disappear_keys = str(obj.sprite_id) + "Disappear"
 	obj.global_position = t.global_position
 	register_duplicate_input_map(t, obj)
+	register_duplicate_cycle(obj)
 
 # Register the InputMap actions a freshly duplicated sprite owns, mirroring what
 # SaveAndLoad.set_common_data() rebuilds on load. Both action names are keyed by
@@ -300,6 +316,111 @@ func register_duplicate_input_map(src, obj):
 	InputMap.add_action(show_action)
 	if obj.saved_event != null:
 		InputMap.action_add_event(show_action, obj.saved_event)
+
+# Register a duplicated sprite in the cycle its source belonged to.
+#
+# Cycle membership is NOT stored on the sprite: sprite_data only holds is_cycle
+# and the cycle number, while the member list lives in
+# Global.settings_dict.cycles[n].sprites as a list of sprite ids (see
+# assets_panel._on_cycle_choice_sprite_item_selected for the canonical write).
+# copy_common() clones sprite_data, so a copy inherits is_cycle + cycle, but
+# nothing ever adds its fresh id to that list -- and both consumers resolve
+# membership by id:
+#   - cycle.gd / cycle_item_tree.gd use `sprite_id in cycle.sprites`
+#   - reaction_config.gd uses cycle.sprites.find(sprite_id)
+# An unregistered copy therefore gets -1 from find(): the cycle can never select
+# it, and pressing the copy's own show key runs toggle_to(cycle, -1), which
+# advances the cycle to its LAST member instead of showing the copy.
+#
+# Always append: cycle.pos is an index into this list, so inserting in the
+# middle would silently move the cycle's current selection.
+func register_duplicate_cycle(obj):
+	if not obj.sprite_data.get("is_cycle", false):
+		return
+	var cyc : int = int(obj.sprite_data.get("cycle", 0))
+	if cyc <= 0 or cyc > Global.settings_dict.cycles.size():
+		return
+	var cycle = Global.settings_dict.cycles[cyc - 1]
+	if cycle.sprites.has(obj.sprite_id):
+		return
+	cycle.sprites.append(obj.sprite_id)
+
+# Second half of duplicating: point every cross-object link a copy owns at the
+# OTHER COPY instead of at the source. Runs once per operation, after all copies
+# exist -- see the call site for why it cannot live in finalize_*.
+#
+# Two kinds of link:
+#   - target_ik, a direct node reference (the IK / chain target, set through
+#     UIInput's ChainTarget dropdown). copy_common() copies the reference, so a
+#     copied chain keeps bending towards the original bone.
+#   - SPRITE_ID_LINK_KEYS, ids stored inside sprite_data.
+# A link whose partner was not part of the selection is left alone on purpose:
+# copying an appendage on its own should keep it anchored to the existing body.
+func remap_duplicate_links(sprites: Array, id_map: Dictionary) -> void:
+	var by_id := {}
+	for s in get_tree().get_nodes_in_group("Sprites"):
+		by_id[s.sprite_id] = s
+	for obj in sprites:
+		if obj == null or !is_instance_valid(obj):
+			continue
+		if obj.target_ik != null and is_instance_valid(obj.target_ik):
+			var new_target = by_id.get(_mapped_id(id_map, obj.target_ik.sprite_id))
+			if new_target != null:
+				obj.target_ik = new_target
+		var relinked := false
+		for key in SPRITE_ID_LINK_KEYS:
+			var old_id = obj.sprite_data.get(key)
+			if old_id == null:
+				continue
+			var new_id = _mapped_id(id_map, old_id)
+			if new_id == null:
+				continue
+			obj.sprite_data[key] = new_id
+			# get_state() merges states[id] back over sprite_data, so a state
+			# left un-patched would restore the source's id on the next state
+			# switch (and on save, which serialises states[]).
+			for st in obj.states:
+				if st is Dictionary and (st as Dictionary).has(key):
+					(st as Dictionary)[key] = new_id
+			relinked = true
+		if relinked and obj.has_method("set_anchor_sprite"):
+			obj.set_anchor_sprite()
+
+# id_map lookup by == instead of by hash: its keys are the float sprite_ids, and
+# an int/float mismatch would silently miss.
+func _mapped_id(id_map: Dictionary, old_id) -> Variant:
+	if old_id == null:
+		return null
+	if id_map.has(old_id):
+		return id_map[old_id]
+	for k in id_map.keys():
+		if k == old_id:
+			return id_map[k]
+	return null
+
+# Mirror of register_duplicate_cycle() for the delete path: membership lives in
+# the cycle, not on the sprite, so removing a sprite has to unregister it there.
+# A dead id left in cycle.sprites is counted by every consumer -- cycle.gd wraps
+# forward / backward over cycle.sprites.size(), so a single ghost slot makes one
+# step select an id no sprite has: nothing is shown and every real member of the
+# cycle is hidden.
+func remove_sprite_from_cycles(sprite_id) -> void:
+	for cycle in Global.settings_dict.cycles:
+		if !cycle.sprites.has(sprite_id):
+			continue
+		var idx : int = cycle.sprites.find(sprite_id)
+		cycle.sprites.remove_at(idx)
+		if cycle.sprites.is_empty():
+			cycle.pos = 0
+			cycle.last_sprite = 0
+			continue
+		# cycle.pos indexes into this list, so a removal below the current
+		# selection shifts it.
+		if idx < cycle.pos:
+			cycle.pos -= 1
+		cycle.pos = clampi(cycle.pos, 0, cycle.sprites.size() - 1)
+		if cycle.last_sprite == sprite_id:
+			cycle.last_sprite = cycle.sprites[cycle.pos]
 
 # True when `sprite` sits below another sprite that is part of the same selection
 # (ancestor relation taken from the LayersTree, which mirrors parent_id).
