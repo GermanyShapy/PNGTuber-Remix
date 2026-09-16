@@ -112,12 +112,27 @@ func update_layers_count():
 	root.set_text(0, text)
 
 func correct_rearrange(sprites : Array = get_tree().get_nodes_in_group("Sprites")):
+	# Callers may pass a subset of the model -- the duplicate flow only hands
+	# over the fresh copies -- so the id -> sprite lookup has to span the whole
+	# model: the parent of a copied item is usually NOT part of that subset, and
+	# the old list-only lookup left the copy dangling under the tree root.
+	# Only the passed items are re-parented (unrelated siblings keep their order)
+	# and an item that already sits under its parent is left untouched, so
+	# repeated calls cannot reshuffle the tree.
+	var by_id := {}
+	for sprite in get_tree().get_nodes_in_group("Sprites"):
+		by_id[sprite.sprite_id] = sprite
 	for i in sprites:
-		for l in sprites:
-			if i.parent_id == l.sprite_id:
-				var parent = i.treeitem.get_parent()
-				parent.remove_child(i.treeitem)
-				l.treeitem.add_child(i.treeitem)
+		if i == null or !is_instance_valid(i) or i.treeitem == null:
+			continue
+		var parent = by_id.get(i.parent_id)
+		if parent == null or parent == i or parent.treeitem == null:
+			continue
+		var current : TreeItem = i.treeitem.get_parent()
+		if current == parent.treeitem:
+			continue
+		current.remove_child(i.treeitem)
+		parent.treeitem.add_child(i.treeitem)
 	correct_recolor()
 
 func update_visib_buttons():

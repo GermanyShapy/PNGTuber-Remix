@@ -98,8 +98,18 @@ func _on_delete_button_pressed():
 func _on_duplicate_button_pressed():
 	var sprites = []
 	var id_map = {}
+	# Selecting a sprite together with one of its own descendants must copy that
+	# subtree once, not twice: the descendant is already cloned as part of the
+	# ancestor's subtree a few lines below. Collect the held set first so a held
+	# sprite can be recognised as "covered by a held ancestor" and skipped.
+	var held := {}
 	for sprite in Global.held_sprites:
 		if sprite != null and is_instance_valid(sprite):
+			held[sprite] = true
+	for sprite in Global.held_sprites:
+		if sprite != null and is_instance_valid(sprite):
+			if _has_held_ancestor(sprite, held):
+				continue
 			var base = duplicate_single(sprite, id_map)
 			sprites.append(base)
 			var layers = %LayersTree.get_all_layeritems_with_parent(sprite.treeitem, true)
@@ -245,6 +255,15 @@ func finalize_duplicate(src, obj, id_map):
 	obj.sprite_id = randi()
 	id_map[src.sprite_id] = obj.sprite_id
 	obj.parent_id = src.parent_id
+	obj.disappear_keys = str(obj.sprite_id) + "Disappear"
+	# copy_transform() copies the source's LOCAL transform, but the copy is still
+	# a child of %SpritesContainer at this point. Anchor it to the source in
+	# global space: the reparent pass (reparent_objects -> reparent_obj) keeps
+	# the global transform while adopting it, so a copy of a nested sprite lands
+	# on top of its source instead of being offset by the parent's transform.
+	# finalize_child_duplicate() does the same for the children.
+	obj.global_position = src.global_position
+	register_duplicate_input_map(src, obj)
 
 func finalize_child_duplicate(parent, t, obj, id_map):
 	obj.sprite_id = randi()
@@ -253,7 +272,49 @@ func finalize_child_duplicate(parent, t, obj, id_map):
 		obj.parent_id = id_map[t.parent_id]
 	else:
 		obj.parent_id = parent.sprite_id
+	obj.disappear_keys = str(obj.sprite_id) + "Disappear"
 	obj.global_position = t.global_position
+	register_duplicate_input_map(t, obj)
+
+# Register the InputMap actions a freshly duplicated sprite owns, mirroring what
+# SaveAndLoad.set_common_data() rebuilds on load. Both action names are keyed by
+# the sprite's own id, so a copy always starts from an empty (or absent) action:
+#   - <id>Disappear  -> the hide hotkey list (disappear_keys)
+#   - <id>           -> the asset show key (saved_event)
+# The errors the copy inherits are taken from the source's live InputMap entries
+# rather than from obj.saved_keys, because a key remapped through the
+# ShouldDisappear list only ever touches the action, never saved_keys. Without
+# this the copy's hide / show keys stay dead until the project is saved+reloaded.
+func register_duplicate_input_map(src, obj):
+	var dis_action : String = obj.disappear_keys
+	if InputMap.has_action(dis_action):
+		InputMap.erase_action(dis_action)
+	InputMap.add_action(dis_action)
+	if src != null and is_instance_valid(src) and InputMap.has_action(src.disappear_keys):
+		for ev in InputMap.action_get_events(src.disappear_keys):
+			InputMap.action_add_event(dis_action, ev)
+
+	var show_action : String = str(obj.sprite_id)
+	if InputMap.has_action(show_action):
+		InputMap.erase_action(show_action)
+	InputMap.add_action(show_action)
+	if obj.saved_event != null:
+		InputMap.action_add_event(show_action, obj.saved_event)
+
+# True when `sprite` sits below another sprite that is part of the same selection
+# (ancestor relation taken from the LayersTree, which mirrors parent_id).
+func _has_held_ancestor(sprite, held: Dictionary) -> bool:
+	if sprite.treeitem == null:
+		return false
+	var item : TreeItem = sprite.treeitem.get_parent()
+	while item != null:
+		var meta = item.get_metadata(0)
+		if meta != null and meta is Dictionary:
+			var so = (meta as Dictionary).get("sprite_object")
+			if so != null and held.has(so):
+				return true
+		item = item.get_parent()
+	return false
 
 func _on_replace_button_pressed():
 	Global.main.replacing_sprite()
