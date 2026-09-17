@@ -359,7 +359,11 @@ func get_state(id):
 			modifier1.show()
 
 	elif states[id].is_empty():
+		# Empty slot = freshly imported/created object (states = [{}, ...]), not
+		# "skip the sync". Seed it and re-enter so node-side values (e.g. the
+		# trim offset) get applied; the merge that follows is a no-op.
 		states[id] = sprite_data.duplicate(true)
+		get_state(id)
 
 func check_talk():
 	if get_value("should_talk"):

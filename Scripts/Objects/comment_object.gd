@@ -136,7 +136,10 @@ func get_state(id):
 			%Modifier1.show()
 		
 	elif states[id].is_empty():
+		# See sprite_object.gd get_state(): empty slot = seed and re-enter, so the
+		# node-side sync above (position, offset, text_data) still runs.
 		states[id] = sprite_data.duplicate(true)
+		get_state(id)
 
 func check_talk():
 	if get_value("should_talk"):

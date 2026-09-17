@@ -243,7 +243,10 @@ func get_state(id):
 			%Modifier1.modulate.a = 1
 			%Modifier1.show()
 	elif states[id].is_empty():
+		# See sprite_object.gd get_state(): empty slot = seed and re-enter, so the
+		# node-side offset is applied instead of skipped.
 		states[id] = sprite_data.duplicate(true)
+		get_state(id)
 
 func set_anchor_sprite(_placeholder = null):
 	if get_value("anchor_id") == null:
