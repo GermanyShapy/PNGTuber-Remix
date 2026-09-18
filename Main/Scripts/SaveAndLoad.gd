@@ -407,6 +407,7 @@ func load_model(path: String) -> void:
 	Global.remake_image_manager.emit()
 	Global.load_model.emit()
 	Global.load_sprite_states(0)
+	GlobInput.refresh_action_cache()
 
 func resize_image_data(image_data: ImageData, sprite_node: Node2D, percent: float) -> void:
 	if percent == 100.0 or image_data.runtime_texture == null:
