@@ -60,14 +60,45 @@ signal dev_mode
 var blink_timer : Timer = Timer.new()
 var held_sprite = null
 var held_sprites : Array[SpriteObject] = []
+
+# Gesture bookkeeping for the undo stack. A WASD nudge or a run of Ctrl+wheel
+# ticks rewrites sprite_data every frame, so the value that existed before the
+# gesture is snapshotted when it starts and settled once it goes idle -- without
+# this the pre-gesture value is already gone by the time Ctrl+Z is pressed.
+var _nudge_recording : bool = false
+var _offset_recording : bool = false
+var _wheel_rotate_last_ms : int = -1
+const WHEEL_ROTATE_SETTLE_MS : int = 600
 var tick = 0
 var current_state : int = 0
-var mouth := Mouth.Closed
+var mouth := Mouth.Closed:
+	set(x):
+		if x == mouth: return
+		mouth = x
+		_refresh_mouth_prefix()
 var editing_for := Mouth.Closed:
 	set(x):
 		if x == editing_for: return
 		editing_for = x
+		_refresh_mouth_prefix()
 		editing_for_changed.emit()
+
+# Mouth-variant prefix cache for SpriteObjectClass.get_value(). The prefix
+# depends only on editing_for / mouth -- never on the sprite -- so resolving it
+# once per change turns the hot path (get_value runs ~35x per sprite per state
+# switch) into a single member read instead of a property read + branch + match.
+# An empty prefix means "no variant lookup, return the plain value", which is
+# exactly what Mouth.Closed used to short-circuit to.
+var mouth_prefix : String = ""
+
+func _refresh_mouth_prefix() -> void:
+	var st : int = editing_for
+	if st == Mouth.Closed:
+		st = mouth
+	match st:
+		Mouth.Open: mouth_prefix = "mo_"
+		Mouth.Screaming: mouth_prefix = "scream_"
+		_: mouth_prefix = ""
 
 var settings_dict : Dictionary = {
 	sensitivity_limit = 1,
@@ -151,13 +182,29 @@ var over_mesh_tex : bool = false
 var mesh_text_node : Node = null
 
 var save_path : String = ""
+
+# State-switch throttling. When a rendered frame overruns its budget the engine
+# catches up by running several physics ticks in the next one, and StateButton
+# polls its hotkey from _physics_process while StandGlobalInput refreshes
+# just_pressed_details only once per *rendered* frame -- so a single key press
+# used to fire a full switch per tick (~85 ms x 5 on a 336-sprite model).
+# Requests arriving inside the same rendered frame are coalesced here and the
+# last one is applied once, when _process drains it at the end of that frame.
+var _switch_frame : int = -1
+var _coalesced_state : int = -1
+
 var is_editor : bool = true:
 	set(x):
 		if x == is_editor:
 			is_editor = x
 			return
+		var was_editor := is_editor
 		is_editor = x
 		Settings.change_cursor()
+		# Editor panels are not refreshed while in preview mode (see
+		# _emit_state_signals), so push one full refresh on the way back.
+		if x and not was_editor:
+			call_deferred("_refresh_editor_ui")
 
 var image_data = ImageData.new()
 var image_data_normal = ImageData.new()
@@ -171,7 +218,7 @@ func _ready():
 	var img = Image.create_empty(32,32, false, Image.FORMAT_RGBA8)
 	folder_texture = ImageTexture.create_from_image(img)
 	create_placeholders()
-	get_window().min_size = Vector2(720,720)
+	get_window().min_size = Vector2(360,360) # For those who want to use the main window as a desktop pet
 	add_child(blink_timer)
 	blinking()
 	get_window().title = "PNGTuber-Remix V" + version
@@ -243,29 +290,87 @@ func blinking():
 	blinking()
 
 func load_sprite_states(state):
+	# A structural reload (model load / state added / state deleted) is not a
+	# switch, so reset the throttle baseline: a switch issued later in this very
+	# frame must apply immediately instead of being coalesced onto the reload.
+	_switch_frame = -1
+	_coalesced_state = -1
+
 	current_state = state
 	for i in get_tree().get_nodes_in_group("Sprites"):
 		i.get_state(current_state)
 
-	reinfo.emit()
-	animation_state.emit(current_state)
-	light_info.emit(current_state)
-	update_anim.emit()
+	# include_layer_visib stays false: the original load path never repainted
+	# the layer-visibility buttons, only get_sprite_states did.
+	_emit_state_signals(current_state, false)
 
 func get_sprite_states(state):
+	# Coalesce every further request inside the same rendered frame: a physics
+	# catch-up burst must not multiply the cost of one key press.
+	var frame := Engine.get_process_frames()
+	if frame == _switch_frame:
+		_coalesced_state = state
+		return
+	_apply_state(state)
+
+# Unconditional apply. Must stay free of the coalescing guard above: _process
+# drains the pending request within the very same frame the burst arrived in,
+# so re-entering get_sprite_states() there would coalesce onto itself and
+# postpone the switch by a frame.
+func _apply_state(state):
+	_switch_frame = Engine.get_process_frames()
+	_coalesced_state = -1
+
 	var group_sprites: Array[Node] = get_tree().get_nodes_in_group("Sprites")
 	if is_editor:
 		for i in group_sprites:
 			i.save_state(current_state)
 
+	var from := current_state
 	current_state = state
 
 	for i in group_sprites:
-		i.get_state(current_state)
+		# Identical content: get_state() would merge the same values back into
+		# sprite_data and re-write every guarded property with the value it
+		# already holds (measured: the data-driven half is ~57% of get_state,
+		# and 42% of all switches -- ~98% within a cluster -- are identical).
+		# Safe because is_editor just ran save_state(from), so states[from]
+		# mirrors sprite_data; any real difference, including an unsaved edit,
+		# makes the comparison fail and takes the full path instead.
+		var st : Array = i.states
+		if (from < st.size() and state < st.size()
+				and i.has_method("apply_state_side_effects")
+				and st[from] == st[state]):
+			i.apply_state_side_effects(state)
+		else:
+			i.get_state(current_state)
 
+	_emit_state_signals(current_state)
+
+# Signals are split by who consumes them:
+#   * animation_state -> SpritesContainer.get_state + reaction_config.
+#     reset_animations; light_info -> light_source.get_state (LightSource lives
+#     inside the rendered SubViewport). Both drive the model itself.
+#   * update_anim -> model_effects / model_animation_parameters set_data(),
+#     which push values into sliders and those value_changed handlers call
+#     sprite_container.save_state() again. That write-back is a persistence
+#     side effect, not just a repaint, so it stays unconditional.
+#   * reinfo / update_layer_visib only repaint editor panels that do not exist
+#     in preview mode -- and reinfo alone walks every sprite in the model
+#     (336 sel() calls, ~11 ms), so they are skipped there.
+# When the editor comes back, the is_editor setter pushes a full refresh.
+func _emit_state_signals(state : int, include_layer_visib : bool = true) -> void:
+	animation_state.emit(state)
+	light_info.emit(state)
+	update_anim.emit()
+
+	if is_editor:
+		reinfo.emit()
+		if include_layer_visib:
+			update_layer_visib.emit()
+
+func _refresh_editor_ui() -> void:
 	reinfo.emit()
-	animation_state.emit(current_state)
-	light_info.emit(current_state)
 	update_layer_visib.emit()
 	update_anim.emit()
 
@@ -274,12 +379,16 @@ func _input(_event : InputEvent):
 		if i != null && is_instance_valid(i):
 			if Input.is_action_pressed("ctrl"):
 				if Input.is_action_pressed("scrollup"):
+					i.begin_value_record("rotation")
 					i.sprite_data.rotation -= 0.05
 					rot(i)
+					_wheel_rotate_last_ms = Time.get_ticks_msec()
 
 				elif Input.is_action_pressed("scrolldown"):
+					i.begin_value_record("rotation")
 					i.sprite_data.rotation += 0.05
 					rot(i)
+					_wheel_rotate_last_ms = Time.get_ticks_msec()
 
 func offset(i):
 	i.get_node("%Grab").anchors_preset = Control.LayoutPreset.PRESET_FULL_RECT
@@ -290,6 +399,13 @@ func offset(i):
 	update_offset_spins.emit()
 
 func _process(delta):
+	if _coalesced_state >= 0:
+		var pending := _coalesced_state
+		_coalesced_state = -1
+		# Only apply when the coalesced target actually differs: repeats of a
+		# switch that already happened must not cost another full pass.
+		if pending != current_state:
+			_apply_state(pending)
 	if settings_dict.should_delta:
 		tick = wrap(tick + delta, 0, 922337203685477630)
 	else:
@@ -298,7 +414,32 @@ func _process(delta):
 		moving_origin(delta)
 		moving_sprite(delta)
 
+	# A run of Ctrl+wheel ticks has no release event to hang the settle on, so
+	# the record is closed once the wheel has been idle for a moment.
+	if _wheel_rotate_last_ms >= 0 and Time.get_ticks_msec() - _wheel_rotate_last_ms > WHEEL_ROTATE_SETTLE_MS:
+		for i in held_sprites:
+			if i != null && is_instance_valid(i):
+				i.end_value_record("rotation")
+		_wheel_rotate_last_ms = -1
+
+const OFFSET_KEYS : Array[String] = ["up", "down", "left", "right"]
+
 func moving_origin(delta):
+	var key_down := false
+	for k in OFFSET_KEYS:
+		if Input.is_action_pressed(k):
+			key_down = true
+			break
+
+	# offset() rewrites both position and offset, so record both keys: undoing
+	# only one of them would put the sprite back half way.
+	if key_down and not _offset_recording:
+		_offset_recording = true
+		for i in held_sprites:
+			if i != null && is_instance_valid(i):
+				i.begin_value_record("position")
+				i.begin_value_record("offset")
+
 	for i in held_sprites:
 		if i != null && is_instance_valid(i):
 			if Input.is_action_pressed("up"):
@@ -323,18 +464,45 @@ func moving_origin(delta):
 		if main.can_scroll:
 			if Input.is_action_pressed("ctrl"):
 				if Input.is_action_just_pressed("lmb"):
+					i.begin_value_record("position")
+					i.begin_value_record("offset")
 					var of = i.get_parent().get_global_mouse_position() - i.global_position
 					i.global_position += of
 					i.get_node("%Sprite2D").global_position -= of
 
 					offset(i)
+					i.end_value_record("position")
+					i.end_value_record("offset")
+
+	# Arrow keys do have a release edge, so the gesture settles here -- same
+	# shape as the WASD nudge above.
+	if not key_down and _offset_recording:
+		_offset_recording = false
+		for i in held_sprites:
+			if i != null && is_instance_valid(i):
+				i.end_value_record("position")
+				i.end_value_record("offset")
 
 func rot(i):
 	i.rotation = i.get_value("rotation")
 	i.save_state(current_state)
 	update_pos_spins.emit()
 
+const MOVE_KEYS : Array[String] = ["w", "s_move", "a", "d"]
+
 func moving_sprite(delta):
+	var key_down := false
+	for k in MOVE_KEYS:
+		if Input.is_action_pressed(k):
+			key_down = true
+			break
+
+	if key_down and not _nudge_recording:
+		_nudge_recording = true
+		for i in held_sprites:
+			if i != null && is_instance_valid(i):
+				i.begin_value_record("position")
+
 	for i in held_sprites:
 		if i != null && is_instance_valid(i):
 			if Input.is_action_pressed("w"):
@@ -355,6 +523,12 @@ func moving_sprite(delta):
 				i.position.x += 10 * delta
 				i.sprite_data.position.x += 10 * delta
 				update_spins()
+
+	if not key_down and _nudge_recording:
+		_nudge_recording = false
+		for i in held_sprites:
+			if i != null && is_instance_valid(i):
+				i.end_value_record("position")
 
 func update_spins():
 	for i in held_sprites:

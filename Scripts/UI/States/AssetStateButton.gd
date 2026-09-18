@@ -194,6 +194,10 @@ func _on_auto_show_on_toggle_check_toggled(toggled_on: bool) -> void:
 	if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
 		Global.held_sprites[0].auto_show = toggled_on
 
+func _on_auto_hide_on_toggle_check_toggled(toggled_on: bool) -> void:
+	if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
+		Global.held_sprites[0].auto_hide = toggled_on
+
 func _on_cast_time_spin_box_value_changed(value: float) -> void:
 	if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
 		Global.held_sprites[0].cast_time = value

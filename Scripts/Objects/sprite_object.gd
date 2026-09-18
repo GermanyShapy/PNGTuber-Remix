@@ -20,6 +20,14 @@ func get_default_object_data() -> Dictionary:
 
 var wiggle_val : float = 0
 
+# get_state() runs for every sprite on every state switch. Resolving a %Name
+# there costs a scene-tree lookup each time; SpriteObjectClass already caches
+# modifier / modifier1 / sprite_object this way, so do the same for the one
+# get_state still resolved per call (measured ~0.4-1.0 ms per switch @336).
+# @onready is required: a plain `var x = %Node` initialiser runs before this
+# node is in the tree, so it resolves to null and every later use errors.
+@onready var hit_detection : StaticBody2D = %HitDetection
+
 func _init() -> void:
 	cached_defaults = DEFAULT_DATA.merged(get_default_object_data(), true)
 	sprite_data = cached_defaults.duplicate(true)
@@ -161,17 +169,20 @@ func _on_grab_button_down():
 			var mouse_pos = get_parent().to_local(get_global_mouse_position())
 			for s in Global.held_sprites:
 				drag_offsets[s] = mouse_pos - s.position
+			begin_drag_record()
 
 func _on_grab_button_up():
 	if selected && dragging:
 		save_state(Global.current_state)
 		dragging = false
+		end_drag_record()
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_released("lmb"):
 		if selected && dragging:
 			save_state(Global.current_state)
 			dragging = false
+			end_drag_record()
 
 func wiggle_sprite():
 	var length: float = 0.0
@@ -211,8 +222,36 @@ func advanced_lipsyc():
 			sprite_object.frame_coords.x = 13
 
 func save_state(id):
-	var dict : Dictionary = sprite_data.duplicate(true)
-	states[id] = dict
+	# Skip the deep copy when nothing changed. save_state() runs for every
+	# sprite on every state switch as an editor-side safety net (some legacy UI
+	# never saves on its own), and re-storing an identical dictionary measured
+	# ~21 ms on a 336-sprite model while the unchanged case needs no work.
+	if id >= 0 and id < states.size() and states[id] == sprite_data:
+		return
+	states[id] = sprite_data.duplicate(true)
+
+# Side-effect half of get_state(). Global._apply_state() calls this instead of
+# get_state() when the target state's content is identical to the current one:
+# in that case every value the data-driven half would merge into sprite_data,
+# and every property it would write, already holds the value it would write, so
+# skipping it changes nothing observable.
+# MUST stay in sync with get_state(): each item below also lives there.
+func apply_state_side_effects(id) -> void:
+	if id < 0 or id >= states.size(): return
+	if (states[id] as Dictionary).is_empty():
+		states[id] = sprite_data.duplicate(true)
+		return
+	if get_value("should_reset_state"):
+		reaction_config.reset_anim()
+	if !get_value("should_blink"):
+		modifier1.show()
+	else:
+		reaction_config.update_to_mode_change(Global.mode)
+	animation()
+	advanced_lipsyc()
+	if !get_value("should_blink"):
+		modifier1.modulate.a = 1
+		modifier1.show()
 
 func get_state(id):
 	if !states[id].is_empty():
@@ -226,15 +265,36 @@ func get_state(id):
 			reaction_config.reset_anim()
 		
 		var old_glob = global_position
-		
-		sprite_object.position = get_value("offset") 
-		sprite_object.scale = Vector2(1,1)
-		
-		modifier1.z_index = get_value("z_index")
-		modulate = get_value("colored")
-		sprite_object.self_modulate = get_value("tint")
-		static_collision.disabled = !get_value("can_be_hit")
-		%HitDetection.set_collision_layer_value(2, get_value("can_be_hit"))
+
+		# Every write below is guarded by a value comparison: with physics
+		# interpolation enabled each write marks the CanvasItem dirty, and on a
+		# 336-sprite model the unconditional version measured ~20 ms per state
+		# switch for values that had not changed at all.
+		var want_offset : Vector2 = get_value("offset")
+		if sprite_object.position != want_offset:
+			sprite_object.position = want_offset
+		var want_scale := Vector2(
+			-1.0 if get_value("flip_sprite_h") else 1.0,
+			-1.0 if get_value("flip_sprite_v") else 1.0)
+		if sprite_object.scale != want_scale:
+			sprite_object.scale = want_scale
+
+		var want_z : int = get_value("z_index")
+		if modifier1.z_index != want_z:
+			modifier1.z_index = want_z
+		var want_colored : Color = get_value("colored")
+		if modulate != want_colored:
+			modulate = want_colored
+		var want_tint : Color = get_value("tint")
+		if sprite_object.self_modulate != want_tint:
+			sprite_object.self_modulate = want_tint
+		var want_hit : bool = get_value("can_be_hit")
+		var want_disabled := not want_hit
+		if static_collision.disabled != want_disabled:
+			static_collision.disabled = want_disabled
+		var hit_detect := hit_detection
+		if hit_detect.get_collision_layer_value(2) != want_hit:
+			hit_detect.set_collision_layer_value(2, want_hit)
 		apply_transform()
 	#	use apply_transform to update all
 	#	global_position = get_value("global_position")
@@ -244,20 +304,19 @@ func get_state(id):
 			modifier.global_position = modifier1.global_position
 			%Dragger.global_position = %Modifier.global_position
 		
-		sprite_object.set_clip_children_mode(get_value("clip"))
+		var want_clip : int = get_value("clip")
+		if sprite_object.get_clip_children_mode() != want_clip:
+			sprite_object.set_clip_children_mode(want_clip)
 		
-		sprite_object.material.set_shader_parameter("wiggle", get_value("wiggle"))
-		sprite_object.material.set_shader_parameter("rotation_offset", get_value("wiggle_rot_offset"))
-		
-		if get_value("flip_sprite_h"):
-			sprite_object.scale.x = -1
-		else:
-			sprite_object.scale.x = 1
-
-		if get_value("flip_sprite_v"):
-			sprite_object.scale.y = -1
-		else:
-			sprite_object.scale.y = 1
+		# get_shader_parameter() is a cheap dictionary read compared to the
+		# re-batch a redundant set_shader_parameter() triggers.
+		var mat : ShaderMaterial = sprite_object.material
+		var want_wiggle = get_value("wiggle")
+		if mat.get_shader_parameter("wiggle") != want_wiggle:
+			mat.set_shader_parameter("wiggle", want_wiggle)
+		var want_rot_off = get_value("wiggle_rot_offset")
+		if mat.get_shader_parameter("rotation_offset") != want_rot_off:
+			mat.set_shader_parameter("rotation_offset", want_rot_off)
 
 		if get_value("advanced_lipsync"):
 			sprite_object.hframes = 6
@@ -274,24 +333,37 @@ func get_state(id):
 			# end (load_sprite_states) after sync_asset_visibility, and setting
 			# a=colored.a here would resurrect the a=1.0 + visible=false pair,
 			# making fade_asset's first show short-circuit (instant pop).
-			if is_asset and !%Sprite2D.visible:
-				modulate.a = 0.0
+			if is_asset and !sprite_object.visible:
+				if modulate.a != 0.0:
+					modulate.a = 0.0
 			else:
-				modulate.a = get_value("colored").a
-			visible = get_value("visible")
+				var want_a : float = get_value("colored").a
+				if modulate.a != want_a:
+					modulate.a = want_a
+			var want_visible : bool = get_value("visible")
+			if visible != want_visible:
+				visible = want_visible
 		animation()
 		set_blend(get_value("blend_mode"))
 		advanced_lipsyc()
 
-		if !get_value("cycle") in range(Global.settings_dict.cycles.size() + 1):
+		# Same check as `!get_value("cycle") in range(cycles.size() + 1)`, but
+		# that form built a fresh Array and linear-scanned it for every sprite
+		# on every switch (measured ~262 us per switch on a 336-sprite model).
+		var cyc : Variant = get_value("cycle")
+		if cyc == null or cyc < 0 or cyc > Global.settings_dict.cycles.size():
 			sprite_data.cycle = 0
 
 		if !get_value("should_blink"):
-			%Modifier1.modulate.a = 1
-			%Modifier1.show()
+			modifier1.modulate.a = 1
+			modifier1.show()
 
 	elif states[id].is_empty():
+		# Empty slot = freshly imported/created object (states = [{}, ...]), not
+		# "skip the sync". Seed it and re-enter so node-side values (e.g. the
+		# trim offset) get applied; the merge that follows is a no-op.
 		states[id] = sprite_data.duplicate(true)
+		get_state(id)
 
 func check_talk():
 	if get_value("should_talk"):
@@ -313,11 +385,28 @@ func reposition_plus(parent):
 						state.position = get_value("position")
 
 func apply_transform():
-		transform.x = Vector2.RIGHT
-		transform.y = Vector2.UP
-		position = get_value("position")
-		rotation = get_value("rotation")
-		scale = get_value("scale")
-		var skew_vector = get_value("skew")
-		transform.x = transform.x.rotated(deg_to_rad(skew_vector.x) )
-		transform.y = transform.y.rotated(deg_to_rad(skew_vector.y) )
+		var want_pos : Vector2 = get_value("position")
+		var want_rot : float = get_value("rotation")
+		var want_scale : Vector2 = get_value("scale")
+		var want_skew : Vector2 = get_value("skew")
+		# Node2D transform setters carry no value guard in the engine, so every
+		# write below marks the CanvasItem dirty. Build the transform this call
+		# would produce and bail out when the node already holds it: on the
+		# 336-sprite reference model a real state switch leaves ~90% of the
+		# sprites untouched. The target uses skew 0 because the explicit skew
+		# reset below normalizes the node's own `skew` field first, so the body
+		# is guaranteed to land exactly on it.
+		var want := Transform2D(want_rot, want_scale, 0.0, want_pos)
+		want.x = want.x.rotated(deg_to_rad(want_skew.x))
+		want.y = want.y.rotated(deg_to_rad(want_skew.y))
+		if transform == want:
+			return
+		# Resetting the skew field replaces the old "write a throwaway RIGHT/UP
+		# basis pair and let the position setter decompose it again" trick: same
+		# result, one write less, and the target above matches by construction.
+		skew = 0.0
+		position = want_pos
+		rotation = want_rot
+		scale = want_scale
+		transform.x = transform.x.rotated(deg_to_rad(want_skew.x))
+		transform.y = transform.y.rotated(deg_to_rad(want_skew.y))

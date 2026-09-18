@@ -127,16 +127,44 @@ func wiggle_sprite():
 	sprite_object.material.set_shader_parameter("rotation", wiggle_val )
 
 func save_state(id):
-	var dict : Dictionary = sprite_data.duplicate()
-	states[id] = dict
+	# Skip the copy when nothing changed (editor-side safety net; see
+	# sprite_object.gd save_state for the measurement behind this).
+	if id >= 0 and id < states.size() and states[id] == sprite_data:
+		return
+	states[id] = sprite_data.duplicate()
+
+# Side-effect half of get_state(); see sprite_object.gd apply_state_side_effects
+# for why it is safe to run this instead of the full get_state().
+# MUST stay in sync with get_state(): each item below also lives there.
+func apply_state_side_effects(id) -> void:
+	if id < 0 or id >= states.size(): return
+	if (states[id] as Dictionary).is_empty():
+		states[id] = sprite_data.duplicate(true)
+		return
+	if get_value("should_reset_state"):
+		reaction_config.reset_anim()
+	if !get_value("should_blink"):
+		modifier1.show()
+	else:
+		reaction_config.update_to_mode_change(Global.mode)
+	update_wiggle_parts()
 
 func get_state(id):
 	if not states[id].is_empty():
 		var dict = states[id]
 		sprite_data.merge(dict, true)
-		modifier1.z_index = get_value("z_index")
-		modulate = get_value("colored")
-		sprite_object.self_modulate = get_value("tint")
+		# Guarded writes: with physics interpolation on, every redundant write
+		# marks the CanvasItem dirty (measured as the dominant cost of a state
+		# switch on a big model).
+		var want_z : int = get_value("z_index")
+		if modifier1.z_index != want_z:
+			modifier1.z_index = want_z
+		var want_colored : Color = get_value("colored")
+		if modulate != want_colored:
+			modulate = want_colored
+		var want_tint : Color = get_value("tint")
+		if sprite_object.self_modulate != want_tint:
+			sprite_object.self_modulate = want_tint
 	#	global_position = get_value("global_position")
 		if get_value("should_reset_state"):
 			reaction_config.reset_anim()
@@ -150,8 +178,14 @@ func get_state(id):
 			%Dragger.global_position = %Modifier.global_position
 		
 		
-		sprite_object.position = get_value("offset") 
-		sprite_object.scale = Vector2(1,1)
+		var want_offset : Vector2 = get_value("offset")
+		if sprite_object.position != want_offset:
+			sprite_object.position = want_offset
+		var want_scale := Vector2(
+			-1.0 if get_value("flip_h") else 1.0,
+			-1.0 if get_value("flip_v") else 1.0)
+		if sprite_object.scale != want_scale:
+			sprite_object.scale = want_scale
 		
 		sprite_object.closed = get_value("wiggle_closed_loop")
 		sprite_object.gravity = get_value("wiggle_gravity")
@@ -166,21 +200,18 @@ func get_state(id):
 				sprite_object.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
 		
 		sprite_object.keep_length = get_value("keep_length_anchor")
-		static_collision.disabled = !get_value("can_be_hit")
-		%HitDetection.set_collision_layer_value(2, get_value("can_be_hit"))
+		var want_hit : bool = get_value("can_be_hit")
+		var want_disabled := not want_hit
+		if static_collision.disabled != want_disabled:
+			static_collision.disabled = want_disabled
+		var hit_detect : Node = %HitDetection
+		if hit_detect.get_collision_layer_value(2) != want_hit:
+			hit_detect.set_collision_layer_value(2, want_hit)
 		
 		
-		sprite_object.set_clip_children_mode(get_value("clip"))
-		
-
-		if get_value("flip_h"):
-			sprite_object.scale.x = -1
-		else:
-			sprite_object.scale.x = 1
-		if get_value("flip_v"):
-			sprite_object.scale.y = -1
-		else:
-			sprite_object.scale.y = 1
+		var want_clip : int = get_value("clip")
+		if sprite_object.get_clip_children_mode() != want_clip:
+			sprite_object.set_clip_children_mode(want_clip)
 		
 		if !get_value("should_blink"):
 			modifier1.show()
@@ -190,8 +221,12 @@ func get_state(id):
 		if get_value("fade"):
 			trigger_fade(visible)
 		else:
-			modulate.a = get_value("colored").a
-			visible = get_value("visible")
+			var want_a : float = get_value("colored").a
+			if modulate.a != want_a:
+				modulate.a = want_a
+			var want_visible : bool = get_value("visible")
+			if visible != want_visible:
+				visible = want_visible
 			
 		update_wiggle_parts()
 		set_anchor_sprite()
@@ -208,7 +243,10 @@ func get_state(id):
 			%Modifier1.modulate.a = 1
 			%Modifier1.show()
 	elif states[id].is_empty():
+		# See sprite_object.gd get_state(): empty slot = seed and re-enter, so the
+		# node-side offset is applied instead of skipped.
 		states[id] = sprite_data.duplicate(true)
+		get_state(id)
 
 func set_anchor_sprite(_placeholder = null):
 	if get_value("anchor_id") == null:
@@ -298,24 +336,37 @@ func _on_grab_button_down():
 			var mouse_pos = get_parent().to_local(get_global_mouse_position())
 			for s in Global.held_sprites:
 				drag_offsets[s] = mouse_pos - s.position
+			begin_drag_record()
 
 func _on_grab_button_up():
 	if selected:
 		dragging = false
 		save_state(Global.current_state)
+		end_drag_record()
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_released("lmb"):
 		if selected && dragging:
 			save_state(Global.current_state)
 			dragging = false
+			end_drag_record()
 
 func apply_transform():
-	transform.x = Vector2.RIGHT
-	transform.y = Vector2.UP
-	position = get_value("position")
-	rotation = get_value("rotation")
-	scale = get_value("scale")
-	var skew = get_value("skew")
-	transform.x = transform.x.rotated(deg_to_rad(skew.x) )
-	transform.y = transform.y.rotated(deg_to_rad(skew.y) )
+	var want_pos : Vector2 = get_value("position")
+	var want_rot : float = get_value("rotation")
+	var want_scale : Vector2 = get_value("scale")
+	var want_skew : Vector2 = get_value("skew")
+	# Value-guarded for the same reason as sprite_object.gd: the engine's Node2D
+	# transform setters have no guard, so an unchanged transform would still cost
+	# seven dirty-marking writes per object per state switch.
+	var want := Transform2D(want_rot, want_scale, 0.0, want_pos)
+	want.x = want.x.rotated(deg_to_rad(want_skew.x))
+	want.y = want.y.rotated(deg_to_rad(want_skew.y))
+	if transform == want:
+		return
+	skew = 0.0
+	position = want_pos
+	rotation = want_rot
+	scale = want_scale
+	transform.x = transform.x.rotated(deg_to_rad(want_skew.x))
+	transform.y = transform.y.rotated(deg_to_rad(want_skew.y))

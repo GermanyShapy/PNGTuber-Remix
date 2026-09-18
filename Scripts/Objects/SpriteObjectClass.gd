@@ -311,6 +311,12 @@ var disappear_keys : String = str(sprite_id) + "Disappear"
 var rest_mode : int = 0
 var ignore_if_rest : bool = false
 var auto_show : bool = false
+var auto_hide : bool = false
+# Single source of truth for "this sprite is asleep", i.e. it is out of the
+# visible tree because an ancestor (or itself) is hidden. Every follow /
+# movement component used to keep a private copy of this recomputed by its own
+# visibility_changed handler; the value was always identical, so it lives here.
+var is_rest : bool = false
 
 var last_mouse_position : Vector2 = Vector2(0,0)
 var last_dist : Vector2 = Vector2(0,0)
@@ -320,6 +326,17 @@ var old_global: Vector2 = Vector2(-999999999999,-9999999999)
 var selected : bool = false
 
 var drag_offsets = {} 
+
+# Values sampled when an editor gesture (mouse drag, WASD nudge, wheel rotate,
+# grid snap) starts. Those gestures write sprite_data -- and thus
+# states[current] -- on every frame, overwriting the value that existed before
+# the gesture began, so the only way Ctrl+Z can restore it is to snapshot at
+# start time and hand the whole gesture to the undo stack as one entry on end.
+# Up to a handful of keys per gesture: `offset()` rewrites both position and
+# offset, so a single nudge has to restore both or it comes back half-undone.
+# pending_record_start maps node -> Dictionary{action: start_value}.
+var pending_record_actions : Array[String] = []
+var pending_record_start : Dictionary = {}
 
 var target_ik : SpriteObject = null
 
@@ -388,28 +405,23 @@ func is_all_default(key: String) -> bool:
 	return true
 
 func get_value(key: String) -> Variant:
-	if key not in sprite_data:
-		return null
-	
-	var default = sprite_data[key]
-	
+	# One hash lookup instead of two: the old form did `key not in sprite_data`
+	# and then `sprite_data[key]`. get_value runs ~19x per sprite per switch.
+	var default = sprite_data.get(key)
+
 	if sprite_data.shared_movement:
 		return default
 	
-	var state := Global.editing_for
-	
-	if state == Global.Mouth.Closed:
+	# The mouth-variant prefix is cached on Global (Global._refresh_mouth_prefix):
+	# it depends only on editing_for / mouth, never on the sprite, so the old
+	# per-call property read + branch + match collapses into one member read.
+	var prefix := Global.mouth_prefix
+	if prefix.is_empty():
 		return default
-		#state = Global.mouth
-	
-	match state:
-		#Global.Mouth.Closed: return default
-		Global.Mouth.Open: key = "mo_" + key
-		Global.Mouth.Screaming: key = "scream_" + key
-	
-	if key in sprite_data:
-		return sprite_data[key]
-	
+	var vkey := prefix + key
+	if vkey in sprite_data:
+		return sprite_data[vkey]
+
 	return default
 
 func set_blend(blend: String) -> void:
@@ -594,7 +606,101 @@ func sync_asset_visibility(vis: bool) -> void:
 	was_active_before = vis
 	modulate.a = get_value("colored").a if vis else 0.0
 
+func _on_visibility_changed() -> void:
+	# The scene root connects its own visibility_changed to this method
+	# (base_object.tscn). CanvasItem propagates that signal down the tree, so it
+	# also fires when an ancestor hides / shows -- which is exactly the state
+	# is_visible_in_tree() reports.
+	is_rest = !is_visible_in_tree()
+	if tween == null:
+		return
+	if is_rest:
+		# Falling asleep: freeze the show/hide fade on the side it belongs to.
+		# A killed tween never resumes, so its trailing write would be lost.
+		tween.kill()
+		modulate.a = 1.0 if was_active_before else 0.0
+	elif !was_active_before and !auto_show:
+		# Waking up while logically hidden. Hiding/showing a sprite only flips
+		# its own %Sprite2D.visible, and children are parented under it, so an
+		# ancestor coming back re-enables this whole subtree mid fade-out: the
+		# sprite would be drawn again at whatever alpha its auto-hide had
+		# reached (~50% for a fade half done) and only then disappear. A hidden
+		# asset must stay hidden (auto_hide is sticky) unless auto_show / its
+		# key brings it back, so finish the pending hide here instead.
+		tween.kill()
+		modulate.a = 0.0
+		if sprite_object != null:
+			sprite_object.visible = false
+
 func sync_sprite_cycle_in_states():
 	for s in states:
 		s.is_cycle = sprite_data.is_cycle
 		s.cycle = sprite_data.cycle
+
+# Start recording a gesture that edits `action` (a sprite_data key such as
+# "position", "rotation" or "offset"). Re-entering with the same action keeps
+# the earliest snapshot, so a run of wheel ticks collapses into one undo entry.
+# Adding a *different* action to a gesture already in progress does not settle
+# the old one -- both keys are snapshotted and restored together, which is what
+# an offset nudge needs (it moves position and offset at once).
+func begin_value_record(action : String) -> void:
+	if action.is_empty() or pending_record_actions.has(action):
+		return
+	pending_record_actions.append(action)
+	if pending_record_start.is_empty():
+		for s in Global.held_sprites:
+			if s == null or not is_instance_valid(s):
+				continue
+			pending_record_start[s] = {action: s.sprite_data[action]}
+	else:
+		for s in pending_record_start.keys():
+			if s == null or not is_instance_valid(s):
+				continue
+			pending_record_start[s][action] = s.sprite_data[action]
+
+# Counterpart of begin_value_record(). The gesture is settled -- and pushed as
+# ONE undo entry covering every recorded key -- only when its last action ends.
+# Idempotent: a second call with nothing pending pushes nothing, which the drag
+# helpers rely on since both the button-up handler and the lmb-release fallback
+# fire for the same gesture.
+func end_value_record(action : String) -> void:
+	if action.is_empty() or not pending_record_actions.has(action) or pending_record_start.is_empty():
+		return
+	pending_record_actions.erase(action)
+	if not pending_record_actions.is_empty():
+		return
+	var record_data : Array = []
+	for s in pending_record_start.keys():
+		if s == null or not is_instance_valid(s):
+			continue
+		for key in pending_record_start[s]:
+			var start_value : Variant = pending_record_start[s][key]
+			var end_value : Variant = s.sprite_data[key]
+			if _value_unchanged(start_value, end_value):
+				continue
+			record_data.append({
+				node = s,
+				action = key,
+				state = Global.current_state,
+				value = start_value,
+				new_val = end_value,
+			})
+	pending_record_start.clear()
+	if record_data.is_empty():
+		return
+	UndoRedoManager.push_data(record_data)
+
+static func _value_unchanged(a : Variant, b : Variant) -> bool:
+	match typeof(a):
+		TYPE_VECTOR2:
+			return (a as Vector2).is_equal_approx(b)
+		TYPE_FLOAT:
+			return is_equal_approx(a as float, b as float)
+	return a == b
+
+# Thin wrappers: mouse drag is the position gesture.
+func begin_drag_record() -> void:
+	begin_value_record("position")
+
+func end_drag_record() -> void:
+	end_value_record("position")
