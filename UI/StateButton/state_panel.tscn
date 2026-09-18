@@ -153,6 +153,7 @@ theme_override_constants/margin_right = 5
 theme_override_constants/margin_bottom = 5
 
 [node name="LabelMouseInputArea" type="Button" parent="StateRemapPopup/Margin2" unique_id=-1055597867]
+visible = false
 layout_mode = 2
 mouse_filter = 2
 button_mask = 0
