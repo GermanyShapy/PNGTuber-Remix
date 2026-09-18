@@ -18,65 +18,125 @@ func _init():
 
 
 func _ready():
-	set_process_unhandled_input(false)
+	set_process_input(false)
 	update_key_text()
 
 
 func _toggled(_button_pressed):
 	current_remap = Remap.Asset
 	if %IsAssetCheck.button_pressed:
-		set_process_unhandled_input(_button_pressed)
+		set_process_input(_button_pressed)
 		if _button_pressed:
+			# While awaiting we must not hold key focus: a focused Button eats
+			# ui_accept (Enter/Space) and the Tab/arrow ui_* actions before they
+			# reach our _input() handler.
 			text = tr("TR_AWAITING_INPUT")
-			set_focus_mode(FOCUS_ALL)
+			release_focus()
+			MouseCaptureArea.show_for(self)
 		else:
+			# Never re-grab focus here: a focused toggle Button swallows the next
+			# ui_accept, silently re-arming this widget and stealing later keys.
 			update_key_text()
 			release_focus()
+			MouseCaptureArea.hide_for(self)
+	else:
+		# The bind button is inert while "Is Asset" is off: make sure no await
+		# state (and no capture pad) is left behind.
+		set_process_input(false)
+		MouseCaptureArea.hide_for(self)
 
 
-func _unhandled_input(event):
+func cancel_remap() -> void:
+	# Leaves the awaiting state from any entry point (deselect, unchecking
+	# "Is Asset", a click outside the capture pad) without depending on the
+	# toggled() gate, which is skipped while "Is Asset" is off.
+	set_process_input(false)
+	MouseCaptureArea.hide_for(self)
+	MouseCaptureArea.hide_for(%ShouldDisRemapButton)
+	if button_pressed:
+		button_pressed = false
+	else:
+		update_key_text()
+	if %ShouldDisRemapButton.button_pressed:
+		%ShouldDisRemapButton.button_pressed = false
+
+
+func _input(event):
+	if Global.held_sprites.is_empty():
+		# The selection disappeared while we were awaiting (deselect). Never
+		# index [0]; just leave the awaiting state cleanly.
+		cancel_remap()
+		return
+	if not is_visible_in_tree():
+		# The right panel was hidden mid-await: stop swallowing input.
+		cancel_remap()
+		return
+	if event is InputEventMouseMotion:
+		return
+	var awaiting_button: Control = self if current_remap == Remap.Asset else %ShouldDisRemapButton
+	# `_input` runs before GUI picking, so a press that lands on the visible
+	# capture pad can be swallowed here before the control the pad covers (e.g.
+	# the "inclusive key check" checkbox) ever sees it. A mouse press anywhere
+	# else means "cancel the await", never "bind this mouse button".
+	if event is InputEventMouseButton:
+		var step := MouseCaptureArea.step_mouse(awaiting_button, event)
+		if step == MouseCaptureArea.MouseStep.PRESS_OUTSIDE:
+			cancel_remap()
+			return
+		if step != MouseCaptureArea.MouseStep.RELEASE_ON_PAD:
+			# Press on the pad (already consumed) or an orphan release: keep
+			# waiting / ignore, never bind.
+			return
+	elif not event.is_released():
+		# Swallow the key press too: otherwise the key could still fire a
+		# shortcut or move focus before its release binds it.
+		get_viewport().set_input_as_handled()
+		return
+	# Swallow the bound event so it cannot also drive the GUI afterwards.
+	get_viewport().set_input_as_handled()
+
 	if current_remap == Remap.Asset:
-		if not event is InputEventMouseMotion:
-			if event.is_released():
-				if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
-					Global.held_sprites[0].saved_event = event
-					action = str(Global.held_sprites[0].sprite_id)
-					InputMap.action_erase_events(action)
-					InputMap.action_add_event(action, event)
-				update_other_assets()
-				button_pressed = false
+		if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
+			Global.held_sprites[0].saved_event = event
+			action = str(Global.held_sprites[0].sprite_id)
+			InputMap.action_erase_events(action)
+			InputMap.action_add_event(action, event)
+		update_other_assets()
+		button_pressed = false
 
 	elif current_remap == Remap.Keys:
-		if not event is InputEventMouseMotion:
-			if event.is_released():
-				if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
-					if InputMap.has_action(Global.held_sprites[0].disappear_keys):
-						var input_array = InputMap.action_get_events(Global.held_sprites[0].disappear_keys)
-						if id < input_array.size():
-							var ev = input_array[id]
-							InputMap.action_erase_event(Global.held_sprites[0].disappear_keys, ev)
-							InputMap.action_add_event(Global.held_sprites[0].disappear_keys, event)
-						else:
-							InputMap.action_add_event(Global.held_sprites[0].disappear_keys, event)
-					else:
-						InputMap.add_action(Global.held_sprites[0].disappear_keys)
-						InputMap.action_add_event(Global.held_sprites[0].disappear_keys, event)
-				
-				print(event.as_text())
-				%ShouldDisList.set_item_text(id, event.as_text())
-				%ShouldDisRemapButton.button_pressed = false
+		if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
+			if InputMap.has_action(Global.held_sprites[0].disappear_keys):
+				var input_array = InputMap.action_get_events(Global.held_sprites[0].disappear_keys)
+				if id < input_array.size():
+					var ev = input_array[id]
+					InputMap.action_erase_event(Global.held_sprites[0].disappear_keys, ev)
+					InputMap.action_add_event(Global.held_sprites[0].disappear_keys, event)
+				else:
+					InputMap.action_add_event(Global.held_sprites[0].disappear_keys, event)
+			else:
+				InputMap.add_action(Global.held_sprites[0].disappear_keys)
+				InputMap.action_add_event(Global.held_sprites[0].disappear_keys, event)
+		
+		%ShouldDisList.set_item_text(id, InputDisplayName.text(event))
+		%ShouldDisRemapButton.button_pressed = false
 
 
 func update_other_assets():
+	if Global.held_sprites.is_empty():
+		return
 	for i in get_tree().get_nodes_in_group("Sprites"):
 		if i != Global.held_sprites[0]:
 			if i.saved_event != null:
+				# Identity comparison between STORED events: keep the RAW
+				# as_text() here. Routing this through InputDisplayName would
+				# compare localised labels and silently mis-match.
 				if Global.held_sprites[0].saved_event.as_text() == i.saved_event.as_text():
 					i.sync_asset_visibility(Global.held_sprites[0].get_node("%Sprite2D").visible)
 
 func update_key_text():
 	if InputMap.action_get_events(action).size() != 0:
-		text = "%s" % InputMap.action_get_events(action)[0].as_text()
+		text = InputDisplayName.text(InputMap.action_get_events(action)[0])
 	else:
 		text = tr("TR_BIND_KEY")
 
@@ -107,6 +167,8 @@ func _on_is_asset_check_toggled(toggled_on):
 				ReactionConfig.sprite_show(Global.held_sprites[0])
 				update_key_text()
 				%IsAssetButton.release_focus()
+			# Unchecking "Is Asset" must also drop any pending await / capture pad.
+			cancel_remap()
 
 		Global.held_sprites[0].is_asset = toggled_on
 
@@ -153,7 +215,14 @@ func _on_should_dis_remap_button_toggled(toggled_on):
 			toggled_on = false
 			return
 		%ShouldDisList.set_item_text(id, tr("TR_AWAITING_INPUT"))
-	set_process_unhandled_input(toggled_on)
+	set_process_input(toggled_on)
+	if toggled_on:
+		MouseCaptureArea.show_for(%ShouldDisRemapButton)
+	else:
+		MouseCaptureArea.hide_for(%ShouldDisRemapButton)
+	# Keep key focus off this button at all times: while awaiting it would
+	# swallow ui_accept, and re-grabbing it on exit re-arms on the next Enter.
+	%ShouldDisRemapButton.release_focus()
 
 func _on_should_dis_list_empty_clicked(_at_position, _mouse_button_index):
 	selected_item = null

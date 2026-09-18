@@ -10,6 +10,11 @@ func _ready() -> void:
 	nullfy()
 
 func nullfy():
+	# Deselecting must also drop any pending bind await: otherwise the widget
+	# keeps processing input while held_sprites is empty and the next stray
+	# click indexes held_sprites[0] (out of bounds). Covers both the asset
+	# bind and the disappear-key remap (they share _input).
+	%IsAssetButton.cancel_remap()
 	%IsAssetCheck.disabled = true
 	%IsAssetButton.disabled = true
 	%RemoveAssetButton.disabled = true
@@ -63,7 +68,7 @@ func set_data():
 	%ShouldDisList.clear()
 	if InputMap.has_action(Global.held_sprites[0].disappear_keys):
 		for i in InputMap.action_get_events(Global.held_sprites[0].disappear_keys):
-			%ShouldDisList.add_item(i.as_text())
+			%ShouldDisList.add_item(InputDisplayName.text(i))
 	%ShouldDisappearCheck.button_pressed = Global.held_sprites[0].should_disappear
 	if %ShouldDisappearCheck.button_pressed:
 		%ShouldDisListContainer.show()

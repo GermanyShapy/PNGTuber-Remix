@@ -7,7 +7,7 @@ var current_binding_action : String = ""
 var selected : ThrowableResource
 
 func _ready() -> void:
-	set_process_unhandled_input(false)
+	set_process_input(false)
 	Global.deselect.connect(nullfy)
 	Global.reinfo.connect(enable)
 	Global.load_model.connect(update_ui)
@@ -39,6 +39,8 @@ func _ready() -> void:
 		throw_force_label.text = "Throw Force"
 
 func nullfy():
+	# Deselecting / hiding the panel must also drop any pending throw-key await.
+	cancel_await()
 	%HasCollision.disabled = true
 	%Physics.disabled = true
 
@@ -200,49 +202,89 @@ func _on_throw_key_toggled(toggled_on: bool) -> void:
 	if toggled_on:
 		if has_node("%ThrowPauseKey"): %ThrowPauseKey.button_pressed = false
 		current_binding_action = "throwing"
-		set_process_unhandled_input(true)
+		set_process_input(true)
 		%ThrowKey.text = tr("TR_AWAITING_INPUT")
 		release_focus()
+		MouseCaptureArea.show_for(%ThrowKey)
 	else:
 		if current_binding_action == "throwing":
-			set_process_unhandled_input(false)
+			set_process_input(false)
 			current_binding_action = ""
 		update_key_text()
-		grab_focus()
+		release_focus()
+		MouseCaptureArea.hide_for(%ThrowKey)
 
 func _on_throw_pause_key_toggled(toggled_on: bool) -> void:
 	if toggled_on:
 		%ThrowKey.button_pressed = false
 		current_binding_action = "throwing_pause"
-		set_process_unhandled_input(true)
+		set_process_input(true)
 		%ThrowPauseKey.text = tr("TR_AWAITING_INPUT")
 		release_focus()
+		MouseCaptureArea.show_for(%ThrowPauseKey)
 	else:
 		if current_binding_action == "throwing_pause":
-			set_process_unhandled_input(false)
+			set_process_input(false)
 			current_binding_action = ""
 		update_key_text()
-		grab_focus()
+		release_focus()
+		MouseCaptureArea.hide_for(%ThrowPauseKey)
 
-func _unhandled_input(event):
-	if !event is InputEventMouseMotion and current_binding_action != "":
-		if event.is_released():
-			if !InputMap.has_action(current_binding_action):
-				InputMap.add_action(current_binding_action)
-			InputMap.action_erase_events(current_binding_action)
-			InputMap.action_add_event(current_binding_action, event)
-			if current_binding_action == "throwing":
-				%ThrowKey.button_pressed = false
-			elif current_binding_action == "throwing_pause":
-				%ThrowPauseKey.button_pressed = false
-			
-			current_binding_action = ""
-			set_process_unhandled_input(false)
-			update_key_text()
+func cancel_await() -> void:
+	# Drops any pending throw-key await (deselect, panel hidden, a click outside
+	# the capture pad, ...) so we stop swallowing input and never bind by accident.
+	current_binding_action = ""
+	set_process_input(false)
+	MouseCaptureArea.hide_for(%ThrowKey)
+	if has_node("%ThrowPauseKey"):
+		MouseCaptureArea.hide_for(%ThrowPauseKey)
+	if %ThrowKey.button_pressed:
+		%ThrowKey.button_pressed = false
+	if has_node("%ThrowPauseKey") and %ThrowPauseKey.button_pressed:
+		%ThrowPauseKey.button_pressed = false
+	update_key_text()
+
+
+func _input(event):
+	if current_binding_action == "":
+		return
+	if not is_visible_in_tree():
+		# The panel was hidden mid-await: stop swallowing input.
+		cancel_await()
+		return
+	if event is InputEventMouseMotion:
+		return
+	var awaiting_button: Control = %ThrowKey if current_binding_action == "throwing" else %ThrowPauseKey
+	# `_input` runs before GUI picking, so a press that lands on the capture pad
+	# is swallowed here before the control the pad covers ever reacts. A mouse
+	# press anywhere else cancels the await, never binds a stray mouse button.
+	if event is InputEventMouseButton:
+		var step := MouseCaptureArea.step_mouse(awaiting_button, event)
+		if step == MouseCaptureArea.MouseStep.PRESS_OUTSIDE:
+			cancel_await()
+			return
+		if step != MouseCaptureArea.MouseStep.RELEASE_ON_PAD:
+			return
+	elif not event.is_released():
+		# Swallow the key press too: otherwise the key could still fire a
+		# shortcut or move focus before its release binds it.
+		get_viewport().set_input_as_handled()
+		return
+	# Swallow the bound event so it cannot also drive the GUI afterwards.
+	get_viewport().set_input_as_handled()
+	if !InputMap.has_action(current_binding_action):
+		InputMap.add_action(current_binding_action)
+	InputMap.action_erase_events(current_binding_action)
+	InputMap.action_add_event(current_binding_action, event)
+	awaiting_button.button_pressed = false
+	
+	current_binding_action = ""
+	set_process_input(false)
+	update_key_text()
 
 func update_key_text():
 	if InputMap.has_action('throwing') and InputMap.action_get_events('throwing').size() != 0:
-		%ThrowKey.text = "%s" % InputMap.action_get_events('throwing')[0].as_text()
+		%ThrowKey.text = InputDisplayName.text(InputMap.action_get_events('throwing')[0])
 	else:
 		%ThrowKey.text = tr("TR_BIND_KEY")
 		
@@ -251,7 +293,7 @@ func update_key_text():
 		
 	if has_node("%ThrowPauseKey"):
 		if InputMap.action_get_events('throwing_pause').size() != 0:
-			%ThrowPauseKey.text = "%s" % InputMap.action_get_events('throwing_pause')[0].as_text()
+			%ThrowPauseKey.text = InputDisplayName.text(InputMap.action_get_events('throwing_pause')[0])
 		else:
 			%ThrowPauseKey.text = tr("TR_BIND_KEY")
 
