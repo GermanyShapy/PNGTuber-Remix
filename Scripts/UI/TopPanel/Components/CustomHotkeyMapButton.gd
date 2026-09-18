@@ -152,6 +152,7 @@ func update_hotkey_event(event):
 			cycle.backward = (event as InputEvent).duplicate()
 	
 	hotkey_event = (event as InputEvent).duplicate()
+	GlobInput.refresh_action_cache()
 	update_key_text()
 	TopBarInput.desel_everything()
 
