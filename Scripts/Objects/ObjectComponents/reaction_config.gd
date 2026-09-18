@@ -143,7 +143,7 @@ func _process(delta: float) -> void:
 	# Conditions
 	is_action_just_pressed = GlobInput.is_input_just_pressed(actor.saved_event, actor.inclusive_key_check)
 	is_action_pressed = GlobInput.is_input_pressed(actor.saved_event, actor.inclusive_key_check)
-	is_disappear_key_just_pressed = GlobInput.is_action_input_just_pressed(actor.disappear_keys, actor.inclusive_key_check)
+	is_disappear_key_just_pressed = GlobInput.is_action_just_pressed(actor.disappear_keys, actor.inclusive_key_check)
 	
 	if is_action_just_pressed:
 		if actor.show_only:
