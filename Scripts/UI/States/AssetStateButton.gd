@@ -9,7 +9,27 @@ enum Remap {
 
 var current_remap: Remap
 var selected_item = null
-var id
+# Row index of the selected disappear key; -1 means "no selection". Kept as an
+# int on purpose: it is used in comparisons and as an ItemList index.
+var id: int = -1
+
+# The stored index can outlive its row (list rebuilt for another sprite, row
+# deleted). Callers must go through this instead of reading `id` directly.
+func _selected_id() -> int:
+	if id >= 0 and id < %ShouldDisList.item_count:
+		return id
+	return -1
+
+func _update_action_buttons_enabled() -> void:
+	var has_row := _selected_id() >= 0
+	%ShouldDisRemapButton.disabled = not has_row
+	%ShouldDisDelButton.disabled = not has_row
+
+# Called when the list is rebuilt (selection changed to another sprite): the old
+# index refers to rows that no longer exist.
+func reset_selection() -> void:
+	id = -1
+	_update_action_buttons_enabled()
 
 
 func _init():
@@ -105,20 +125,31 @@ func _input(event):
 		button_pressed = false
 
 	elif current_remap == Remap.Keys:
+		# The awaited row can disappear while we wait (list rebuilt, row deleted).
+		var sel := _selected_id()
+		if sel < 0:
+			cancel_remap()
+			return
 		if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
-			if InputMap.has_action(Global.held_sprites[0].disappear_keys):
-				var input_array = InputMap.action_get_events(Global.held_sprites[0].disappear_keys)
-				if id < input_array.size():
-					var ev = input_array[id]
-					InputMap.action_erase_event(Global.held_sprites[0].disappear_keys, ev)
-					InputMap.action_add_event(Global.held_sprites[0].disappear_keys, event)
+			# `:=` cannot infer through an untyped Array element; spelled out.
+			var action_name: String = Global.held_sprites[0].disappear_keys
+			if InputMap.has_action(action_name):
+				var input_array: Array = InputMap.action_get_events(action_name)
+				if sel < input_array.size():
+					# action_add_event appends, so erase_event + add_event would
+					# move this row to the end and desync the list order from the
+					# event order. Rewrite the whole list instead.
+					input_array[sel] = event
+					InputMap.action_erase_events(action_name)
+					for e in input_array:
+						InputMap.action_add_event(action_name, e)
 				else:
-					InputMap.action_add_event(Global.held_sprites[0].disappear_keys, event)
+					InputMap.action_add_event(action_name, event)
 			else:
-				InputMap.add_action(Global.held_sprites[0].disappear_keys)
-				InputMap.action_add_event(Global.held_sprites[0].disappear_keys, event)
+				InputMap.add_action(action_name)
+				InputMap.action_add_event(action_name, event)
 		
-		%ShouldDisList.set_item_text(id, InputDisplayName.text(event))
+		%ShouldDisList.set_item_text(sel, InputDisplayName.text(event))
 		%ShouldDisRemapButton.button_pressed = false
 
 
@@ -183,38 +214,49 @@ func _on_should_disappear_check_toggled(toggled_on):
 
 func _on_should_dis_add_button_pressed():
 	%ShouldDisList.add_item("Null")
+	# Selecting right away is what makes Remap/Delete meaningful.
+	# `:=` cannot infer through a `%Node` access; the type is spelled out.
+	var new_row: int = %ShouldDisList.item_count - 1
+	id = new_row
+	%ShouldDisList.select(new_row)
+	_update_action_buttons_enabled()
 
 
 func _on_should_dis_del_button_pressed():
-	%ShouldDisList.remove_item(id)
+	var sel := _selected_id()
+	if sel < 0:
+		return
+	%ShouldDisList.remove_item(sel)
 
-	var held = Global.held_sprites[0]
-	if held != null && is_instance_valid(held):
-		var action_name = held.disappear_keys
-		if InputMap.has_action(action_name):
-			var events = InputMap.action_get_events(action_name)
-			if id >= 0 && id < events.size():
-				var ev = events[id]
-				InputMap.action_erase_event(action_name, ev)
+	if not Global.held_sprites.is_empty():
+		var held = Global.held_sprites[0]
+		if held != null && is_instance_valid(held):
+			var action_name = held.disappear_keys
+			if InputMap.has_action(action_name):
+				var events = InputMap.action_get_events(action_name)
+				if sel < events.size():
+					InputMap.action_erase_event(action_name, events[sel])
 
-	%ShouldDisRemapButton.disabled = false
-	%ShouldDisDelButton.disabled = false
+	id = -1
+	%ShouldDisList.deselect_all()
+	_update_action_buttons_enabled()
 
 
 func _on_should_dis_list_item_selected(index):
 	id = index
-
-	%ShouldDisRemapButton.disabled = false
-	%ShouldDisDelButton.disabled = false
+	_update_action_buttons_enabled()
 
 
 func _on_should_dis_remap_button_toggled(toggled_on):
 	current_remap = Remap.Keys
+	var sel := _selected_id()
 	if toggled_on:
-		if %ShouldDisList.item_count < id:
-			toggled_on = false
+		# No row (or a stale index): drop the await instead of leaving the button
+		# half-pressed and writing later to a row that does not exist.
+		if sel < 0:
+			%ShouldDisRemapButton.button_pressed = false
 			return
-		%ShouldDisList.set_item_text(id, tr("TR_AWAITING_INPUT"))
+		%ShouldDisList.set_item_text(sel, tr("TR_AWAITING_INPUT"))
 	set_process_input(toggled_on)
 	if toggled_on:
 		MouseCaptureArea.show_for(%ShouldDisRemapButton)
@@ -226,16 +268,14 @@ func _on_should_dis_remap_button_toggled(toggled_on):
 
 func _on_should_dis_list_empty_clicked(_at_position, _mouse_button_index):
 	selected_item = null
-	id = null
-	%ShouldDisRemapButton.disabled = true
-	%ShouldDisDelButton.disabled = true
+	id = -1
+	_update_action_buttons_enabled()
 
 
 func _on_should_dis_list_focus_exited():
 	selected_item = null
-	id = null
-	%ShouldDisRemapButton.disabled = true
-	%ShouldDisDelButton.disabled = true
+	id = -1
+	_update_action_buttons_enabled()
 
 
 func _on_dont_hide_on_toggle_check_toggled(toggled_on: bool) -> void:
