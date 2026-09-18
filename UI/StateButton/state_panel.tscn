@@ -152,13 +152,6 @@ theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 5
 theme_override_constants/margin_bottom = 5
 
-[node name="LabelMouseInputArea" type="Button" parent="StateRemapPopup/Margin2" unique_id=-1055597867]
-visible = false
-layout_mode = 2
-mouse_filter = 2
-button_mask = 0
-text = "TR_MOUSE_INPUT_AREA"
-
 [connection signal="pressed" from="HBoxContainer/AddState" to="StatesStuff" method="_on_add_state_pressed"]
 [connection signal="pressed" from="HBoxContainer/DuplicateState" to="StatesStuff" method="_on_duplicate_state_pressed"]
 [connection signal="pressed" from="HBoxContainer/StateRemap" to="StatesStuff" method="_on_state_remap_pressed"]
