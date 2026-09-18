@@ -84,21 +84,27 @@ func _on_grab_button_down():
 				var mouse_pos = get_parent().to_local(get_global_mouse_position())
 				for s in Global.held_sprites:
 					drag_offsets[s] = mouse_pos - s.position
+				begin_drag_record()
 
 func _on_grab_button_up():
 	if selected && dragging:
 		save_state(Global.current_state)
 		dragging = false
+		end_drag_record()
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_released("lmb"):
 		if selected && dragging:
 			save_state(Global.current_state)
 			dragging = false
+			end_drag_record()
 
 func save_state(id):
-	var dict : Dictionary = sprite_data.duplicate(true)
-	states[id] = dict
+	# Skip the deep copy when nothing changed (editor-side safety net; see
+	# sprite_object.gd save_state for the measurement behind this).
+	if id >= 0 and id < states.size() and states[id] == sprite_data:
+		return
+	states[id] = sprite_data.duplicate(true)
 
 func get_state(id):
 	if !states[id].is_empty():
@@ -147,7 +153,10 @@ func get_state(id):
 		
 		
 	elif states[id].is_empty():
+		# See sprite_object.gd get_state(): empty slot = seed and re-enter, so the
+		# node-side sync above (position, offset, flip scale) still runs.
 		states[id] = sprite_data.duplicate(true)
+		get_state(id)
 	
 	mesh.queue_redraw()
 

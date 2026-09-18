@@ -49,6 +49,8 @@ static func redo():
 			redo_light(data)
 
 static func undo_action_object(data):
+	var pos_changed := false
+	var offset_changed := false
 	for dt in data:
 		if dt.node == null or !is_instance_valid(dt.node): continue
 		if dt.node.get_value(dt.action) == null: continue
@@ -59,11 +61,26 @@ static func undo_action_object(data):
 				dt.node.save_state( dt.state)
 				dt.node.get_state(dt.state)
 				Global.reinfo.emit()
+				# The property panel caches X/Y/offset in its own SpinBoxes and
+				# nothing else refreshes them after an undo, so the numbers
+				# would keep showing where the gesture ended.
+				pos_changed = pos_changed or dt.action == "position"
+				offset_changed = offset_changed or dt.action == "offset"
 			else:
 				dt.node.states[dt.state][dt.action] = dt.value
-	redo_data.append(data) 
+	redo_data.append(data)
+	_refresh_pos_spins(pos_changed, offset_changed)
+
+static func _refresh_pos_spins(pos_changed: bool, offset_changed: bool) -> void:
+	# update_offset_spins also refreshes the position spins, so it wins.
+	if offset_changed:
+		Global.update_offset_spins.emit()
+	elif pos_changed:
+		Global.update_pos_spins.emit()
 
 static func redo_action_object(data):
+	var pos_changed := false
+	var offset_changed := false
 	for dt in data:
 		if dt.node == null or !is_instance_valid(dt.node): continue
 		if dt.node.get_value(dt.action) == null: continue
@@ -74,9 +91,12 @@ static func redo_action_object(data):
 				dt.node.save_state( dt.state)
 				dt.node.get_state(dt.state)
 				Global.reinfo.emit()
+				pos_changed = pos_changed or dt.action == "position"
+				offset_changed = offset_changed or dt.action == "offset"
 			else:
 				dt.node.states[dt.state][dt.action] = dt.new_val
-	undo_data.append(data) 
+	undo_data.append(data)
+	_refresh_pos_spins(pos_changed, offset_changed)
 
 static func undo_tree(data):
 	var item = data.item

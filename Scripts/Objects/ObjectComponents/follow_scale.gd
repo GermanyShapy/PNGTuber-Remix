@@ -11,7 +11,6 @@ var target_rotation :Vector2 = Vector2.ZERO
 var target_scale :Vector2 = Vector2.ONE
 var mouse_coords : Vector2 = Vector2(0,0)
 
-var rest : bool = false
 var axis_left :Vector2 = Vector2.ZERO
 var axis_right :Vector2 = Vector2.ZERO
 var axis_shoulderl :Vector2 = Vector2.ZERO
@@ -30,7 +29,7 @@ func _physics_process(delta: float) -> void:
 	if actor.rest_mode in [5,7]:
 		reset_modifier()
 		return
-	if actor.rest_mode in [1,3] and rest:
+	if actor.rest_mode in [1,3] and actor.is_rest:
 		reset_modifier()
 	else:
 		update_controller_inputs()
@@ -239,6 +238,3 @@ func follow_mouse_vel_scale() -> Vector2:
 	var scl_y = lerp(float(s_min_y), float(s_max_y), absf(r.y))
 	var _target_scale : Vector2 = Vector2(scl_x, scl_y)
 	return _target_scale
-
-func _on_sprite_object_visibility_changed() -> void:
-	rest = !actor.is_visible_in_tree()

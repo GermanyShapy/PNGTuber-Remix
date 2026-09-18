@@ -309,10 +309,14 @@ func _on_grid_id_pressed(id: int) -> void:
 			Global.grid_snap = !Global.grid_snap
 			if Global.grid_snap:
 				for sprite in Global.held_sprites:
+					sprite.begin_value_record("position")
+				for sprite in Global.held_sprites:
 					var snapped_position: Vector2 = Global.snap_position(sprite.position)
 					sprite.position = snapped_position
 					sprite.sprite_data.position = snapped_position
 					sprite.save_state(Global.current_state)
+				for sprite in Global.held_sprites:
+					sprite.end_value_record("position")
 			Global.update_pos_spins.emit()
 		2:
 			_show_grid_size_dialog()
@@ -374,10 +378,14 @@ func _apply_grid_size() -> void:
 
 	if Global.grid_snap:
 		for sprite in Global.held_sprites:
+			sprite.begin_value_record("position")
+		for sprite in Global.held_sprites:
 			var snapped: Vector2 = Global.snap_position(sprite.position)
 			sprite.position = snapped
 			sprite.sprite_data.position = snapped
 			sprite.save_state(Global.current_state)
+		for sprite in Global.held_sprites:
+			sprite.end_value_record("position")
 		Global.update_pos_spins.emit()
 
 	var popup: PopupMenu = grid_button.get_popup()

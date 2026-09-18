@@ -123,6 +123,7 @@ func save_data():
 			"inclusive_key_check":sprt.inclusive_key_check,
 			"ignore_if_rest":sprt.ignore_if_rest,
 			"auto_show":sprt.auto_show,
+			"auto_hide":sprt.auto_hide,
 			"is_collapsed": sprt.is_collapsed,
 			"is_premultiplied": true,
 			"layer_color": sprt.layer_color,
@@ -156,6 +157,7 @@ func save_data():
 				"inclusive_key_check":sprt.inclusive_key_check,
 				"ignore_if_rest":sprt.ignore_if_rest,
 				"auto_show":sprt.auto_show,
+			"auto_hide":sprt.auto_hide,
 				"is_collapsed": sprt.is_collapsed,
 				"is_premultiplied": true,
 				"layer_color": sprt.layer_color,
@@ -548,6 +550,8 @@ func set_common_data(sprite, sprite_obj):
 			sprite_obj.ignore_if_rest = sprite.ignore_if_rest
 		if sprite.has("auto_show"):
 			sprite_obj.auto_show = sprite.auto_show
+		if sprite.has("auto_hide"):
+			sprite_obj.auto_hide = sprite.auto_hide
 		if sprite.is_asset:
 			sprite_obj.sync_asset_visibility(sprite.was_active_before)
 		else:

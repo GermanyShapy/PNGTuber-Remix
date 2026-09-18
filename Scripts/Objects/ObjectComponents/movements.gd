@@ -43,8 +43,6 @@ var shadow_target : Vector2 = Vector2.ZERO
 var index_change_len : float = 0.0
 var index_change_len_y : float = 0.0
 
-var rest : bool = false
-
 var last_mouse_position : Vector2 = Vector2.ZERO
 var last_dist : Vector2 = Vector2.ZERO
 var applied_pos_offset : Vector2 = Vector2.ZERO
@@ -79,7 +77,7 @@ func _physics_process(delta: float) -> void:
 		modifier_node.scale = Vector2.ONE
 		sprite_node.self_modulate = actor.get_value("tint")
 		return
-	elif (actor.rest_mode in [2,3,6]) && rest:
+	elif (actor.rest_mode in [2,3,6]) && actor.is_rest:
 		if actor.rest_mode == 6:
 			last_wobble_pos = Vector2.ZERO
 			paused_wobble = Vector2.ZERO
@@ -424,13 +422,3 @@ func auto_rotate():
 
 func actor_get_parent():
 	return get_parent()
-
-func _on_sprite_object_visibility_changed() -> void:
-	rest = !actor.is_visible_in_tree() if !(actor == null) else false
-	
-	if rest and actor.tween != null:
-		actor.tween.kill()
-		if actor.was_active_before:
-			actor.modulate.a = 1.0
-		else:
-			actor.modulate.a = 0.0
