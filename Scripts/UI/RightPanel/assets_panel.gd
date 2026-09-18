@@ -69,6 +69,8 @@ func set_data():
 	if InputMap.has_action(Global.held_sprites[0].disappear_keys):
 		for i in InputMap.action_get_events(Global.held_sprites[0].disappear_keys):
 			%ShouldDisList.add_item(InputDisplayName.text(i))
+	# Rows now belong to another sprite; any previously selected index is stale.
+	%IsAssetButton.reset_selection()
 	%ShouldDisappearCheck.button_pressed = Global.held_sprites[0].should_disappear
 	if %ShouldDisappearCheck.button_pressed:
 		%ShouldDisListContainer.show()

@@ -162,16 +162,18 @@ func update_hotkey_event(event):
 		sprite.saved_event = new_event
 
 	for sprite: SpriteObject in hotkey_disappear_sprites:
-		var dis_action_events = InputMap.action_get_events(sprite.disappear_keys)
-		var changed_hotkey: Array = []
+		var dis_action_events: Array = InputMap.action_get_events(sprite.disappear_keys)
+		var changed := false
 		for id in dis_action_events.size():
 			if is_same_hotkey_event(hotkey_event, dis_action_events[id]):
-				changed_hotkey.append(dis_action_events.get(id))
-		
-		for old_event in changed_hotkey:
-			var new_event = (event as InputEvent).duplicate()
-			InputMap.action_erase_event(sprite.disappear_keys, old_event)
-			InputMap.action_add_event(sprite.disappear_keys, new_event)
+				dis_action_events[id] = (event as InputEvent).duplicate()
+				changed = true
+		# action_add_event appends: erase_event + add_event would move every
+		# replaced row to the end. Rewrite the whole list to keep the order.
+		if changed:
+			InputMap.action_erase_events(sprite.disappear_keys)
+			for e in dis_action_events:
+				InputMap.action_add_event(sprite.disappear_keys, e)
 	
 	for cycle in hotkey_cycles:
 		var toggle_event = cycle.toggle
