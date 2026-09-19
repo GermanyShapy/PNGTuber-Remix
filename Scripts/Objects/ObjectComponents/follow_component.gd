@@ -51,11 +51,12 @@ var final_target : Vector2 = Vector2.ZERO
 func _physics_process(delta: float) -> void:
 	if actor.get_value("follow_type") == 15:
 		target_pos = Vector2.ZERO
-		modifier.position = Vector2.ZERO
+		if not modifier.position.is_equal_approx(Vector2.ZERO):
+			modifier.position = Vector2.ZERO
 		return
 	if Global.static_view:
 		return
-	# rest_mode 5/6 fully disables the follow: snap the modifier back to its rest
+	# rest_mode 5/7 fully disables the follow: snap the modifier back to its rest
 	# transform right away instead of freezing it at the last followed offset.
 	if actor.rest_mode in [5,7]:
 		reset_modifier()
@@ -66,10 +67,17 @@ func _physics_process(delta: float) -> void:
 		process_follow(delta)
 		mouse_coords = follow_calculation()
 
+# Called every physics tick for every resting sprite, so each write is compared
+# first: a redundant transform write still marks the canvas item dirty and the
+# cost dominates once a model has hundreds of sprites sitting in rest.
+# See movements.gd _physics_process(): same rule for the movement modifier.
 func reset_modifier() -> void:
-	modifier.position = Vector2.ZERO
-	modifier.rotation = 0.0
-	modifier.scale = Vector2.ONE
+	if not modifier.position.is_equal_approx(Vector2.ZERO):
+		modifier.position = Vector2.ZERO
+	if not is_equal_approx(modifier.rotation, 0.0):
+		modifier.rotation = 0.0
+	if not modifier.scale.is_equal_approx(Vector2.ONE):
+		modifier.scale = Vector2.ONE
 
 func mouse_delay():
 	#get mouse delta with relative movement in mouse inputs
