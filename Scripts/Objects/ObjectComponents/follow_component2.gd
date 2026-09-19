@@ -37,7 +37,7 @@ var axis_lr_3 : Vector2 = Vector2.ZERO
 func _physics_process(delta: float) -> void:
 	if Global.static_view:
 		return
-	# rest_mode 5/6 fully disables the follow: snap the modifier back to its rest
+	# rest_mode 5/7 fully disables the follow: snap the modifier back to its rest
 	# transform right away instead of freezing it at the last followed offset.
 	if actor.rest_mode in [5,7]:
 		reset_modifier()
@@ -51,10 +51,14 @@ func _physics_process(delta: float) -> void:
 		process_follow(delta, t)
 		last_mouse_position = mouse_coords
 
+# See follow_component.gd reset_modifier(): why each write is compared first.
 func reset_modifier() -> void:
-	modifier.position = Vector2.ZERO
-	modifier.rotation = 0.0
-	modifier.scale = Vector2.ONE
+	if not modifier.position.is_equal_approx(Vector2.ZERO):
+		modifier.position = Vector2.ZERO
+	if not is_equal_approx(modifier.rotation, 0.0):
+		modifier.rotation = 0.0
+	if not modifier.scale.is_equal_approx(Vector2.ONE):
+		modifier.scale = Vector2.ONE
 
 func mouse_delay():
 	mouse_delta = last_mouse_position - mouse_coords

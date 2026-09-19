@@ -24,7 +24,7 @@ func _physics_process(delta: float) -> void:
 		return
 	if Global.static_view:
 		return
-	# rest_mode 5/6 fully disables the follow: snap the modifier back to its rest
+	# rest_mode 5/7 fully disables the follow: snap the modifier back to its rest
 	# transform right away instead of freezing it at the last followed offset.
 	if actor.rest_mode in [5,7]:
 		reset_modifier()
@@ -35,8 +35,10 @@ func _physics_process(delta: float) -> void:
 		update_controller_inputs()
 		update_scale(delta)
 
+# See follow_component.gd reset_modifier(): why each write is compared first.
 func reset_modifier() -> void:
-	modifier.scale = Vector2.ONE
+	if not modifier.scale.is_equal_approx(Vector2.ONE):
+		modifier.scale = Vector2.ONE
 
 func update_controller_inputs() -> void:
 	axis_left = Input.get_vector("ControllerLeft", "ControllerRight", "ControllerUp", "ControllerDown")

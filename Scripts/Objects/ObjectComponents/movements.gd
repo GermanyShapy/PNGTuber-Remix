@@ -72,10 +72,16 @@ func _physics_process(delta: float) -> void:
 	if Global.static_view:
 		static_prev()
 	elif actor.rest_mode in [4,7]:	# Disable
-		modifier_node.position = Vector2.ZERO
-		modifier_node.rotation = 0.0
-		modifier_node.scale = Vector2.ONE
-		sprite_node.self_modulate = actor.get_value("tint")
+		# Same per-tick cost rule as below: compare before writing.
+		var tint : Color = actor.get_value("tint")
+		if not modifier_node.position.is_equal_approx(Vector2.ZERO):
+			modifier_node.position = Vector2.ZERO
+		if not is_equal_approx(modifier_node.rotation, 0.0):
+			modifier_node.rotation = 0.0
+		if not modifier_node.scale.is_equal_approx(Vector2.ONE):
+			modifier_node.scale = Vector2.ONE
+		if not sprite_node.self_modulate.is_equal_approx(tint):
+			sprite_node.self_modulate = tint
 		return
 	elif (actor.rest_mode in [2,3,6]) && actor.is_rest:
 		if actor.rest_mode == 6:
