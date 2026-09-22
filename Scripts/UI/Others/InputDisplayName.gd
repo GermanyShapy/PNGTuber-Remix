@@ -99,6 +99,47 @@ const MOUSE_TR: Dictionary = {
 
 const DOUBLE_CLICK_SUFFIX := " (Double Click)"
 
+## Joypad buttons that carry a printed label. The letters and the D-pad arrows are
+## locale independent for the same reason as GLYPHS, and Back / Guide / Start /
+## L3 / R3 / LB / RB are printed in English on the pad itself -- the same call as
+## leaving Tab, Shift and the F-keys untranslated above.
+const JOY_BUTTON_GLYPHS: Dictionary = {
+	JOY_BUTTON_A: "A",
+	JOY_BUTTON_B: "B",
+	JOY_BUTTON_X: "X",
+	JOY_BUTTON_Y: "Y",
+	JOY_BUTTON_BACK: "Back",
+	JOY_BUTTON_GUIDE: "Guide",
+	JOY_BUTTON_START: "Start",
+	JOY_BUTTON_LEFT_STICK: "L3",
+	JOY_BUTTON_RIGHT_STICK: "R3",
+	JOY_BUTTON_LEFT_SHOULDER: "LB",
+	JOY_BUTTON_RIGHT_SHOULDER: "RB",
+	JOY_BUTTON_DPAD_UP: "↑",
+	JOY_BUTTON_DPAD_DOWN: "↓",
+	JOY_BUTTON_DPAD_LEFT: "←",
+	JOY_BUTTON_DPAD_RIGHT: "→",
+}
+
+## Stick axis -> translations.csv key. The triggers are absent because they are
+## fixed labels (LT / RT), not localised ones.
+const JOY_AXIS_TR: Dictionary = {
+	JOY_AXIS_LEFT_X: "TR_INPUT_JOY_LEFT_STICK",
+	JOY_AXIS_LEFT_Y: "TR_INPUT_JOY_LEFT_STICK",
+	JOY_AXIS_RIGHT_X: "TR_INPUT_JOY_RIGHT_STICK",
+	JOY_AXIS_RIGHT_Y: "TR_INPUT_JOY_RIGHT_STICK",
+}
+
+## Prefix for joypad labels. A pad's A/B/X/Y, its D-pad arrows and LT / RT all
+## read like plain keyboard keys otherwise, so the pad side is always marked --
+## "X" on a pad and "X" on the keyboard are indistinguishable in the binding
+## list. Only the sticks are left unmarked: "Left Stick →" already says what it
+## is and cannot be confused with a keyboard key.
+##
+## The trailing space belongs to the locale (English needs one, Chinese does
+## not), which is the same convention TR_INPUT_KEY_KP uses.
+const JOY_PREFIX_TR := "TR_INPUT_JOY_PREFIX"
+
 
 ## The display label for any InputEvent. Never use this for comparisons or as a
 ## storage key — several call sites rely on the raw `as_text()` for identity.
@@ -109,7 +150,42 @@ static func text(p_event: InputEvent) -> String:
 		return _mouse_text(p_event)
 	if p_event is InputEventKey:
 		return _key_text(p_event)
+	if p_event is InputEventJoypadButton:
+		return _joy_button_text(p_event)
+	if p_event is InputEventJoypadMotion:
+		return _joy_motion_text(p_event)
 	return p_event.as_text()
+
+
+static func _joy_prefix() -> String:
+	return _lookup(JOY_PREFIX_TR, "Gamepad ")
+
+
+static func _joy_button_text(p_event: InputEventJoypadButton) -> String:
+	if JOY_BUTTON_GLYPHS.has(p_event.button_index):
+		return _joy_prefix() + JOY_BUTTON_GLYPHS[p_event.button_index]
+	return _joy_prefix() + ("Button %d" % p_event.button_index)
+
+
+## Sticks render as the stick name plus a direction arrow. Godot reports Y
+## positive downwards, so +Y is the down arrow.
+static func _joy_motion_text(p_event: InputEventJoypadMotion) -> String:
+	match p_event.axis:
+		JOY_AXIS_TRIGGER_LEFT:
+			return _joy_prefix() + "LT"
+		JOY_AXIS_TRIGGER_RIGHT:
+			return _joy_prefix() + "RT"
+
+	var positive := "→"
+	var negative := "←"
+	if p_event.axis == JOY_AXIS_LEFT_Y or p_event.axis == JOY_AXIS_RIGHT_Y:
+		positive = "↓"
+		negative = "↑"
+
+	var label := "Axis %d" % p_event.axis
+	if JOY_AXIS_TR.has(p_event.axis):
+		label = _lookup(JOY_AXIS_TR[p_event.axis], label)
+	return label + (positive if p_event.axis_value >= 0.0 else negative)
 
 
 ## Returns Godot's own text, minus the localisation. Only for identity checks

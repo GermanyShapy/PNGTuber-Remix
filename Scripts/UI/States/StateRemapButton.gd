@@ -46,6 +46,14 @@ func _input(event):
 		return
 	if event is InputEventMouseMotion:
 		return
+	# A stick binds the moment its direction crosses the deadzone -- see
+	# StandGlobalInput.is_joy_pushed() for why "on release" cannot work.
+	if event is InputEventJoypadMotion:
+		if not GlobInput.is_joy_pushed(event):
+			return
+		get_viewport().set_input_as_handled()
+		_remap_selected_state(GlobInput.normalize_joy_event(event))
+		return
 	# `_input` runs before GUI picking, so a press that lands on the capture pad
 	# is swallowed here before the control the pad covers ever reacts. A mouse
 	# press anywhere else cancels the await, never binds a stray mouse button.
@@ -63,6 +71,12 @@ func _input(event):
 		return
 	# Swallow the bound event so it cannot also drive the GUI afterwards.
 	get_viewport().set_input_as_handled()
+	_remap_selected_state(event)
+
+
+## Applies a bound event to the selected state's action. Shared by the
+## mouse/keyboard path and the stick path (which passes a normalised axis event).
+func _remap_selected_state(event: InputEvent) -> void:
 	if StateButton.selected_state != null && is_instance_valid(StateButton.selected_state):
 		InputMap.action_erase_events(StateButton.selected_state.input_key)
 		InputMap.action_add_event(StateButton.selected_state.input_key, event)

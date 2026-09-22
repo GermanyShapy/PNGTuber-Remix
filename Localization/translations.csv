@@ -642,6 +642,9 @@ TR_INPUT_MOUSE_WHEEL_LEFT,Mouse Wheel Left,Колёсико мыши влево,
 TR_INPUT_MOUSE_WHEEL_RIGHT,Mouse Wheel Right,Колёсико мыши вправо,鼠标滚轮右滚
 TR_INPUT_MOUSE_THUMB_1,Mouse Thumb Button 1,Дополнительная кнопка мыши 1,鼠标侧键1
 TR_INPUT_MOUSE_THUMB_2,Mouse Thumb Button 2,Дополнительная кнопка мыши 2,鼠标侧键2
+TR_INPUT_JOY_LEFT_STICK,Left Stick,Левый стик,左摇杆
+TR_INPUT_JOY_RIGHT_STICK,Right Stick,Правый стик,右摇杆
+TR_INPUT_JOY_PREFIX,"Gamepad ","Геймпад ",手柄
 TR_INPUT_KEY_SPACE,Space,Пробел,空格
 TR_INPUT_KEY_ENTER,Enter,Enter,回车
 TR_INPUT_KEY_BACKSPACE,Backspace,Backspace,退格

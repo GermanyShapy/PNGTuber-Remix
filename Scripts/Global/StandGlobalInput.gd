@@ -52,3 +52,31 @@ func _on_raw_mouse_input_updated(lLastX: int, lLastY: int) -> void:
 func refresh_raw_mouse_input():
 	if rawMouseInput != null:
 		rawMouseInput.refresh()
+
+# --- Joypad binding helpers --------------------------------------------------
+#
+# Used by the key-binding widgets (`CustomHotkeyMapButton` / `AssetStateButton` /
+# `StateRemapButton`). They live here rather than in a separate helper class so
+# the deadzone stays in the same namespace as the property that owns it
+# (`GlobInput.joy_deadzone`) -- which is also the value the native trigger check
+# uses, so a direction that can be bound is always a direction that fires.
+#
+# Why a stick cannot be bound "on release" like a key or a button: while it is
+# pushed its events report `is_released() == false`, and the event sent when it
+# returns to centre carries `axis_value == 0`. Binding that would store an empty
+# direction, and on a stick whose resting value is not exactly 0 the release
+# branch would never be reached at all. So the widgets bind the first event that
+# crosses the deadzone and stop awaiting immediately.
+
+## True when this axis event is pushed far enough in either direction to bind.
+func is_joy_pushed(p_event: InputEventJoypadMotion) -> bool:
+	return absf(p_event.axis_value) >= joy_deadzone
+
+
+## Stored form of a stick binding: axis plus direction only. The magnitude is
+## device specific and every comparison is by sign, so it is normalised away.
+func normalize_joy_event(p_event: InputEventJoypadMotion) -> InputEventJoypadMotion:
+	var normalized := InputEventJoypadMotion.new()
+	normalized.axis = p_event.axis
+	normalized.axis_value = 1.0 if p_event.axis_value >= 0.0 else -1.0
+	return normalized
