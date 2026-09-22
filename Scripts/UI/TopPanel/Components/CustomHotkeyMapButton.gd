@@ -93,6 +93,15 @@ func _input(event):
 		return
 	if event is InputEventMouseMotion:
 		return
+	# A stick binds the moment its direction crosses the deadzone -- see
+	# StandGlobalInput.is_joy_pushed() for why "on release" cannot work.
+	if event is InputEventJoypadMotion:
+		if not GlobInput.is_joy_pushed(event):
+			return
+		get_viewport().set_input_as_handled()
+		update_hotkey_event(GlobInput.normalize_joy_event(event))
+		button_pressed = false
+		return
 	# `_input` runs before GUI picking, so a press that lands on the capture pad
 	# is swallowed here before the control the pad covers ever reacts. A mouse
 	# press anywhere else cancels the await, never binds a stray mouse button.
@@ -122,21 +131,39 @@ func update_key_text():
 		text = "Null"
 
 static func is_same_hotkey_event(event1: InputEvent, event2: InputEvent) -> bool:
-	var result = true
-	
+	if event1 == null or event2 == null:
+		return false
+
 	if event1 is InputEventKey and event2 is InputEventKey:
-		result = result and event1.keycode == event2.keycode
+		if event1.keycode != event2.keycode:
+			return false
 	elif event1 is InputEventMouseButton and event2 is InputEventMouseButton:
-		result = result and event1.button_index == event2.button_index
+		if event1.button_index != event2.button_index:
+			return false
+	elif event1 is InputEventJoypadButton and event2 is InputEventJoypadButton:
+		# Device is deliberately not compared: a binding has to survive a
+		# reconnect or a different USB port.
+		if event1.button_index != event2.button_index:
+			return false
+	elif event1 is InputEventJoypadMotion and event2 is InputEventJoypadMotion:
+		# Axis plus direction only -- the magnitude is device specific.
+		if event1.axis != event2.axis:
+			return false
+		if (event1.axis_value >= 0.0) != (event2.axis_value >= 0.0):
+			return false
 	else:
-		result = false
-		
-	result = result and event1.ctrl_pressed == event2.ctrl_pressed
-	result = result and event1.shift_pressed == event2.shift_pressed
-	result = result and event1.alt_pressed == event2.alt_pressed
-	result = result and event1.meta_pressed == event2.meta_pressed
-		
-	return result
+		return false
+
+	# A joypad event carries no modifiers at all, and reading `ctrl_pressed` off
+	# one raises a runtime error -- so the modifier comparison only applies when
+	# both sides actually have modifiers.
+	if not (event1 is InputEventWithModifiers and event2 is InputEventWithModifiers):
+		return true
+
+	return event1.ctrl_pressed == event2.ctrl_pressed \
+		and event1.shift_pressed == event2.shift_pressed \
+		and event1.alt_pressed == event2.alt_pressed \
+		and event1.meta_pressed == event2.meta_pressed
 
 func update_hotkey_event(event):
 	#Check for duplicate hotkey events

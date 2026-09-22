@@ -93,6 +93,14 @@ func _input(event):
 		return
 	if event is InputEventMouseMotion:
 		return
+	# A stick binds the moment its direction crosses the deadzone -- see
+	# StandGlobalInput.is_joy_pushed() for why "on release" cannot work.
+	if event is InputEventJoypadMotion:
+		if not GlobInput.is_joy_pushed(event):
+			return
+		get_viewport().set_input_as_handled()
+		_bind_event(GlobInput.normalize_joy_event(event))
+		return
 	var awaiting_button: Control = self if current_remap == Remap.Asset else %ShouldDisRemapButton
 	# `_input` runs before GUI picking, so a press that lands on the visible
 	# capture pad can be swallowed here before the control the pad covers (e.g.
@@ -114,7 +122,13 @@ func _input(event):
 		return
 	# Swallow the bound event so it cannot also drive the GUI afterwards.
 	get_viewport().set_input_as_handled()
+	_bind_event(event)
 
+
+## Applies a bound event to whichever target this widget is currently remapping.
+## Shared by the mouse/keyboard path and the stick path (which passes a
+## normalised axis event).
+func _bind_event(event: InputEvent) -> void:
 	if current_remap == Remap.Asset:
 		if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
 			Global.held_sprites[0].saved_event = event
