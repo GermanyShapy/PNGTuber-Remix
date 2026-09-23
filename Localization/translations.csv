@@ -94,8 +94,9 @@ TR_COLOR_BLINDNESS_HELPER_TOOLTIP,An accessibility feature that helps users and 
 TR_COMEBACK_LABEL,Comeback,Возврат,复位力度
 TR_COMMENTS_BUTTON_TOOLTIP,Comment Block,Блок комментария,注释区块
 TR_COMMENTS_GO_HERE,Comments go here,Комментарии здесь,在这里输入评论
-TR_CONTROLLER_LEFT,Controller (Left),Контроллер (левый),控制器 (左)
-TR_CONTROLLER_RIGHT,Controller (Right),Контроллер (правый),控制器 (右)
+TR_CONTROLLER_LEFT,Left Stick,Левый стик,手柄摇杆(左)
+TR_CONTROLLER_RIGHT,Right Stick,Правый стик,手柄摇杆(右)
+TR_CONTROLLER_DPAD,D-Pad,Крестовина,手柄十字键
 TR_CREATE_NEW_MODEL,Create new model,Создать новую модель,创建新模型
 TR_CREDITS,Credits,Авторы,致谢
 TR_CROP_IMAGES_TO_CONTENT,Crop Images to Content,Обрезка изображений по содержимому,自动裁剪导入图片
@@ -645,6 +646,20 @@ TR_INPUT_MOUSE_THUMB_2,Mouse Thumb Button 2,Дополнительная кно�
 TR_INPUT_JOY_LEFT_STICK,Left Stick,Левый стик,左摇杆
 TR_INPUT_JOY_RIGHT_STICK,Right Stick,Правый стик,右摇杆
 TR_INPUT_JOY_PREFIX,"Gamepad ","Геймпад ",手柄
+TR_INPUT_JOY_DPAD,"D-Pad ","Крестовина ",手柄十字键
+TR_INPUT_JOY_B_BOTTOM,Xb A / PS ✕ / NS B,Xb A / PS ✕ / NS B,Xb A / PS ✕ / NS B
+TR_INPUT_JOY_B_RIGHT,Xb B / PS ○ / NS A,Xb B / PS ○ / NS A,Xb B / PS ○ / NS A
+TR_INPUT_JOY_B_LEFT,Xb X / PS □ / NS Y,Xb X / PS □ / NS Y,Xb X / PS □ / NS Y
+TR_INPUT_JOY_B_TOP,Xb Y / PS △ / NS X,Xb Y / PS △ / NS X,Xb Y / PS △ / NS X
+TR_INPUT_JOY_LB,Xb LB / PS L1 / NS L,Xb LB / PS L1 / NS L,Xb LB / PS L1 / NS L
+TR_INPUT_JOY_RB,Xb RB / PS R1 / NS R,Xb RB / PS R1 / NS R,Xb RB / PS R1 / NS R
+TR_INPUT_JOY_LT,Xb LT / PS L2 / NS ZL,Xb LT / PS L2 / NS ZL,Xb LT / PS L2 / NS ZL
+TR_INPUT_JOY_RT,Xb RT / PS R2 / NS ZR,Xb RT / PS R2 / NS ZR,Xb RT / PS R2 / NS ZR
+TR_INPUT_JOY_L3,L3,L3,L3
+TR_INPUT_JOY_R3,R3,R3,R3
+TR_INPUT_JOY_BACK,Back,Back,Back
+TR_INPUT_JOY_GUIDE,Guide,Guide,Guide
+TR_INPUT_JOY_START,Start,Start,Start
 TR_INPUT_KEY_SPACE,Space,Пробел,空格
 TR_INPUT_KEY_ENTER,Enter,Enter,回车
 TR_INPUT_KEY_BACKSPACE,Backspace,Backspace,退格

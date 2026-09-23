@@ -44,6 +44,7 @@ var axis_right :Vector2 = Vector2.ZERO
 var axis_shoulderl :Vector2 = Vector2.ZERO
 var axis_shoulderr :Vector2 = Vector2.ZERO
 var axis_lr_3 : Vector2 = Vector2.ZERO
+var axis_dpad : Vector2 = Vector2.ZERO
 var current_dir : Vector2 = Vector2.ZERO
 var current_dist : float = 0.0
 var final_target : Vector2 = Vector2.ZERO
@@ -182,6 +183,7 @@ func update_controller_inputs() -> void:
 	axis_shoulderl = Input.get_vector("ShoulderL1", "ShoulderR1", "ShoulderL1", "ShoulderR1")
 	axis_shoulderr = Input.get_vector("ShoulderL2", "ShoulderR2", "ShoulderL2", "ShoulderR2")
 	axis_lr_3 = Input.get_vector("L3", "R3", "L3", "R3")
+	axis_dpad = Input.get_vector("DPadLeft", "DPadRight", "DPadUp", "DPadDown")
 
 func update_position(dir: Vector2, dist: float, _delta: float) -> void:
 	if actor.get_value("follow_type") == 15:
@@ -208,7 +210,7 @@ func update_position(dir: Vector2, dist: float, _delta: float) -> void:
 			# the configured range, so min/max are reached before the mouse
 			# touches the screen edge.
 			follow_position_calculations(dir, Vector2(dist, dist))
-	elif follow_type in [1, 2, 10, 11, 12]:
+	elif follow_type in [1, 2, 10, 11, 12, 18]:
 		var axis: Vector2 = axis_left
 		match follow_type:
 			1: axis = axis_left
@@ -216,6 +218,7 @@ func update_position(dir: Vector2, dist: float, _delta: float) -> void:
 			10: axis = axis_shoulderl
 			11: axis = axis_shoulderr
 			12: axis = axis_lr_3
+			18: axis = axis_dpad
 			_: axis = Vector2.ZERO
 		follow_position_calculations(axis)
 	elif follow_type in [3, 4, 5, 6, 7, 8]:

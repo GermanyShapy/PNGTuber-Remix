@@ -312,7 +312,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 selected = 0
-item_count = 18
+item_count = 19
 popup/item_0/text = "TR_MOUSE"
 popup/item_0/id = 0
 popup/item_1/text = "TR_CONTROLLER_LEFT"
@@ -353,6 +353,8 @@ popup/item_16/disabled = true
 popup/item_16/separator = true
 popup/item_17/text = "TR_UDP"
 popup/item_17/id = 17
+popup/item_18/text = "TR_CONTROLLER_DPAD"
+popup/item_18/id = 18
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer" unique_id=1712858666]
 layout_mode = 2
@@ -369,7 +371,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 selected = 0
-item_count = 18
+item_count = 19
 popup/item_0/text = "TR_MOUSE"
 popup/item_0/id = 0
 popup/item_1/text = "TR_CONTROLLER_LEFT"
@@ -410,6 +412,8 @@ popup/item_16/disabled = true
 popup/item_16/separator = true
 popup/item_17/text = "TR_UDP"
 popup/item_17/id = 16
+popup/item_18/text = "TR_CONTROLLER_DPAD"
+popup/item_18/id = 18
 
 [node name="HBoxContainer3" type="HBoxContainer" parent="VBoxContainer" unique_id=1466851355]
 layout_mode = 2
@@ -426,7 +430,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 selected = 0
-item_count = 18
+item_count = 19
 popup/item_0/text = "TR_MOUSE"
 popup/item_0/id = 0
 popup/item_1/text = "TR_CONTROLLER_LEFT"
@@ -467,6 +471,8 @@ popup/item_16/disabled = true
 popup/item_16/separator = true
 popup/item_17/text = "TR_UDP"
 popup/item_17/id = 16
+popup/item_18/text = "TR_CONTROLLER_DPAD"
+popup/item_18/id = 18
 
 [node name="FMDBSlider2" parent="VBoxContainer" unique_id=1674292144 instance=ExtResource("1_h5u6y")]
 unique_name_in_owner = true
