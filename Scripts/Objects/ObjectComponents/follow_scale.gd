@@ -16,6 +16,7 @@ var axis_right :Vector2 = Vector2.ZERO
 var axis_shoulderl :Vector2 = Vector2.ZERO
 var axis_shoulderr :Vector2 = Vector2.ZERO
 var axis_lr_3 : Vector2 = Vector2.ZERO
+var axis_dpad : Vector2 = Vector2.ZERO
 var final_target : Vector2 = Vector2.ZERO
 
 func _physics_process(delta: float) -> void:
@@ -46,6 +47,7 @@ func update_controller_inputs() -> void:
 	axis_shoulderl = Input.get_vector("ShoulderL1", "ShoulderR1", "ShoulderL1", "ShoulderR1")
 	axis_shoulderr = Input.get_vector("ShoulderL2", "ShoulderR2", "ShoulderL2", "ShoulderR2")
 	axis_lr_3 = Input.get_vector("L3", "R3", "L3", "R3")
+	axis_dpad = Input.get_vector("DPadLeft", "DPadRight", "DPadUp", "DPadDown")
 
 func update_scale(delta: float) -> void:
 	if actor.get_value("follow_type3") == 15:
@@ -78,7 +80,7 @@ func update_scale(delta: float) -> void:
 				x_val = test.x
 				y_val = test.y
 				
-		1, 2, 10, 11, 12:
+		1, 2, 10, 11, 12, 18:
 			var axis = Vector2.ZERO
 			if follow_type3 == 1:
 				axis = follow_controller_scale(axis_left)
@@ -93,6 +95,9 @@ func update_scale(delta: float) -> void:
 
 			elif follow_type3 == 12:
 				axis = follow_controller_scale(axis_lr_3)
+
+			elif follow_type3 == 18:
+				axis = follow_controller_scale(axis_dpad)
 			
 			if actor.get_value("snap_scale"):
 				if axis.x != 0:

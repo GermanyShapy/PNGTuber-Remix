@@ -99,30 +99,44 @@ const MOUSE_TR: Dictionary = {
 
 const DOUBLE_CLICK_SUFFIX := " (Double Click)"
 
-## Joypad buttons that carry a printed label. The letters and the D-pad arrows are
-## locale independent for the same reason as GLYPHS, and Back / Guide / Start /
-## L3 / R3 / LB / RB are printed in English on the pad itself -- the same call as
-## leaving Tab, Shift and the F-keys untranslated above.
-const JOY_BUTTON_GLYPHS: Dictionary = {
-	JOY_BUTTON_A: "A",
-	JOY_BUTTON_B: "B",
-	JOY_BUTTON_X: "X",
-	JOY_BUTTON_Y: "Y",
-	JOY_BUTTON_BACK: "Back",
-	JOY_BUTTON_GUIDE: "Guide",
-	JOY_BUTTON_START: "Start",
-	JOY_BUTTON_LEFT_STICK: "L3",
-	JOY_BUTTON_RIGHT_STICK: "R3",
-	JOY_BUTTON_LEFT_SHOULDER: "LB",
-	JOY_BUTTON_RIGHT_SHOULDER: "RB",
+## Joypad button -> translations.csv key. Every user-visible pad label lives in
+## the CSV: the face/shoulder/trigger rows name all three vendor layouts at once
+## ("Xb A / PS ✕ / NS B"), because the engine only exposes a *position*
+## (0 = bottom, 1 = right, 2 = left, 3 = top) and never reports which pad is
+## connected -- listing them beats guessing. Those self-identifying rows carry no
+## prefix; L3 / R3 / Back / Guide / Start do.
+const JOY_BUTTON_TR: Dictionary = {
+	JOY_BUTTON_A: "TR_INPUT_JOY_B_BOTTOM",
+	JOY_BUTTON_B: "TR_INPUT_JOY_B_RIGHT",
+	JOY_BUTTON_X: "TR_INPUT_JOY_B_LEFT",
+	JOY_BUTTON_Y: "TR_INPUT_JOY_B_TOP",
+	JOY_BUTTON_LEFT_SHOULDER: "TR_INPUT_JOY_LB",
+	JOY_BUTTON_RIGHT_SHOULDER: "TR_INPUT_JOY_RB",
+	JOY_BUTTON_LEFT_STICK: "TR_INPUT_JOY_L3",
+	JOY_BUTTON_RIGHT_STICK: "TR_INPUT_JOY_R3",
+	JOY_BUTTON_BACK: "TR_INPUT_JOY_BACK",
+	JOY_BUTTON_GUIDE: "TR_INPUT_JOY_GUIDE",
+	JOY_BUTTON_START: "TR_INPUT_JOY_START",
+}
+
+## Rows that already name all three vendors, so they are shown bare.
+const JOY_BUTTON_SELF_LABELLED: Array = [
+	JOY_BUTTON_A, JOY_BUTTON_B, JOY_BUTTON_X, JOY_BUTTON_Y,
+	JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER,
+]
+
+## D-pad directions. The arrow itself is a glyph, not a word -- the same four
+## symbols the keyboard's arrow keys use (see GLYPHS), so it stays in code and
+## only the prefix is localised.
+const JOY_DPAD_GLYPHS: Dictionary = {
 	JOY_BUTTON_DPAD_UP: "↑",
 	JOY_BUTTON_DPAD_DOWN: "↓",
 	JOY_BUTTON_DPAD_LEFT: "←",
 	JOY_BUTTON_DPAD_RIGHT: "→",
 }
 
-## Stick axis -> translations.csv key. The triggers are absent because they are
-## fixed labels (LT / RT), not localised ones.
+## Stick axis -> translations.csv key. The triggers are handled separately, they
+## are axes too but read as buttons.
 const JOY_AXIS_TR: Dictionary = {
 	JOY_AXIS_LEFT_X: "TR_INPUT_JOY_LEFT_STICK",
 	JOY_AXIS_LEFT_Y: "TR_INPUT_JOY_LEFT_STICK",
@@ -130,15 +144,17 @@ const JOY_AXIS_TR: Dictionary = {
 	JOY_AXIS_RIGHT_Y: "TR_INPUT_JOY_RIGHT_STICK",
 }
 
-## Prefix for joypad labels. A pad's A/B/X/Y, its D-pad arrows and LT / RT all
-## read like plain keyboard keys otherwise, so the pad side is always marked --
-## "X" on a pad and "X" on the keyboard are indistinguishable in the binding
-## list. Only the sticks are left unmarked: "Left Stick →" already says what it
-## is and cannot be confused with a keyboard key.
+## Prefix for joypad labels that are not self-identifying (L3 / R3 / Back /
+## Guide / Start). The face, shoulder and trigger rows name all three vendors at
+## once, and the sticks already say what they are -- neither needs this.
 ##
 ## The trailing space belongs to the locale (English needs one, Chinese does
 ## not), which is the same convention TR_INPUT_KEY_KP uses.
 const JOY_PREFIX_TR := "TR_INPUT_JOY_PREFIX"
+
+## Prefix for the D-pad, which is drawn as an arrow rather than spelled out: a
+## bare "↑" would be indistinguishable from the keyboard's up arrow.
+const JOY_DPAD_PREFIX_TR := "TR_INPUT_JOY_DPAD"
 
 
 ## The display label for any InputEvent. Never use this for comparisons or as a
@@ -161,10 +177,20 @@ static func _joy_prefix() -> String:
 	return _lookup(JOY_PREFIX_TR, "Gamepad ")
 
 
+static func _joy_dpad_prefix() -> String:
+	return _lookup(JOY_DPAD_PREFIX_TR, "D-Pad ")
+
+
 static func _joy_button_text(p_event: InputEventJoypadButton) -> String:
-	if JOY_BUTTON_GLYPHS.has(p_event.button_index):
-		return _joy_prefix() + JOY_BUTTON_GLYPHS[p_event.button_index]
-	return _joy_prefix() + ("Button %d" % p_event.button_index)
+	var idx := p_event.button_index
+	if JOY_BUTTON_TR.has(idx):
+		var label := _lookup(JOY_BUTTON_TR[idx], "Button %d" % idx)
+		if idx in JOY_BUTTON_SELF_LABELLED:
+			return label
+		return _joy_prefix() + label
+	if JOY_DPAD_GLYPHS.has(idx):
+		return _joy_dpad_prefix() + JOY_DPAD_GLYPHS[idx]
+	return _joy_prefix() + ("Button %d" % idx)
 
 
 ## Sticks render as the stick name plus a direction arrow. Godot reports Y
@@ -172,9 +198,9 @@ static func _joy_button_text(p_event: InputEventJoypadButton) -> String:
 static func _joy_motion_text(p_event: InputEventJoypadMotion) -> String:
 	match p_event.axis:
 		JOY_AXIS_TRIGGER_LEFT:
-			return _joy_prefix() + "LT"
+			return _lookup("TR_INPUT_JOY_LT", "LT / L2 / ZL")
 		JOY_AXIS_TRIGGER_RIGHT:
-			return _joy_prefix() + "RT"
+			return _lookup("TR_INPUT_JOY_RT", "RT / R2 / ZR")
 
 	var positive := "→"
 	var negative := "←"

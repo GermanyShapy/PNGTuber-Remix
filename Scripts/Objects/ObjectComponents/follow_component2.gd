@@ -33,6 +33,7 @@ var axis_right : Vector2 = Vector2.ZERO
 var axis_shoulderl : Vector2 = Vector2.ZERO
 var axis_shoulderr : Vector2 = Vector2.ZERO
 var axis_lr_3 : Vector2 = Vector2.ZERO
+var axis_dpad : Vector2 = Vector2.ZERO
 
 func _physics_process(delta: float) -> void:
 	if Global.static_view:
@@ -130,6 +131,7 @@ func update_controller_inputs() -> void:
 	axis_shoulderl = Input.get_vector("ShoulderL1", "ShoulderR1", "ShoulderL1", "ShoulderR1")
 	axis_shoulderr = Input.get_vector("ShoulderL2", "ShoulderR2", "ShoulderL2", "ShoulderR2")
 	axis_lr_3 = Input.get_vector("L3", "R3", "L3", "R3")
+	axis_dpad = Input.get_vector("DPadLeft", "DPadRight", "DPadUp", "DPadDown")
 
 func get_normalized_mouse() -> Vector2:
 	var screen_rect = get_screen_bounds()
@@ -175,7 +177,7 @@ func update_position(dir: Vector2, _dist: float, t: float) -> void:
 	var axis: Vector2 = Vector2.ZERO
 	if follow_type == 0:
 		axis = dir
-	elif follow_type in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12]:
+	elif follow_type in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 18]:
 		axis = _get_input_axis(follow_type)
 
 	if follow_type == 0:
@@ -206,7 +208,7 @@ func update_position(dir: Vector2, _dist: float, t: float) -> void:
 			target_pos.y = lerp(target_pos.y, val_y, t)
 			current_dir = axis
 
-	elif follow_type in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12]:
+	elif follow_type in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 18]:
 		var input_for_x = axis.y if swap_x else axis.x
 		var input_for_y = axis.x if swap_y else axis.y
 		
@@ -305,7 +307,7 @@ func update_rotation(t: float) -> void:
 			
 		target_rot_rad = deg_to_rad(raw_rot_deg)
 
-	elif follow_type2 in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12]:
+	elif follow_type2 in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 18]:
 		var axis = _get_input_axis(follow_type2)
 		var input_val = axis.x
 		
@@ -375,7 +377,7 @@ func update_scale(t: float) -> void:
 		modifier.scale.y = GlobalCalculations.is_nan_or_inf(lerp(modifier.scale.y, target_scale.y, t))
 		return
 
-	elif follow_type3 in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12]:
+	elif follow_type3 in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 18]:
 		var axis = _get_input_axis(follow_type3)
 		
 		var input_for_scale_x = axis.y if swap_x else axis.x
@@ -408,6 +410,7 @@ func _get_input_axis(f_type: int) -> Vector2:
 		10: return axis_shoulderl
 		11: return axis_shoulderr
 		12: return axis_lr_3
+		18: return axis_dpad
 		3, 4, 5, 6, 7, 8:
 			return GlobalCalculations.some_keyboard_calc_wasd("follow_type", actor)
 	return Vector2.ZERO
