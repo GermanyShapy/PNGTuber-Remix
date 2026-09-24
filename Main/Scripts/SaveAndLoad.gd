@@ -410,6 +410,47 @@ func load_model(path: String) -> void:
 	Global.load_model.emit()
 	Global.load_sprite_states(0)
 	GlobInput.refresh_action_cache()
+	restore_cycles()
+
+# Cycle members that are not assets come back visible from set_common_data (its
+# non-asset branch shows every sprite), so a model whose cycles are built from
+# non-asset sprites -- the usual case, "Is Cycle Asset" without "Is Asset" -- is
+# drawn with a whole cycle showing at once. Collapse every cycle that has members
+# down to a single visible member, keeping the (visible, was_active_before) pair in
+# sync for the fade helpers. The flags still hold what the save file recorded here,
+# set_common_data wrote them and nothing else has touched them since.
+func restore_cycles() -> void:
+	for cycle in Global.settings_dict.cycles:
+		var sprites: Array = cycle.get("sprites", [])
+		if sprites.is_empty():
+			continue
+		var shown_id = null
+		if cycle.get("active", false) and sprites.has(cycle.get("last_sprite", null)):
+			# Toggled on: whoever was showing when the model was saved.
+			shown_id = cycle.get("last_sprite")
+		else:
+			# Otherwise keep whichever member the save recorded as showing. A cycle
+			# that was just built has every member flagged visible and the pick falls
+			# on the head of the list -- the default member, which is also where
+			# toggle_to(cycle, 0) puts it. A cycle toggled off recorded no visible
+			# member, so it stays hidden.
+			shown_id = _first_flagged_member(sprites)
+		_apply_cycle_visibility(sprites, shown_id)
+
+func _first_flagged_member(sprites: Array):
+	for id in sprites:
+		for sprite in get_tree().get_nodes_in_group("Sprites"):
+			if sprite.get_value("is_cycle") and sprite.sprite_id == id and sprite.was_active_before:
+				return id
+	return null
+
+func _apply_cycle_visibility(sprites: Array, shown_id) -> void:
+	for sprite in get_tree().get_nodes_in_group("Sprites"):
+		if not sprite.get_value("is_cycle") or not (sprite.sprite_id in sprites):
+			continue
+		var should_show : bool = sprite.sprite_id == shown_id
+		if sprite.sprite_object.visible != should_show or sprite.was_active_before != should_show:
+			sprite.sync_asset_visibility(should_show)
 
 func resize_image_data(image_data: ImageData, sprite_node: Node2D, percent: float) -> void:
 	if percent == 100.0 or image_data.runtime_texture == null:
