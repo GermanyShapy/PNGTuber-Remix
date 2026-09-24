@@ -373,6 +373,21 @@ focus_mode = 1
 focus_behavior_recursive = 1
 columns = 2
 
+[node name="CycleNameLabel" type="Label" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "TR_CYCLE_NAME"
+
+[node name="CycleName" type="LineEdit" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+focus_behavior_recursive = 2
+mouse_force_pass_scroll_events = false
+placeholder_text = "TR_CYCLE_NAME_PLACEHOLDER"
+max_length = 32
+
 [node name="Label" type="Label" parent="CycleMargin/CycleData/VBoxContainer/Margin2/Grid" unique_id=1094009756]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -511,6 +526,9 @@ script = ExtResource("11_ef4gi")
 [connection signal="toggled" from="CycleGrid/CheckBox" to="." method="_on_is_cycle_checkbox_changed"]
 [connection signal="item_selected" from="CycleGrid/CycleChoiceSprite" to="." method="_on_cycle_choice_sprite_item_selected"]
 [connection signal="item_selected" from="HBoxContainer/CycleChoice" to="." method="_on_cycle_choice_item_selected"]
+[connection signal="focus_entered" from="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/CycleName" to="." method="_on_cycle_name_focus_entered"]
+[connection signal="focus_exited" from="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/CycleName" to="." method="_on_cycle_name_focus_exited"]
+[connection signal="text_submitted" from="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/CycleName" to="." method="_on_cycle_name_text_submitted"]
 [connection signal="pressed" from="HBoxContainer/AddCycle" to="." method="_on_add_cycle_pressed"]
 [connection signal="pressed" from="HBoxContainer/DeleteCycle" to="." method="_on_delete_cycle_pressed"]
 [connection signal="pressed" from="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset/CycleDel" to="CycleMargin/CycleData/VBoxContainer/Margin2/Grid/HBoxAsset/CycleKey" method="_on_cycle_del_pressed"]
