@@ -43,7 +43,7 @@ func toggle_cycle(cycle):
 	else:
 		for sprite in get_tree().get_nodes_in_group("Sprites"):
 			if sprite.sprite_id in cycle.sprites and sprite.get_value("is_cycle"):
-				if sprite.was_active_before and !_hold_key_down(sprite):
+				if sprite.was_active_before:
 					ReactionConfig.sprite_hide(sprite)
 
 func toggle_forward(cycle):
@@ -63,15 +63,10 @@ func toggle_to(cycle, pos):
 				ReactionConfig.sprite_show(sprite)
 		#other sprites
 		elif sprite.sprite_id in cycle.sprites and sprite.get_value("is_cycle"):
-			# A member whose own key is still held owns the screen (reaction_config.gd
-			# "#Cycle Check" suppresses the other members for exactly that reason).
-			# Retracting one here would fight the hold branch and blink it out mid-hold.
-			if sprite.was_active_before and !_hold_key_down(sprite):
+			# Retract every other member, held keys included: a hold_to_show member
+			# whose key is still down re-asserts itself on the next frame (see the
+			# "#Cycle Check" block in reaction_config.gd), and that re-assertion is
+			# what makes the LAST held member the visible one. Skipping the retract
+			# here leaves every held member on screen at once.
+			if sprite.was_active_before:
 				ReactionConfig.sprite_hide(sprite)
-
-## True while a hold_to_show cycle member's own key is down. Only hold_to_show
-## members carry that state, so sprites without a key never reach the query.
-func _hold_key_down(sprite) -> bool:
-	if not sprite.hold_to_show:
-		return false
-	return GlobInput.is_input_pressed(sprite.saved_event, sprite.inclusive_key_check)
