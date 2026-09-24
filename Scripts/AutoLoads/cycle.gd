@@ -31,13 +31,19 @@ func toggle_cycle(cycle):
 		if array.has(cycle.last_sprite) and array.size() > 1:
 			array.remove_at(array.find(cycle.last_sprite))
 		if array.size() > 0:
-			var rand = array.pick_random()
-			toggle_to(cycle, rand)
+			# pick_random() returns a sprite_id, and toggle_to() takes a slot: the id
+			# MUST go through find(), otherwise it gets wrapped as an index -- ids are
+			# huge numbers, so every member collapses onto whichever slot the wrap
+			# happens to hit (measured: a whole cycle stuck on slot 0). See
+			# 50-报告/精灵与动画/循环切换与读档显隐-合流定位与修复方案-2026-09-24.md
+			var rand_index : int = cycle.sprites.find(array.pick_random())
+			if rand_index >= 0:
+				toggle_to(cycle, rand_index)
 
 	else:
 		for sprite in get_tree().get_nodes_in_group("Sprites"):
 			if sprite.sprite_id in cycle.sprites and sprite.get_value("is_cycle"):
-				if sprite.was_active_before:
+				if sprite.was_active_before and !_hold_key_down(sprite):
 					ReactionConfig.sprite_hide(sprite)
 
 func toggle_forward(cycle):
@@ -57,5 +63,15 @@ func toggle_to(cycle, pos):
 				ReactionConfig.sprite_show(sprite)
 		#other sprites
 		elif sprite.sprite_id in cycle.sprites and sprite.get_value("is_cycle"):
-			if sprite.was_active_before:
+			# A member whose own key is still held owns the screen (reaction_config.gd
+			# "#Cycle Check" suppresses the other members for exactly that reason).
+			# Retracting one here would fight the hold branch and blink it out mid-hold.
+			if sprite.was_active_before and !_hold_key_down(sprite):
 				ReactionConfig.sprite_hide(sprite)
+
+## True while a hold_to_show cycle member's own key is down. Only hold_to_show
+## members carry that state, so sprites without a key never reach the query.
+func _hold_key_down(sprite) -> bool:
+	if not sprite.hold_to_show:
+		return false
+	return GlobInput.is_input_pressed(sprite.saved_event, sprite.inclusive_key_check)
