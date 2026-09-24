@@ -12,8 +12,10 @@ func update_tree_items():
 	set_column_expand(0, true)
 	var root = create_item()
 
-	if %CycleChoice.get_selected_id() > 0:
-		var cycle_id = %CycleChoice.get_selected_id() - 1
+	# "None" (0) maps to -1, and a stale selection after a cycle was removed maps
+	# past the end -- both used to index out of range.
+	var cycle_id = %CycleChoice.get_selected_id() - 1
+	if cycle_id >= 0 and cycle_id < Global.settings_dict.cycles.size():
 		var cycle = Global.settings_dict.cycles[cycle_id]
 		
 		var sprite_id_dict: Dictionary = {}
@@ -53,10 +55,21 @@ func _drop_data(at_position: Vector2, data: Variant) -> void:
 	var n = get_drop_section_at_position(at_position - self.position)
 	var item = get_item_at_position(at_position - self.position)
 	
+	# selected_id 0 ("None") wraps to -1 and a removed cycle leaves the id past the
+	# end; both used to index out of range before any of the work below.
 	var cycle_id = %CycleChoice.get_selected_id() - 1
+	if cycle_id < 0 or cycle_id >= Global.settings_dict.cycles.size():
+		return
 	var cycle = Global.settings_dict.cycles[cycle_id]
 	var dragged_index = (data as TreeItem).get_index()
-	var target_index = (item as TreeItem).get_index() if n != -100 else 0
+	if dragged_index < 0 or dragged_index >= cycle.sprites.size():
+		return
+	var target_index: int = 0
+	if n != -100:
+		# Dropped onto a row: -100 means the drop landed below every row.
+		if item == null:
+			return
+		target_index = item.get_index()
 	var temp_sprite_id = cycle.sprites[dragged_index]
 	
 	if n == 1:
@@ -65,6 +78,7 @@ func _drop_data(at_position: Vector2, data: Variant) -> void:
 	(cycle.sprites as Array).remove_at(dragged_index)
 	if dragged_index < target_index:
 		target_index -= 1
+	target_index = clampi(target_index, 0, cycle.sprites.size())
 	
 	(cycle.sprites as Array).insert(target_index, temp_sprite_id)
 	

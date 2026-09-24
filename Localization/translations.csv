@@ -105,6 +105,8 @@ TR_CUSTOM,Custom,Пользовательский,自定义
 TR_CYCLE,Cycle,Цикл,循环
 TR_CYCLE_BACKWARD_LABEL,Cycle Backward,Цикл назад,向后循环
 TR_CYCLE_FORWARD_LABEL,Cycle Forward,Цикл вперёд,向前循环
+TR_CYCLE_NAME,Cycle Name,Название цикла,循环名称
+TR_CYCLE_NAME_PLACEHOLDER,Default,По умолчанию,默认
 TR_CYCLE_TOGGLE_LABEL,Cycle Toggle,Переключение цикла,切换循环
 TR_DAMPING_X,Damping X,Затухание X,阻尼 X
 TR_DAMPING_Y,Damping Y,Затухание Y,阻尼 Y
