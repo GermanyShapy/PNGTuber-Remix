@@ -156,6 +156,20 @@ const JOY_PREFIX_TR := "TR_INPUT_JOY_PREFIX"
 ## bare "↑" would be indistinguishable from the keyboard's up arrow.
 const JOY_DPAD_PREFIX_TR := "TR_INPUT_JOY_DPAD"
 
+## Brand placeholders used in translations.csv -> icon-font code points.
+##
+## The CSV keeps the readable placeholder, so translators and git diffs never
+## have to deal with invisible PUA characters; the glyphs live here instead,
+## written as \uXXXX escapes so this file stays readable too. Swapping an icon
+## or dropping the whole idea is a one-line change here, with the CSV untouched.
+##
+## Switch has no entry on purpose: Font Awesome 6 dropped the nintendo-switch
+## glyph (trademark), so that slot stays as the plain text "NS".
+const BRAND_MARKS: Dictionary = {
+	"{xb}": "\uF412",   # Xbox (Font Awesome 6 brands)
+	"{ps}": "\uF3DF",   # PlayStation (Font Awesome 6 brands)
+}
+
 
 ## The display label for any InputEvent. Never use this for comparisons or as a
 ## storage key — several call sites rely on the raw `as_text()` for identity.
@@ -181,10 +195,17 @@ static func _joy_dpad_prefix() -> String:
 	return _lookup(JOY_DPAD_PREFIX_TR, "D-Pad ")
 
 
+## Replaces the brand placeholders of a localised label with their icons.
+static func _brandify(p_label: String) -> String:
+	for mark in BRAND_MARKS:
+		p_label = p_label.replace(mark, BRAND_MARKS[mark])
+	return p_label
+
+
 static func _joy_button_text(p_event: InputEventJoypadButton) -> String:
 	var idx := p_event.button_index
 	if JOY_BUTTON_TR.has(idx):
-		var label := _lookup(JOY_BUTTON_TR[idx], "Button %d" % idx)
+		var label := _brandify(_lookup(JOY_BUTTON_TR[idx], "Button %d" % idx))
 		if idx in JOY_BUTTON_SELF_LABELLED:
 			return label
 		return _joy_prefix() + label
@@ -198,9 +219,9 @@ static func _joy_button_text(p_event: InputEventJoypadButton) -> String:
 static func _joy_motion_text(p_event: InputEventJoypadMotion) -> String:
 	match p_event.axis:
 		JOY_AXIS_TRIGGER_LEFT:
-			return _lookup("TR_INPUT_JOY_LT", "LT / L2 / ZL")
+			return _brandify(_lookup("TR_INPUT_JOY_LT", "LT / L2 / ZL"))
 		JOY_AXIS_TRIGGER_RIGHT:
-			return _lookup("TR_INPUT_JOY_RT", "RT / R2 / ZR")
+			return _brandify(_lookup("TR_INPUT_JOY_RT", "RT / R2 / ZR"))
 
 	var positive := "→"
 	var negative := "←"
