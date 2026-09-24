@@ -1,6 +1,7 @@
-[gd_resource type="FontVariation" load_steps=3 format=3]
+[gd_resource type="FontVariation" load_steps=4 format=3]
 
 [ext_resource type="FontFile" path="res://Scripts/Fonts/OpenSans-Medium.ttf" id="1_base"]
+[ext_resource type="FontFile" path="res://Scripts/Fonts/BrandIcons.ttf" id="2_brand"]
 
 [sub_resource type="SystemFont" id="SystemFont_symbols"]
 font_names = PackedStringArray("Segoe UI Symbol", "Noto Sans Symbols 2", "Symbola", "DejaVu Sans")
@@ -8,4 +9,4 @@ subpixel_positioning = 0
 
 [resource]
 base_font = ExtResource("1_base")
-fallbacks = Array[Font]([SubResource("SystemFont_symbols")])
+fallbacks = Array[Font]([SubResource("SystemFont_symbols"), ExtResource("2_brand")])

@@ -647,14 +647,14 @@ TR_INPUT_JOY_LEFT_STICK,Left Stick,Левый стик,左摇杆
 TR_INPUT_JOY_RIGHT_STICK,Right Stick,Правый стик,右摇杆
 TR_INPUT_JOY_PREFIX,"Gamepad ","Геймпад ",手柄
 TR_INPUT_JOY_DPAD,"D-Pad ","Крестовина ",手柄十字键
-TR_INPUT_JOY_B_BOTTOM,Xb A / PS ✕ / NS B,Xb A / PS ✕ / NS B,Xb A / PS ✕ / NS B
-TR_INPUT_JOY_B_RIGHT,Xb B / PS ○ / NS A,Xb B / PS ○ / NS A,Xb B / PS ○ / NS A
-TR_INPUT_JOY_B_LEFT,Xb X / PS □ / NS Y,Xb X / PS □ / NS Y,Xb X / PS □ / NS Y
-TR_INPUT_JOY_B_TOP,Xb Y / PS △ / NS X,Xb Y / PS △ / NS X,Xb Y / PS △ / NS X
-TR_INPUT_JOY_LB,Xb LB / PS L1 / NS L,Xb LB / PS L1 / NS L,Xb LB / PS L1 / NS L
-TR_INPUT_JOY_RB,Xb RB / PS R1 / NS R,Xb RB / PS R1 / NS R,Xb RB / PS R1 / NS R
-TR_INPUT_JOY_LT,Xb LT / PS L2 / NS ZL,Xb LT / PS L2 / NS ZL,Xb LT / PS L2 / NS ZL
-TR_INPUT_JOY_RT,Xb RT / PS R2 / NS ZR,Xb RT / PS R2 / NS ZR,Xb RT / PS R2 / NS ZR
+TR_INPUT_JOY_B_BOTTOM,{xb} A / {ps} ✕ / NS B,{xb} A / {ps} ✕ / NS B,{xb} A / {ps} ✕ / NS B
+TR_INPUT_JOY_B_RIGHT,{xb} B / {ps} ○ / NS A,{xb} B / {ps} ○ / NS A,{xb} B / {ps} ○ / NS A
+TR_INPUT_JOY_B_LEFT,{xb} X / {ps} □ / NS Y,{xb} X / {ps} □ / NS Y,{xb} X / {ps} □ / NS Y
+TR_INPUT_JOY_B_TOP,{xb} Y / {ps} △ / NS X,{xb} Y / {ps} △ / NS X,{xb} Y / {ps} △ / NS X
+TR_INPUT_JOY_LB,{xb} LB / {ps} L1 / NS L,{xb} LB / {ps} L1 / NS L,{xb} LB / {ps} L1 / NS L
+TR_INPUT_JOY_RB,{xb} RB / {ps} R1 / NS R,{xb} RB / {ps} R1 / NS R,{xb} RB / {ps} R1 / NS R
+TR_INPUT_JOY_LT,{xb} LT / {ps} L2 / NS ZL,{xb} LT / {ps} L2 / NS ZL,{xb} LT / {ps} L2 / NS ZL
+TR_INPUT_JOY_RT,{xb} RT / {ps} R2 / NS ZR,{xb} RT / {ps} R2 / NS ZR,{xb} RT / {ps} R2 / NS ZR
 TR_INPUT_JOY_L3,L3,L3,L3
 TR_INPUT_JOY_R3,R3,R3,R3
 TR_INPUT_JOY_BACK,Back,Back,Back
