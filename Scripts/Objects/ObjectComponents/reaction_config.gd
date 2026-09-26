@@ -449,11 +449,12 @@ func reset_animations(_place_holder : int = 0, force : bool = false):
 	if actor.get_value("never_reset"):
 		return
 
-	# force=true is used by sprite_show: a shown one_shot sheet must always
-	# restart from frame 0, even when the previous run was cut short by hide
-	# (frame < last), otherwise the sprite "resumes" near the end on the next
-	# press. Signal-driven calls (blink/speak) keep the frame==last guard so a
-	# finished one_shot is not yanked back to frame 0 while it merely sits there.
+	# sprite_show passes the sprite's own one_shot flag: a one_shot shown again
+	# must restart from frame 0 even when the previous run was cut short by hide
+	# (frame < last), or it "resumes" near the end on the next press. A looping
+	# sheet is never reset on show, so rapid re-presses keep the cycle running
+	# instead of pinning it on frame 0. Signal-driven calls pass false, keeping
+	# the frame==last guard for a sheet that is still playing.
 	if force or (actor.get_value("one_shot") and actor.sprite_object.frame == (actor.get_value("hframes")*actor.get_value("vframes") -1)):
 		reset_anim()
 
@@ -530,7 +531,9 @@ static func sprite_show(aim_actor : Node):
 		aim_actor.fade_reset()
 		aim_sprite2d.visible = true
 		aim_actor.was_active_before = aim_sprite2d.visible
-	aim_actor.get_node("ReactionConfig").reset_animations(0, true)
+	# Reset only one_shot sheets: a looping sheet must keep its phase so rapid
+	# re-presses do not pin it on frame 0 (see reset_animations()).
+	aim_actor.get_node("ReactionConfig").reset_animations(0, aim_actor.get_value("one_shot"))
 		
 static func sprite_hide(aim_actor : Node):
 	var aim_sprite2d = aim_actor.sprite_object
