@@ -210,6 +210,11 @@ func update_tracking_backend():
 				GlobInput.backend = "x11"
 			else:
 				set_backed_default()
+		"macos":
+			if OS.has_feature("macos"):
+				GlobInput.backend = "macos"
+			else:
+				set_backed_default()
 		"dummy":
 			GlobInput.backend = "dummy"
 		_:
@@ -220,6 +225,10 @@ func set_backed_default():
 		GlobInput.backend = "windows"
 	elif OS.has_feature("linux"):
 		GlobInput.backend = "x11"
+	elif OS.has_feature("macos"):
+		# Without this branch Apple builds fell through to the dummy backend,
+		# so GlobalInput never actually polled anything.
+		GlobInput.backend = "macos"
 	else:
 		GlobInput.backend = "dummy"
 
