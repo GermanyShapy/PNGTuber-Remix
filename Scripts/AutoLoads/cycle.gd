@@ -31,9 +31,7 @@ func toggle_cycle(cycle):
 		if array.has(cycle.last_sprite) and array.size() > 1:
 			array.remove_at(array.find(cycle.last_sprite))
 		if array.size() > 0:
-			# pick_random() returns a sprite_id and toggle_to() takes a slot, so the id
-			# MUST go through find(); wrapping the raw id as an index collapses every
-			# member onto an arbitrary slot (a whole cycle can stick on slot 0).
+			# pick_random() returns a sprite_id, toggle_to() takes a slot: map it through find().
 			var rand_index : int = cycle.sprites.find(array.pick_random())
 			if rand_index >= 0:
 				toggle_to(cycle, rand_index)
