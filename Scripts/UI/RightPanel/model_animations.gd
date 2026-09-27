@@ -6,9 +6,8 @@ var should_change: bool = false
 func _ready() -> void:
 	await get_tree().current_scene.ready
 	Global.connect("update_anim", update_anim)
-	%SquishAmount.get_node("%SliderValue").value_changed.connect(_on_squish_amount_value_changed)
-	%SquishAmount.get_node("%SliderValue").drag_ended.connect(_on_squish_amount_drag_ended)
-	%SquishAmount.get_node("%SpinBoxValue").value_changed.connect(_on_squish_amount_value_changed)
+	%SquishAmount.get_node("%SliderValue").value_changed.connect(_on_squish_amount_changed)
+	%SquishAmount.get_node("%SpinBoxValue").value_changed.connect(_on_squish_amount_changed)
 	%BlinkChanceSlider.value = 10
 	Global.slider_values.connect(set_slider_data)
 	update_anim()
@@ -29,19 +28,9 @@ func update_anim():
 	should_change = true
 
 
-## Live update: the container follows the knob while it moves, and the undo entry plus the
-## state write-back are settled once when the drag ends. Previously this ran on every
-## value_changed, so a single drag pushed dozens of undo entries and re-serialized the state
-## dictionary every frame.
-func _on_squish_amount_value_changed(value: float):
+func _on_squish_amount_changed(value: float):
+	add_to_undo("squish_amount", Global.sprite_container.squish_amount, value)
 	Global.sprite_container.squish_amount = value
-
-
-func _on_squish_amount_drag_ended(value_changed: bool):
-	if not value_changed:
-		return
-	add_to_undo("squish_amount", Global.sprite_container.squish_amount, %SquishAmount.get_node("%SliderValue").value)
-	Global.sprite_container.squish_amount = %SquishAmount.get_node("%SliderValue").value
 	Global.sprite_container.save_state(Global.current_state)
 
 
