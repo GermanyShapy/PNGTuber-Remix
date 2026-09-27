@@ -396,10 +396,7 @@ func reset_animations(_place_holder : int = 0):
 	if actor.get_value("never_reset"):
 		return
 	
-	# A wiggle/appendage actor binds a Line2D, which has no frame: compare the frame only
-	# when the bound node really is a framed sprite, otherwise switching state throws.
-	var target = actor.sprite_object
-	if actor.get_value("one_shot") and target and "frame" in target and target.frame == (actor.get_value("hframes")*actor.get_value("vframes") -1):
+	if actor.get_value("one_shot") and actor.sprite_object.frame == (actor.get_value("hframes")*actor.get_value("vframes") -1):
 		reset_anim()
 	
 	if actor.get_value("should_reset"):
