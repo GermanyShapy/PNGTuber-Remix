@@ -19,10 +19,6 @@ enum Type { Both, Spin, Slide, NoLabel, NoLabelSpin }
 var should_change: bool = false
 var held_spinbox = null
 var val = []
-## True while the slider knob is being dragged: the value keeps changing, but the undo
-## entry and the state write-back are deferred to the end of the drag so a drag costs one
-## entry instead of one per frame.
-var drag_active : bool = false
 
 func _ready():
 	Global.reinfo.connect(enable)
@@ -96,6 +92,10 @@ func _on_spinbox_focused():
 	held_spinbox = self
 	val = []
 	if Global.held_sprites.is_empty(): return
+	# Nothing to snapshot when this slider is not bound to a property of the selection,
+	# so bail out here; sprites whose data lacks the key are skipped in the loop below.
+	if sp_type == "Null":
+		return
 	for obj in Global.held_sprites:
 		var d = {
 				node = obj,
@@ -112,9 +112,7 @@ func _on_spinbox_unfocused():
 func _on_spin_box_value_value_changed(nvalue):
 	if should_change:
 		if held_spinbox:
-			# While the knob is being dragged the value already lands every frame; the drag
-			# end settles the undo entry, so do not push another one here.
-			_apply_value_to_selected(nvalue, not drag_active)
+			_apply_value_to_selected(nvalue, true)
 		held_spinbox = null
 		Global.spinbox_held = false
 		%SliderValue.value = nvalue
@@ -127,9 +125,11 @@ func _on_slider_value_drag_started() -> void:
 	if Global.held_sprites.is_empty(): return
 	val = []
 	if Global.held_sprites.is_empty(): return
+	# Nothing to snapshot when this slider is not bound to a property of the selection,
+	# so bail out here; sprites whose data lacks the key are skipped in the loop below.
+	if sp_type == "Null":
+		return
 	for obj in Global.held_sprites:
-		if not obj.sprite_data.has(value_to_update):
-			continue
 		var d = {
 				node = obj,
 				action = value_to_update,
@@ -137,7 +137,6 @@ func _on_slider_value_drag_started() -> void:
 				value = obj.sprite_data[value_to_update]
 			}
 		val.append(d)
-	drag_active = true
 
 func _on_slider_value_value_changed(nvalue):
 	if should_change:
@@ -147,9 +146,7 @@ func _on_slider_value_value_changed(nvalue):
 		_apply_value_to_selected(%SpinBoxValue.value, false)
 
 func _on_slider_value_drag_ended(value_changed: bool):
-	drag_active = false
 	if value_changed and sp_type != "Null":
-		# Settle once per gesture: one undo entry and one state write-back for the whole drag.
 		_apply_value_to_selected(%SliderValue.value, true)
 
 func _apply_value_to_selected(nvalue: float, push_undo: bool):
@@ -162,9 +159,7 @@ func _apply_value_to_selected(nvalue: float, push_undo: bool):
 		StateButton.multi_edit(sprite.sprite_data[value_to_update], value_to_update, sprite, sprite.states)
 		if sprite.sprite_type == "WiggleApp" and sp_type == "WiggleApp":
 			sprite.update_wiggle_parts()
-		# Skipped mid-drag: the write-back happens once when the drag ends.
-		if not drag_active:
-			sprite.save_state(Global.current_state)
+		sprite.save_state(Global.current_state)
 		for i in val:
 			i.merge({new_val = sprite.sprite_data[value_to_update]}, true)
 	if push_undo:
