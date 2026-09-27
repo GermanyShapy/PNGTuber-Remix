@@ -620,3 +620,4 @@ TR_SNAP_SIZE_TITLE,Grid Snap Size,Grid Snap Size
 TR_NEVER_RESET_TOOLTIP,Never resets the animation,Никогда не сбрасывает анимацию
 TR_EDIT_WINDOWS,Edit Windows,Edit Windows
 TR_NEVER_RESET,Never Reset,Никогда не сбрасывать
+TR_MOUSE_INPUT_AREA,(Mouse Bind Capture Area),(Область захвата ввода мыши)
