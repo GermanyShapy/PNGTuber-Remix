@@ -92,12 +92,16 @@ func _on_spinbox_focused():
 	held_spinbox = self
 	val = []
 	if Global.held_sprites.is_empty(): return
+	# Nothing to snapshot when this slider is not bound to a property of the selection,
+	# so bail out here; sprites whose data lacks the key are skipped in the loop below.
+	if sp_type == "Null":
+		return
 	for obj in Global.held_sprites:
 		var d = {
 				node = obj,
 				action = value_to_update,
 				state = Global.current_state,
-				value = obj.sprite_data.get(value_to_update)
+				value = obj.sprite_data[value_to_update]
 			}
 		val.append(d)
 
@@ -121,12 +125,16 @@ func _on_slider_value_drag_started() -> void:
 	if Global.held_sprites.is_empty(): return
 	val = []
 	if Global.held_sprites.is_empty(): return
+	# Nothing to snapshot when this slider is not bound to a property of the selection,
+	# so bail out here; sprites whose data lacks the key are skipped in the loop below.
+	if sp_type == "Null":
+		return
 	for obj in Global.held_sprites:
 		var d = {
 				node = obj,
 				action = value_to_update,
 				state = Global.current_state,
-				value = obj.sprite_data.get(value_to_update)
+				value = obj.sprite_data[value_to_update]
 			}
 		val.append(d)
 
