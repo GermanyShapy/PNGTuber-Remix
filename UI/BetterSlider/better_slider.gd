@@ -97,7 +97,7 @@ func _on_spinbox_focused():
 				node = obj,
 				action = value_to_update,
 				state = Global.current_state,
-				value = obj.sprite_data[value_to_update]
+				value = obj.sprite_data.get(value_to_update)
 			}
 		val.append(d)
 
@@ -126,7 +126,7 @@ func _on_slider_value_drag_started() -> void:
 				node = obj,
 				action = value_to_update,
 				state = Global.current_state,
-				value = obj.sprite_data[value_to_update]
+				value = obj.sprite_data.get(value_to_update)
 			}
 		val.append(d)
 
