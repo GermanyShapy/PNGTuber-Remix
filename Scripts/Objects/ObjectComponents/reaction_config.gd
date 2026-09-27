@@ -396,7 +396,11 @@ func reset_animations(_place_holder : int = 0):
 	if actor.get_value("never_reset"):
 		return
 	
-	if actor.get_value("one_shot") and actor.sprite_object.frame == (actor.get_value("hframes")*actor.get_value("vframes") -1):
+	# Only framed sprites expose `frame`; wiggle/appendage actors bind a Line2D, and reading
+	# .frame there threw. A type check is a pointer comparison, where "frame" in node would
+	# do a StringName + property lookup on every state change.
+	var target = actor.sprite_object
+	if actor.get_value("one_shot") and target is Sprite2D and target.frame == (actor.get_value("hframes")*actor.get_value("vframes") -1):
 		reset_anim()
 	
 	if actor.get_value("should_reset"):
