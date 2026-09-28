@@ -605,11 +605,11 @@ TR_BLEND_MASKING,Masking,Masking
 TR_BLEND_TOOLTIP,"Blend mode is developing. \n - Multiply will also apply to both(this and background layer) transparency, which taking a layer mask effect \n - Burn, Hardmix, Cursed mode is unfinished","Blend mode is developing. \n - Multiply will also apply to both(this and background layer) transparency, which taking a layer mask effect \n - Burn, Hardmix, Cursed mode is unfinished"
 TR_IGNORE_BOUNCE_TOOLTIP,"Passive motion simulations (e.g. dragging, rotating, squeezing) will ignore bounce effects.\nFollow motion will still work normally.","Passive motion simulations (e.g. dragging, rotating, squeezing) will ignore bounce effects.\nFollow motion will still work normally."
 TR_MOUSE_VELOCITY_TOOLTIP,Mouse follow motion is based on the mouse velocity instead of its current position.,Mouse follow motion is based on the mouse velocity instead of its current position.
-TR_PHYSICS_TOOLTIP,"When enabled, motion is also affected by the parent's motion.\nWhen physics is off and this node has no parent (i.e. it is the root of all motion), bounce motion will be ignored.","When enabled, motion is also affected by the parent's motion.\nWhen physics is off and this node has no parent (i.e. it is the root of all motion), bounce motion will be ignored."
+TR_PHYSICS_TOOLTIP,"When enabled, motion is also affected by the parent's motion.","When enabled, motion is also affected by the parent's motion."
 TR_REST_MOVE_AND_RESET,Rest Move And Reset,Rest Move And Reset
 TR_SKEW_X,Skew-X,Skew-X
 TR_SKEW_Y,Skew-Y,Skew-Y
-TR_FILE_OPEN,Open,Open
+TR_FILE_OPEN,Open,Открыть
 TR_REDO,Redo,Redo
 TR_UNDO,Undo,Undo
 TR_GRID,Grid,Grid
