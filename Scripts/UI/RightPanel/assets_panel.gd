@@ -86,7 +86,6 @@ func _on_cycle_choice_item_selected(index: int) -> void:
 		%CycleKey.update_key_text()
 		%CycleForward.update_key_text()
 		%CycleBackward.update_key_text()
-		%CycleItemTree.update_tree_items()
 
 func _on_add_cycle_pressed() -> void:
 	%CycleChoiceSprite.add_item("Cycle " + str(%CycleChoice.item_count))
@@ -127,7 +126,6 @@ func _on_delete_cycle_pressed() -> void:
 		#%CycleChoiceSprite.remove_item(%CycleChoice.get_selected_id())
 		#%CycleChoice.remove_item(%CycleChoice.get_selected_id())
 		update_cycle_choice()
-		%CycleItemTree.update_tree_items()
 
 func _on_cycle_choice_sprite_item_selected(index: int) -> void:
 	if %CycleChoiceSprite.get_selected_id() != 0:
@@ -151,7 +149,6 @@ func _on_cycle_choice_sprite_item_selected(index: int) -> void:
 						l.sprites.remove_at(l.sprites.find(i.sprite_id))
 						i.get_node("%Sprite2D").show()
 	
-	%CycleItemTree.update_tree_items()
 	
 func update_cycle_choice():
 	%CycleChoiceSprite.clear()
