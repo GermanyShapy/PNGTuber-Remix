@@ -32,12 +32,16 @@ Before that change, an exported Linux build could not start at all: the autoload
 
 ## Export note
 
-The Linux export preset excludes this directory, so exported Linux builds do not print the
-"library not found" error. That setting lives in `export_presets.cfg`, which is a local,
-uncommitted file - the filter is:
+The extension stays in the package on every platform; nothing is excluded. On a platform
+without a library Godot prints three lines at start-up:
 
 ```
-exclude_filter="res://Localization/translation_checker.*,res://RawMouseInput/*"
+ERROR: No GDExtension library found for current OS and architecture (linux.x86_64) in configuration file: res://RawMouseInput/rawmouseinput.gdextension
+ERROR: GDExtension dynamic library not found: 'res://RawMouseInput/rawmouseinput.gdextension'.
+ERROR: Error loading extension: 'res://RawMouseInput/rawmouseinput.gdextension'.
 ```
 
-If a Linux implementation ever lands, remove this directory from that filter as well.
+They are expected and harmless: no script names the class at parse time, so nothing else
+fails (see the runtime lookup above). Leaving the package untouched also means a future
+Linux build needs no export-preset change at all - add a `linux.release.x86_64` entry here
+next to the Windows ones and it is picked up automatically.
