@@ -8,7 +8,6 @@
 [ext_resource type="Texture2D" uid="uid://dsvnkyrgho1xx" path="res://UI/Assets/ui_buttons.png" id="8_olugq"]
 [ext_resource type="Script" uid="uid://bq0jinc7th4h0" path="res://Scripts/UI/RightPanel/CycleForward.gd" id="8_u22l2"]
 [ext_resource type="Script" uid="uid://cglby66eahspg" path="res://Scripts/UI/RightPanel/CycleBackward.gd" id="9_olugq"]
-[ext_resource type="Script" uid="uid://dm10txhe3ii76" path="res://Scripts/UI/RightPanel/cycle_item_tree.gd" id="11_ef4gi"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ef4gi"]
 atlas = ExtResource("8_olugq")
@@ -474,25 +473,6 @@ focus_behavior_recursive = 1
 icon = SubResource("AtlasTexture_2cqhf")
 icon_alignment = 1
 expand_icon = true
-
-[node name="Panel2" type="PanelContainer" parent="CycleMargin/CycleData/VBoxContainer" unique_id=1043491771]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_vertical = 3
-focus_mode = 1
-focus_behavior_recursive = 1
-
-[node name="CycleItemTree" type="Tree" parent="CycleMargin/CycleData/VBoxContainer/Panel2" unique_id=268916428]
-unique_name_in_owner = true
-layout_mode = 2
-columns = 2
-column_titles_visible = true
-allow_search = false
-hide_folding = true
-hide_root = true
-scroll_horizontal_enabled = false
-scroll_vertical_enabled = false
-script = ExtResource("11_ef4gi")
 
 [connection signal="toggled" from="Buttons/IsAssetCheck" to="Buttons/HBoxContainer/IsAssetButton" method="_on_is_asset_check_toggled"]
 [connection signal="pressed" from="Buttons/HBoxContainer/RemoveAssetButton" to="Buttons/HBoxContainer/IsAssetButton" method="_on_remove_asset_button_pressed"]
