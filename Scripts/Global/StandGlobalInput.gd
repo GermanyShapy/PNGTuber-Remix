@@ -3,7 +3,9 @@ extends GlobalInput
 
 @onready var cycle :Node = %Cycle
 
-var rawMouseInput : RawMouseInput = null;
+# Typed as Object on purpose: the extension only ships a Windows library, so on other
+# platforms the class is never registered and naming the type would break this script.
+var rawMouseInput : Object = null;
 var mouse_relative_movement:Vector2i = Vector2i.ZERO
 var is_mouse_relative_movement:bool = false
 var mouse_relative_movement_buffer:Vector2i = Vector2i.ZERO
@@ -14,9 +16,9 @@ func _ready() -> void:
 	call_deferred("_rawmouse_init");
 
 func _rawmouse_init():
-	if rawMouseInput == null and OS.get_name() == "Windows":
+	if rawMouseInput == null and OS.get_name() == "Windows" and ClassDB.class_exists("RawMouseInput"):
 		print("raw input init start")
-		rawMouseInput = RawMouseInput.new()
+		rawMouseInput = ClassDB.instantiate("RawMouseInput")
 		rawMouseInput.raw_mouse.connect(_on_raw_mouse_input_updated)
 
 		add_child(rawMouseInput);
