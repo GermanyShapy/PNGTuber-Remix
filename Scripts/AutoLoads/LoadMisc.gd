@@ -207,10 +207,13 @@ func load_images_from_psd(path : String):
 	var loaded_layers : Array = []
 	loaded_layers = PSDParser.open_photoshop_file(path, trim_psd, keep_position)
 	
-	# Cropping already happened while decoding; a second pass in import_png would
-	# only re-scan the pixels and overwrite the offset we just computed.
+	# import_png() re-reads these globals itself, so layers that were already
+	# cropped during decoding must skip its trim pass. Only `trim` is a one-shot
+	# flag reset per import; `should_offset` is a persistent user preference
+	# (FileImporter._on_offset_sprite_toggled), so clearing it here would silently
+	# disable the offset for the next import and for every sprite/appendage added
+	# afterwards.
 	ImageTextureLoaderManager.trim = false
-	ImageTextureLoaderManager.should_offset = false
 	for layer in loaded_layers:
 		#print(layer)
 		if layer["type"] == "layer":
