@@ -198,10 +198,17 @@ func load_pngplus_file(path, can_load_plus):
 
 #----------------------------------------------------------------------------
 # Global Image loading from PSD
+# The trim dialog (see FileImporter._on_confirm_trim_*) sets the two flags before
+# this runs: trim = crop each layer to its painted pixels during decoding, and
+# should_offset = shift the layer so the painted content keeps its position.
 func load_images_from_psd(path : String):
+	var trim_psd := ImageTextureLoaderManager.trim
+	var keep_position := ImageTextureLoaderManager.should_offset
 	var loaded_layers : Array = []
-	loaded_layers = PSDParser.open_photoshop_file(path)
+	loaded_layers = PSDParser.open_photoshop_file(path, trim_psd, keep_position)
 	
+	# Cropping already happened while decoding; a second pass in import_png would
+	# only re-scan the pixels and overwrite the offset we just computed.
 	ImageTextureLoaderManager.trim = false
 	ImageTextureLoaderManager.should_offset = false
 	for layer in loaded_layers:
@@ -211,7 +218,9 @@ func load_images_from_psd(path : String):
 			ImageTextureLoaderManager.import_png(layer["image"], null, image_data, false, false)
 			image_data.image_name = layer["name"]
 			image_data.offset = layer["offset"]
-			image_data.trimmed = true
+			# Drives the offset-aware drag/drop path (see FileManagerTree), which only
+			# makes sense when the layer actually got cropped.
+			image_data.trimmed = trim_psd
 			Global.image_manager_data.append(image_data)
 			Global.add_new_image.emit(image_data)
 			add_objects_from_psd_data(layer, image_data)

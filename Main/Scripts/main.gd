@@ -3,6 +3,7 @@ extends Control
 var sprite_paths : PackedStringArray
 var sprite_path : String
 var model_path : String
+var psd_path : String
 
 var filepath : Array = []
 enum State {
@@ -181,7 +182,14 @@ func _on_file_dialog_file_selected(path):
 				ImageTextureLoaderManager.trim = false
 				%FileImporter.add_normal(path)
 		State.ImportPSD:
-			SaveAndLoad.load_images_from_psd(path)
+			# Same trim prompt as the PNG import: "trim" crops each layer to its painted
+			# pixels, and the offset checkbox keeps that content where Photoshop had it.
+			if Settings.theme_settings.enable_trimmer:
+				psd_path = path
+				%ConfirmTrim.popup_centered()
+			else:
+				ImageTextureLoaderManager.trim = false
+				SaveAndLoad.load_images_from_psd(path)
 
 func _on_file_dialog_files_selected(paths):
 	if current_state == State.LoadSprites or current_state == State.AddAppend:

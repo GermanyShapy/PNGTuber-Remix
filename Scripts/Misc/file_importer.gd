@@ -173,6 +173,9 @@ func _on_confirm_trim_confirmed() -> void:
 	elif get_parent().current_state == get_parent().State.LoadFile:
 		ImageTextureLoaderManager.trim = true
 		SaveAndLoad.load_file(get_parent().model_path)
+	elif get_parent().current_state == get_parent().State.ImportPSD:
+		ImageTextureLoaderManager.trim = true
+		SaveAndLoad.load_images_from_psd(get_parent().psd_path)
 	else:
 		ImageTextureLoaderManager.trim = true
 		get_parent().import_objects()
@@ -187,6 +190,9 @@ func _on_confirm_trim_canceled() -> void:
 	elif get_parent().current_state == get_parent().State.LoadFile:
 		ImageTextureLoaderManager.trim = false
 		SaveAndLoad.load_file(get_parent().model_path)
+	elif get_parent().current_state == get_parent().State.ImportPSD:
+		ImageTextureLoaderManager.trim = false
+		SaveAndLoad.load_images_from_psd(get_parent().psd_path)
 	else:
 		ImageTextureLoaderManager.trim = false
 		get_parent().import_objects()
