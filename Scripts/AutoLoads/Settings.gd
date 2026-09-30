@@ -310,7 +310,10 @@ func toggle_borders():
 		get_window().size = s
 	save()
 
-func _input(_event: InputEvent) -> void:
+func _process(_delta: float) -> void:
+	# Polled in _process instead of _input: while the settings popup (or any dialog
+	# that lives in its own OS window) holds keyboard focus, this node's viewport
+	# receives no key events at all, so an _input handler would never run.
 	if Input.is_action_just_pressed("toggle_borders"):
 		toggle_borders()
 	if Input.is_action_just_pressed("center_screen"):
