@@ -75,8 +75,11 @@ func _physics_process(delta: float) -> void:
 	if actor.get_value("static_obj") and not actor.dragging:
 		apply_static_object_pin.call_deferred()
 
-	placeholder_position = modifier1_node.position
-	applied_pos =  placeholder_position
+	# applied_pos carries only the wobble and the drag lag. %Modifier1 already applies the
+	# follow offset -- %Modifier is its descendant, so the sprite gets it structurally --
+	# and seeding it here used to count that offset a second time (measured: the follow
+	# range came out 2x the configured range, 3x once dragSpeed > 0).
+	applied_pos = Vector2.ZERO
 
 	if Global.static_view:
 		static_prev()
@@ -127,7 +130,10 @@ func _physics_process(delta: float) -> void:
 		# %Rotation's IK look-at nor %Modifier1's follow rotation steers the motion)
 		# or as a %Rotation-local offset (merged behaviour, follows the sprite's rotation).
 		if actor.get_value("world_axis_movement"):
-			var world_pos: Vector2 = modifier1_node.global_position + (final_position - modifier1_node.position)
+			# applied_pos no longer contains the follow offset, so it is added as-is here
+			# (subtracting modifier1_node.position used to strip that offset back out; with
+			# the new meaning it would strip it twice and flip the sprite to -f).
+			var world_pos: Vector2 = modifier1_node.global_position + final_position
 			if not modifier_node.global_position.is_equal_approx(world_pos):
 				modifier_node.global_position = world_pos
 		elif not modifier_node.position.is_equal_approx(final_position):
@@ -352,7 +358,11 @@ func add_parent_physics(length : float) -> float:
 
 func drag(_delta : float, p_carry_anchor : bool = false) -> void:
 	var drag_speed = actor.get_value("dragSpeed")
-	var target = modifier_node.global_position + last_wobble_pos
+	# Chase the anchor, not the modifier: the modifier's own position is what this function
+	# writes, so a modifier-based target feeds the result back into itself. That extra loop
+	# both inflated the settled offset and damped the tracking to half the rate 1/dragSpeed
+	# implies (measured: the lag collapsed to ~0.5x, and the rotation with it).
+	var target = modifier1_node.global_position + last_wobble_pos
 	if drag_speed > 0:
 		var t = 1.0 / drag_speed
 		# The dragger is a world-space point, while with physics off the lag is measured in
@@ -368,7 +378,9 @@ func drag(_delta : float, p_carry_anchor : bool = false) -> void:
 		var next: Vector2 = from.lerp(target, t)
 		if not dragger.global_position.is_equal_approx(next):
 			dragger.global_position = next
-		applied_pos = applied_pos.lerp(actor.to_local(dragger.global_position), 0.5)
+		# applied_pos = dragger - anchor, so the sprite lands exactly where the trailing
+		# dragger is (the anchor part is already applied by %Modifier1 above).
+		applied_pos = applied_pos.lerp(actor.to_local(dragger.global_position) - modifier1_node.position, 0.5)
 	elif not dragger.global_position.is_equal_approx(target):
 		dragger.global_position = target
 
