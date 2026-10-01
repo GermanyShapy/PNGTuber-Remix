@@ -455,7 +455,11 @@ func reset_animations(_place_holder : int = 0, force : bool = false):
 	# sheet is never reset on show, so rapid re-presses keep the cycle running
 	# instead of pinning it on frame 0. Signal-driven calls pass false, keeping
 	# the frame==last guard for a sheet that is still playing.
-	if force or (actor.get_value("one_shot") and actor.sprite_object.frame == (actor.get_value("hframes")*actor.get_value("vframes") -1)):
+	# Only framed sprites expose `frame`: a wiggle/appendage actor binds a Line2D, and
+	# reading .frame there threw on every state switch. A type check is a pointer
+	# comparison, where `"frame" in node` would resolve a property by name on each call.
+	var framed = actor.sprite_object
+	if force or (actor.get_value("one_shot") and framed is Sprite2D and framed.frame == (actor.get_value("hframes")*actor.get_value("vframes") -1)):
 		reset_anim()
 
 	if actor.get_value("should_reset"):
