@@ -50,11 +50,13 @@ var applied_pos_offset : Vector2 = Vector2.ZERO
 var modifier_global : Vector2 =  Vector2.ZERO
 var yvel : float = 0.0
 
-# %Modifier1's global transform from the previous physics frame, plus that frame's
-# number. With "Enable Physics" off the lag is measured as the difference of two
+# %Modifier1's inverse global transform from the previous physics frame, plus that
+# frame's number. With "Enable Physics" off the lag is measured as the difference of two
 # samples taken in their own anchor frames, so a parent's motion drops out instead of
-# being baked into the lag that drives the rotation and the stretch.
-var prev_modifier1_global : Transform2D = Transform2D.IDENTITY
+# being baked into the lag that drives the rotation and the stretch. The inverse (rather
+# than the transform itself) is what both the measurement and the drag carry need, so
+# storing it also saves a second affine_inverse per anchor frame.
+var prev_modifier1_inv : Transform2D = Transform2D.IDENTITY
 var prev_modifier1_frame : int = -1
 
 func _ready() -> void:
@@ -228,9 +230,14 @@ func movements(delta: float) -> void:
 	glob = dragger.global_position
 	apply_recursive_look_at_chain(actor)
 	wobble(delta)
-	drag(delta)
 
 	var physics_on : bool = actor.get_value("physics")
+	# A previous anchor frame is only usable while the frames are contiguous: after a
+	# rest / static-view gap the stored one is stale, so neither the carry nor the
+	# differential may use it.
+	var anchor_ready : bool = !physics_on and prev_modifier1_frame == Engine.get_physics_frames() - 1
+	drag(delta, anchor_ready)
+
 	# This pre-compensation shifts the previous sample in world space. With physics off
 	# the hop is already inside %Modifier1's frame differential, so applying it a second
 	# time would bring the very motion we are dropping straight back (measured: a leak
@@ -247,15 +254,13 @@ func movements(delta: float) -> void:
 		# One shared frame cancels nothing at all (measured 800 px vs the 123 px above),
 		# so the two frames must stay different on purpose.
 		var m1 : Transform2D = modifier1_node.global_transform
-		var frame : int = Engine.get_physics_frames()
-		if prev_modifier1_frame != frame - 1:
-			# First active frame after a gap (rest / static view): no usable previous
-			# sample, so start the lag at zero instead of measuring the whole gap as one.
-			l = Vector2.ZERO
+		var m1_inv : Transform2D = m1.affine_inverse()
+		if anchor_ready:
+			l = (prev_modifier1_inv * glob) - (m1_inv * dragger.global_position)
 		else:
-			l = (prev_modifier1_global.affine_inverse() * glob) - (m1.affine_inverse() * dragger.global_position)
-		prev_modifier1_global = m1
-		prev_modifier1_frame = frame
+			l = Vector2.ZERO
+		prev_modifier1_inv = m1_inv
+		prev_modifier1_frame = Engine.get_physics_frames()
 	var length : float = l.y + l.x
 	length = add_parent_physics(length)
 	calc_length = length
@@ -345,12 +350,22 @@ func add_parent_physics(length : float) -> float:
 			pass
 	return leng
 
-func drag(_delta : float):
+func drag(_delta : float, p_carry_anchor : bool = false) -> void:
 	var drag_speed = actor.get_value("dragSpeed")
 	var target = modifier_node.global_position + last_wobble_pos
 	if drag_speed > 0:
 		var t = 1.0 / drag_speed
-		var next: Vector2 = dragger.global_position.lerp(target, t)
+		# The dragger is a world-space point, while with physics off the lag is measured in
+		# %Modifier1's frame -- so the drag state has to be carried by the anchor's own
+		# per-frame motion first. Without the carry the world-space lerp keeps re-injecting
+		# that motion as a standing (dragSpeed - 1) * anchor step, and the frame-to-frame
+		# variation of that standing lag is exactly the residual the frame differential
+		# cannot remove (measured: 36.6 px of lag for a 34.9 px anchor step on a 200 px /
+		# 0.6 s circle, i.e. the residual was one frame of parent motion).
+		var from : Vector2 = dragger.global_position
+		if p_carry_anchor:
+			from = modifier1_node.global_transform * (prev_modifier1_inv * from)
+		var next: Vector2 = from.lerp(target, t)
 		if not dragger.global_position.is_equal_approx(next):
 			dragger.global_position = next
 		applied_pos = applied_pos.lerp(actor.to_local(dragger.global_position), 0.5)
