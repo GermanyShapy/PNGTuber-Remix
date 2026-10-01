@@ -75,13 +75,33 @@ func _physics_process(delta: float) -> void:
 	if actor.get_value("static_obj") and not actor.dragging:
 		apply_static_object_pin.call_deferred()
 
+	# Sleeping (rest_mode 2/3/6 while out of the tree) pauses the movement: applied_pos is
+	# not rebuilt and no movement code runs, so the member state and the node transforms
+	# simply keep what the last awake frame left -- that is what makes the sprite come back
+	# looking the same instead of flashing to the neutral pose. Relies on nothing else
+	# writing applied_pos / %Modifier while a sprite rests.
+	var sleeping : bool = !Global.static_view and actor.is_rest \
+		and (actor.rest_mode == 2 or actor.rest_mode == 3 or actor.rest_mode == 6)
 	# applied_pos carries only the wobble and the drag lag. %Modifier1 already applies the
 	# follow offset -- %Modifier is its descendant, so the sprite gets it structurally --
 	# and seeding it here used to count that offset a second time (measured: the follow
 	# range came out 2x the configured range, 3x once dragSpeed > 0).
-	applied_pos = Vector2.ZERO
-
-	if Global.static_view:
+	if !sleeping:
+		applied_pos = Vector2.ZERO
+	if sleeping:
+		# rest_mode 6 ("sleep and reset") asks for the neutral pose instead of a hold, so it
+		# clears the motion state and writes all three transforms back to neutral here
+		# (stretch() is the only writer of the scale and it does not run while sleeping).
+		if actor.rest_mode == 6:
+			last_wobble_pos = Vector2.ZERO
+			paused_wobble = Vector2.ZERO
+			paused_rotation = 0.0
+			should_rot_rotation = 0.0
+			applied_pos = Vector2.ZERO
+			applied_rotation = 0.0
+			if not modifier_node.scale.is_equal_approx(Vector2.ONE):
+				modifier_node.scale = Vector2.ONE
+	elif Global.static_view:
 		static_prev()
 	elif actor.rest_mode in [4,7]:	# Disable
 		# Same per-tick cost rule as below: compare before writing.
@@ -96,11 +116,8 @@ func _physics_process(delta: float) -> void:
 			sprite_node.self_modulate = tint
 		return
 	elif (actor.rest_mode in [2,3,6]) && actor.is_rest:
-		if actor.rest_mode == 6:
-			last_wobble_pos = Vector2.ZERO
-			paused_wobble = Vector2.ZERO
-			paused_rotation = 0.0
-			should_rot_rotation = 0.0
+		# Unreachable: the sleeping branch above covers these three modes. Kept so the
+		# intent of the resting update stays readable if the pause is ever rolled back.
 		rest_mode_movements(delta)
 	else:	# Active movements
 		if actor.get_value("should_rotate"):
