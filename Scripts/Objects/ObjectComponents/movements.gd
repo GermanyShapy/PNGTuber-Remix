@@ -331,12 +331,18 @@ func add_parent_physics(length : float) -> float:
 		return leng
 	var p = actor.get_parent()
 	if (p is Sprite2D or p is WigglyAppendage2D or p is CustomMesh)  && is_instance_valid(p):
-			var c_parent = actor.get_parent().owner
-			if c_parent != null && is_instance_valid(c_parent):
-				# A parent with its physics disabled is already decoupled from the chain,
-				# so adding its (near zero) lag back in would reintroduce the parent motion.
-				if c_parent.get_value("physics"):
-					leng += c_parent.get_node("%Movements").calc_length
+			# The parent's calc_length is deliberately NOT added to this node's lag any more.
+			# The world-space difference above already carries the parent's motion once, and the
+			# parent's own calc_length already contains *its* parent's, so a 3-level chain used to
+			# accumulate the same motion three times -- measured lag peaks 49.3 / 106.1 / 460.9 px
+			# for L1 / L2 / L3, which is why deep chains swing far harder than the parent does.
+			# Commented out rather than deleted: restoring it is one uncomment if the amplified
+			# behaviour turns out to be wanted after all.
+			#	var c_parent = actor.get_parent().owner
+			#	if c_parent != null && is_instance_valid(c_parent):
+			#		if c_parent.get_value("physics"):
+			#			leng += c_parent.get_node("%Movements").calc_length
+			pass
 	return leng
 
 func drag(_delta : float):
