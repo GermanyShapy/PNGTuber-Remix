@@ -50,6 +50,13 @@ var applied_pos_offset : Vector2 = Vector2.ZERO
 var modifier_global : Vector2 =  Vector2.ZERO
 var yvel : float = 0.0
 
+# %Modifier1's global transform from the previous physics frame, plus that frame's
+# number. With "Enable Physics" off the lag is measured as the difference of two
+# samples taken in their own anchor frames, so a parent's motion drops out instead of
+# being baked into the lag that drives the rotation and the stretch.
+var prev_modifier1_global : Transform2D = Transform2D.IDENTITY
+var prev_modifier1_frame : int = -1
+
 func _ready() -> void:
 	placeholder_position = actor.global_position
 	applied_pos = placeholder_position
@@ -223,9 +230,32 @@ func movements(delta: float) -> void:
 	wobble(delta)
 	drag(delta)
 
-	if actor.get_value("ignore_bounce") && !actor.get_value("static_obj"):
+	var physics_on : bool = actor.get_value("physics")
+	# This pre-compensation shifts the previous sample in world space. With physics off
+	# the hop is already inside %Modifier1's frame differential, so applying it a second
+	# time would bring the very motion we are dropping straight back (measured: a leak
+	# equal to the container's per-frame displacement).
+	if actor.get_value("ignore_bounce") && !actor.get_value("static_obj") && physics_on:
 		glob -= Vector2(0.0, Global.sprite_container.bounceChange)
-	var l = glob - dragger.global_position
+
+	var l : Vector2
+	if physics_on:
+		l = glob - dragger.global_position
+	else:
+		# Both samples are read in %Modifier1's frame *at the time each was taken*, so a
+		# parent's per-frame displacement cancels out instead of being baked into the lag.
+		# One shared frame cancels nothing at all (measured 800 px vs the 123 px above),
+		# so the two frames must stay different on purpose.
+		var m1 : Transform2D = modifier1_node.global_transform
+		var frame : int = Engine.get_physics_frames()
+		if prev_modifier1_frame != frame - 1:
+			# First active frame after a gap (rest / static view): no usable previous
+			# sample, so start the lag at zero instead of measuring the whole gap as one.
+			l = Vector2.ZERO
+		else:
+			l = (prev_modifier1_global.affine_inverse() * glob) - (m1.affine_inverse() * dragger.global_position)
+		prev_modifier1_global = m1
+		prev_modifier1_frame = frame
 	var length : float = l.y + l.x
 	length = add_parent_physics(length)
 	calc_length = length
@@ -303,7 +333,10 @@ func add_parent_physics(length : float) -> float:
 	if (p is Sprite2D or p is WigglyAppendage2D or p is CustomMesh)  && is_instance_valid(p):
 			var c_parent = actor.get_parent().owner
 			if c_parent != null && is_instance_valid(c_parent):
-				leng += c_parent.get_node("%Movements").calc_length
+				# A parent with its physics disabled is already decoupled from the chain,
+				# so adding its (near zero) lag back in would reintroduce the parent motion.
+				if c_parent.get_value("physics"):
+					leng += c_parent.get_node("%Movements").calc_length
 	return leng
 
 func drag(_delta : float):
