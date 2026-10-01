@@ -352,11 +352,17 @@ func rotational_drag(length, delta: float):
 
 	var final_last_rot : float = clamp(last_rot, min_rot, max_rot)
 
-	applied_rotation = lerp_angle(applied_rotation, final_last_rot, 0.15)
 	yvel = ((length * rdrag_str))*(actor.get_value("phys_eff")/200.0)
 
-	yvel = clamp(yvel,min_rot, max_rot)
-	applied_rotation = lerp_angle(applied_rotation,deg_to_rad(yvel),0.15)
+	# yvel is in degrees here, so clamp with the degree limits (radians capped it at ~3 deg).
+	yvel = clamp(yvel, actor.get_value("rLimitMin"), actor.get_value("rLimitMax"))
+
+	# Two chained lerps only ever reached ~54% of a single target, which made the
+	# limits unreachable; blend both targets once and clamp the sum instead.
+	var target_rot : float = clamp(final_last_rot + deg_to_rad(yvel), min_rot, max_rot)
+	# At the +/-180 antipode the shortest-path choice is arbitrary, so the state
+	# used to drift around the circle (measured -442 deg); fold it back into range.
+	applied_rotation = wrapf(lerp_angle(applied_rotation, target_rot, 0.15), -PI, PI)
 
 func stretch(length : float) -> void:
 	var syvel : float = (length * actor.get_value("stretchAmount") * 0.01)* (actor.get_value("phys_eff")/200.0)
