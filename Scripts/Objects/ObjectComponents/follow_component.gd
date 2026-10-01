@@ -62,9 +62,10 @@ func _physics_process(delta: float) -> void:
 	if actor.rest_mode in [5,7]:
 		reset_modifier()
 		return
-	if actor.rest_mode in [1,3] and actor.is_rest:
-		reset_modifier()
-	else:
+	# 休眠跟随 / 休眠两者: hold the last followed offset while the sprite rests, so it
+	# wakes up where it was instead of flashing back to the rest position. rest_mode 5/7
+	# above still snaps back -- those two modes mean "disabled", not "asleep".
+	if !(actor.rest_mode in [1,3] and actor.is_rest):
 		process_follow(delta)
 		mouse_coords = follow_calculation()
 

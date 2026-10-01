@@ -30,9 +30,9 @@ func _physics_process(delta: float) -> void:
 	if actor.rest_mode in [5,7]:
 		reset_modifier()
 		return
-	if actor.rest_mode in [1,3] and actor.is_rest:
-		reset_modifier()
-	else:
+	# 休眠跟随 / 休眠两者: hold the last followed scale while the sprite rests (see
+	# follow_component.gd); rest_mode 5/7 above still snaps back.
+	if !(actor.rest_mode in [1,3] and actor.is_rest):
 		update_controller_inputs()
 		update_scale(delta)
 
