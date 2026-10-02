@@ -408,13 +408,20 @@ func rotational_drag(length, delta: float):
 	var target_rot : float = final_last_rot + deg_to_rad(yvel)
 	if !free_wind:
 		target_rot = clampf(target_rot, min_rot, max_rot)
-	# Fold the state back into range: at the antipode the shortest path is arbitrary.
-	# Stay on lerp_angle. It only ever walks the short way, so a frame can never move more than
-	# PI * weight -- that bound is the whole reason the rotation reads as continuous. Forcing a
-	# direction on top of an already wrapped state instead injects a whole turn the moment the
-	# state happens to sit on the target modulo TAU, which whips the sprite around at twice the
-	# bound. See .ai/docs/90-坑/07-GDScript与数据驱动.md #42.
-	applied_rotation = wrapf(lerp_angle(applied_rotation, target_rot, 0.15), -PI, PI)
+	# Follow the target without folding the state back and without the shortest path.
+	# lerp_angle walks the short way, so the moment the target passes 180 deg the short way
+	# flips and a sweep in the drive's direction comes out as a full turn the other way -- the
+	# exact thing R2 asks for ("past 180, come back from the other side"). A plain follow keeps
+	# the drive's direction and returns the way it came; because the state keeps its winding it
+	# also comes back to rest by the short way, which is what reads as natural.
+	# The state cannot run away: target_rot is a function of the instantaneous lag, so it goes
+	# back to 0 and the state follows it there.
+	# Cap the step at PI * weight -- the same bound the shortest path used to give for free.
+	# It only bites when the gap is more than half a turn, i.e. exactly when the old code would
+	# have flipped direction; a smaller gap is unaffected, so ordinary tracking is unchanged.
+	# See .ai/docs/90-坑/07-GDScript与数据驱动.md #44.
+	var rot_step : float = clampf((target_rot - applied_rotation) * 0.15, -PI * 0.15, PI * 0.15)
+	applied_rotation += rot_step
 
 func stretch(length : float) -> void:
 	var syvel : float = (length * actor.get_value("stretchAmount") * 0.01)* (actor.get_value("phys_eff")/200.0)
