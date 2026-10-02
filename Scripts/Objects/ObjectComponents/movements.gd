@@ -15,8 +15,6 @@ var applied_scale : Vector2 = Vector2.ONE
 
 var hit_rotation : float = 0.0
 
-var placeholder_position : Vector2 = Vector2.ZERO
-
 var last_wobble_pos : Vector2 = Vector2.ZERO
 var glob : Vector2 = Vector2.ZERO
 
@@ -57,9 +55,9 @@ var prev_modifier1_inv : Transform2D = Transform2D.IDENTITY
 var prev_modifier1_frame : int = -1
 
 func _ready() -> void:
-	placeholder_position = actor.global_position
-	applied_pos = placeholder_position
-	glob = placeholder_position
+	var initial_pos : Vector2 = actor.global_position
+	applied_pos = initial_pos
+	glob = initial_pos
 	await get_tree().create_timer(0.025).timeout
 	ik_smoothed_rot = modifier1_node.global_rotation
 	last_modifier_position = sprite_node.global_position
@@ -113,9 +111,6 @@ func _physics_process(delta: float) -> void:
 		if not sprite_node.self_modulate.is_equal_approx(tint):
 			sprite_node.self_modulate = tint
 		return
-	elif (actor.rest_mode in [2,3,6]) && actor.is_rest:
-		# unreachable while the sleeping branch above covers these modes; kept for rollback.
-		rest_mode_movements(delta)
 	else:	# Active movements
 		if actor.get_value("should_rotate"):
 			auto_rotate()
@@ -332,18 +327,6 @@ func apply_look_at_ik(target_pos: Vector2, rotation_node : Node2D) -> void:
 	target_angle_global = wrapf(target_angle_global, -PI, PI)
 	target_angle_global = clamp(target_angle_global, rot_min, rot_max)
 	rotation_node.global_rotation = lerp_angle(rotation_node.global_rotation,target_angle_global,lerp_amount)
-
-func rest_mode_movements(delta : float) -> void:
-	glob = dragger.global_position
-	drag(delta)
-	if !actor.get_value("ignore_bounce"):
-		glob -= Vector2(Global.sprite_container.bounceChange, Global.sprite_container.bounceChange)
-	var l = Vector2(glob - dragger.global_position)
-	var l_norm = l.normalized()
-	var length : float = l_norm.length() * (l.x - l.y)
-	length = add_parent_physics(length)
-	rotational_drag(length, delta)
-	stretch(length)
 
 func add_parent_physics(length : float) -> float:
 	var leng = length
