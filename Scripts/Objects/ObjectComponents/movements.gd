@@ -50,12 +50,9 @@ var applied_pos_offset : Vector2 = Vector2.ZERO
 var modifier_global : Vector2 =  Vector2.ZERO
 var yvel : float = 0.0
 
-# %Modifier1's inverse global transform from the previous physics frame, plus that
-# frame's number. With "Enable Physics" off the lag is measured as the difference of two
-# samples taken in their own anchor frames, so a parent's motion drops out instead of
-# being baked into the lag that drives the rotation and the stretch. The inverse (rather
-# than the transform itself) is what both the measurement and the drag carry need, so
-# storing it also saves a second affine_inverse per anchor frame.
+# %Modifier1's inverse global transform (and frame number) from the previous physics frame.
+# With physics off the lag is two samples taken in their own anchor frames, so a parent's
+# motion cancels; the inverse serves both that measurement and the drag carry.
 var prev_modifier1_inv : Transform2D = Transform2D.IDENTITY
 var prev_modifier1_frame : int = -1
 
@@ -75,36 +72,26 @@ func _physics_process(delta: float) -> void:
 	if actor.get_value("static_obj") and not actor.dragging:
 		apply_static_object_pin.call_deferred()
 
-	# Sleeping (rest_mode 2/3/6 while out of the tree) pauses the movement: applied_pos is
-	# not rebuilt and no movement code runs, so the member state and the node transforms
-	# simply keep what the last awake frame left -- that is what makes the sprite come back
-	# looking the same instead of flashing to the neutral pose. Relies on nothing else
-	# writing applied_pos / %Modifier while a sprite rests.
+	# Sleeping (rest_mode 2/3/6 out of the tree) pauses the movement: nothing is rebuilt, so the
+	# state and the node transforms keep what the last awake frame left. Nothing else may write
+	# applied_pos / %Modifier while a sprite rests.
 	var sleeping : bool = !Global.static_view and actor.is_rest \
 		and (actor.rest_mode == 2 or actor.rest_mode == 3 or actor.rest_mode == 6)
-	# applied_pos carries only the wobble and the drag lag. %Modifier1 already applies the
-	# follow offset -- %Modifier is its descendant, so the sprite gets it structurally --
-	# and seeding it here used to count that offset a second time (measured: the follow
-	# range came out 2x the configured range, 3x once dragSpeed > 0).
+	# applied_pos holds only the wobble and the drag lag; %Modifier1 already applies the follow
+	# offset, and seeding it here counted it twice (2x the range, 3x with dragSpeed > 0).
 	if !sleeping:
 		applied_pos = Vector2.ZERO
 	if sleeping:
-		# rest_mode 6 ("sleep and reset") asks for the neutral pose instead of a hold, so it
-		# clears the motion state and writes all three transforms back to neutral here
-		# (stretch() is the only writer of the scale and it does not run while sleeping).
+		# rest_mode 6 ("sleep and reset"): neutral pose + cleared state instead of a hold.
 		if actor.rest_mode == 6:
 			last_wobble_pos = Vector2.ZERO
 			paused_wobble = Vector2.ZERO
-			# The rotation sine is phase-referenced to Global.tick, so the phase only restarts
-			# from zero when the offset is set to the clock's current value -- zeroing it (it is
-			# already zero in normal running) left the rotation resuming at whatever phase the
-			# global clock happened to be at, i.e. the "sleep and reset keeps a rotation residue"
-			# report. The wobble needs no such trick: paused_wobble is its own accumulator.
+			# The rotation sine is referenced to Global.tick, so the phase only restarts from zero
+			# by setting this to the clock (zeroing it is a no-op -> the wake residue report).
 			paused_rotation = Global.tick
 			should_rot_rotation = 0.0
-		# The drag pointer is left behind while the sprite is parked (no drag() runs), and a
-		# stale one makes the first frame after waking measure the whole parked distance as lag
-		# -- that is the rotation kick on waking. Park it with the sprite instead.
+		# Park the dragger too: a stale one makes the first awake frame read the parked distance
+		# as lag (+14.2 deg kick).
 		if not dragger.global_position.is_equal_approx(modifier_node.global_position):
 			dragger.global_position = modifier_node.global_position
 			applied_pos = Vector2.ZERO
@@ -126,8 +113,7 @@ func _physics_process(delta: float) -> void:
 			sprite_node.self_modulate = tint
 		return
 	elif (actor.rest_mode in [2,3,6]) && actor.is_rest:
-		# Unreachable: the sleeping branch above covers these three modes. Kept so the
-		# intent of the resting update stays readable if the pause is ever rolled back.
+		# unreachable while the sleeping branch above covers these modes; kept for rollback.
 		rest_mode_movements(delta)
 	else:	# Active movements
 		if actor.get_value("should_rotate"):
@@ -157,9 +143,8 @@ func _physics_process(delta: float) -> void:
 		# %Rotation's IK look-at nor %Modifier1's follow rotation steers the motion)
 		# or as a %Rotation-local offset (merged behaviour, follows the sprite's rotation).
 		if actor.get_value("world_axis_movement"):
-			# applied_pos no longer contains the follow offset, so it is added as-is here
-			# (subtracting modifier1_node.position used to strip that offset back out; with
-			# the new meaning it would strip it twice and flip the sprite to -f).
+			# applied_pos no longer holds the follow offset: subtracting modifier1_node.position
+			# here would strip it twice and flip the sprite to -f.
 			var world_pos: Vector2 = modifier1_node.global_position + final_position
 			if not modifier_node.global_position.is_equal_approx(world_pos):
 				modifier_node.global_position = world_pos
@@ -265,16 +250,13 @@ func movements(delta: float) -> void:
 	wobble(delta)
 
 	var physics_on : bool = actor.get_value("physics")
-	# A previous anchor frame is only usable while the frames are contiguous: after a
-	# rest / static-view gap the stored one is stale, so neither the carry nor the
-	# differential may use it.
+	# A previous anchor frame is usable only while frames are contiguous: after a rest /
+	# static-view gap it is stale, so neither the carry nor the differential may use it.
 	var anchor_ready : bool = !physics_on and prev_modifier1_frame == Engine.get_physics_frames() - 1
 	drag(delta, anchor_ready)
 
-	# This pre-compensation shifts the previous sample in world space. With physics off
-	# the hop is already inside %Modifier1's frame differential, so applying it a second
-	# time would bring the very motion we are dropping straight back (measured: a leak
-	# equal to the container's per-frame displacement).
+	# This pre-compensation moves the previous sample in world space; with physics off the hop is
+	# already inside the frame differential, so applying it again re-injects the dropped motion.
 	if actor.get_value("ignore_bounce") && !actor.get_value("static_obj") && physics_on:
 		glob -= Vector2(0.0, Global.sprite_container.bounceChange)
 
@@ -282,10 +264,9 @@ func movements(delta: float) -> void:
 	if physics_on:
 		l = glob - dragger.global_position
 	else:
-		# Both samples are read in %Modifier1's frame *at the time each was taken*, so a
-		# parent's per-frame displacement cancels out instead of being baked into the lag.
-		# One shared frame cancels nothing at all (measured 800 px vs the 123 px above),
-		# so the two frames must stay different on purpose.
+		# Both samples are read in %Modifier1's frame at the time each was taken, so a parent's
+		# displacement cancels; one shared frame cancels nothing (800 px vs 123 px). The two
+		# frames must stay different on purpose.
 		var m1 : Transform2D = modifier1_node.global_transform
 		var m1_inv : Transform2D = m1.affine_inverse()
 		if anchor_ready:
@@ -369,13 +350,10 @@ func add_parent_physics(length : float) -> float:
 		return leng
 	var p = actor.get_parent()
 	if (p is Sprite2D or p is WigglyAppendage2D or p is CustomMesh)  && is_instance_valid(p):
-			# The parent's calc_length is deliberately NOT added to this node's lag any more.
-			# The world-space difference above already carries the parent's motion once, and the
-			# parent's own calc_length already contains *its* parent's, so a 3-level chain used to
-			# accumulate the same motion three times -- measured lag peaks 49.3 / 106.1 / 460.9 px
-			# for L1 / L2 / L3, which is why deep chains swing far harder than the parent does.
-			# Commented out rather than deleted: restoring it is one uncomment if the amplified
-			# behaviour turns out to be wanted after all.
+			# The parent's calc_length is deliberately NOT added any more: the world difference
+			# above already carries the parent's motion once, and the parent's own value contains
+			# *its* parent's, so a 3-level chain accumulated it three times (49.3 / 106.1 / 460.9).
+			# Commented out rather than deleted: one uncomment restores the old behaviour.
 			#	var c_parent = actor.get_parent().owner
 			#	if c_parent != null && is_instance_valid(c_parent):
 			#		if c_parent.get_value("physics"):
@@ -385,28 +363,21 @@ func add_parent_physics(length : float) -> float:
 
 func drag(_delta : float, p_carry_anchor : bool = false) -> void:
 	var drag_speed = actor.get_value("dragSpeed")
-	# Chase the anchor, not the modifier: the modifier's own position is what this function
-	# writes, so a modifier-based target feeds the result back into itself. That extra loop
-	# both inflated the settled offset and damped the tracking to half the rate 1/dragSpeed
-	# implies (measured: the lag collapsed to ~0.5x, and the rotation with it).
+	# Chase the anchor, not the modifier: the modifier is what this function writes, so a
+	# modifier-based target fed back into itself (inflated offset, half the tracking rate).
 	var target = modifier1_node.global_position + last_wobble_pos
 	if drag_speed > 0:
 		var t = 1.0 / drag_speed
-		# The dragger is a world-space point, while with physics off the lag is measured in
-		# %Modifier1's frame -- so the drag state has to be carried by the anchor's own
-		# per-frame motion first. Without the carry the world-space lerp keeps re-injecting
-		# that motion as a standing (dragSpeed - 1) * anchor step, and the frame-to-frame
-		# variation of that standing lag is exactly the residual the frame differential
-		# cannot remove (measured: 36.6 px of lag for a 34.9 px anchor step on a 200 px /
-		# 0.6 s circle, i.e. the residual was one frame of parent motion).
+		# The dragger is world-space while with physics off the lag is measured in %Modifier1's
+		# frame, so carry the state by the anchor's delta first -- without it the lerp re-injects
+		# it as a standing (dragSpeed-1) * anchor step (36.6 px lag for a 34.9 px step).
 		var from : Vector2 = dragger.global_position
 		if p_carry_anchor:
 			from = modifier1_node.global_transform * (prev_modifier1_inv * from)
 		var next: Vector2 = from.lerp(target, t)
 		if not dragger.global_position.is_equal_approx(next):
 			dragger.global_position = next
-		# applied_pos = dragger - anchor, so the sprite lands exactly where the trailing
-		# dragger is (the anchor part is already applied by %Modifier1 above).
+		# applied_pos = dragger - anchor: the sprite lands on the trailing dragger.
 		applied_pos = applied_pos.lerp(actor.to_local(dragger.global_position) - modifier1_node.position, 0.5)
 	elif not dragger.global_position.is_equal_approx(target):
 		dragger.global_position = target
@@ -448,24 +419,21 @@ func rotational_drag(length, delta: float):
 	yvel = ((length * rdrag_str))*(actor.get_value("phys_eff")/200.0)
 
 	# yvel is in degrees here, so limit in degrees (radians capped it at ~3 deg).
-	# +/-180 is the natural wrap point of a 2D rotation, so with both limits on it the drag is
-	# allowed up to a full turn and the rotation simply crosses 180 -- clamping the target there
-	# pinned it to the antipode, and the sprite parked on it (measured: 40 frames at 180.0 deg
-	# while the parent had already reversed). A smaller limit still clamps exactly.
+	# With both limits on +/-180 (the natural wrap point) the drag gets a full turn instead:
+	# clamping the target pinned it to the antipode and the sprite parked there (40 frames at
+	# 180 deg after the parent had reversed). A smaller limit still clamps exactly.
 	var lmin : float = actor.get_value("rLimitMin")
 	var lmax : float = actor.get_value("rLimitMax")
-	# Exact compares on purpose: the limits come from integer sliders, and this runs every
-	# frame -- two is_equal_approx calls cost ~1.5 us/call in GDScript (measured).
+	# Exact compares: integer sliders, runs every frame (two is_equal_approx cost ~1.5 us/call).
 	var free_wind : bool = (lmin == -180.0) and (lmax == 180.0)
 	yvel = clampf(yvel, -360.0, 360.0) if free_wind else clampf(yvel, lmin, lmax)
 
-	# Two chained lerps only ever reached ~54% of a single target, which made the
-	# limits unreachable; blend both targets once and clamp the sum instead.
+	# Two chained lerps only reached ~54% of one target, so the limits were unreachable; blend
+	# both targets once instead.
 	var target_rot : float = final_last_rot + deg_to_rad(yvel)
 	if !free_wind:
 		target_rot = clampf(target_rot, min_rot, max_rot)
-	# At the +/-180 antipode the shortest-path choice is arbitrary, so the state
-	# used to drift around the circle (measured -442 deg); fold it back into range.
+	# Fold the state back into range: the antipode's shortest path is arbitrary (-442 deg drift).
 	applied_rotation = wrapf(lerp_angle(applied_rotation, target_rot, 0.15), -PI, PI)
 
 func stretch(length : float) -> void:
