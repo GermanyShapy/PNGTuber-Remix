@@ -398,30 +398,23 @@ func rotational_drag(length, delta: float):
 	# Exact compares on purpose: the limits come from integer sliders and this runs every frame.
 	var free_wind : bool = (lmin == -180.0) and (lmax == 180.0)
 
+	# With both limits on +/-180 the drag gets a full turn: the sum is only folded back into
+	# range on the way out, so a hard drag carries the sprite through the antipode instead of
+	# parking on it. A smaller limit still clamps exactly.
+	yvel = clampf(yvel, -360.0, 360.0) if free_wind else clampf(yvel, lmin, lmax)
+
 	# Two chained lerps never converge on a single target, which left the limits unreachable;
 	# blend both targets once instead.
-	var target_rot : float
+	var target_rot : float = final_last_rot + deg_to_rad(yvel)
 	if !free_wind:
-		# A smaller limit clamps exactly, and folding the state back into range is safe: at the
-		# antipode the shortest path is arbitrary.
-		yvel = clampf(yvel, lmin, lmax)
-		target_rot = clampf(final_last_rot + deg_to_rad(yvel), min_rot, max_rot)
-		applied_rotation = wrapf(lerp_angle(applied_rotation, target_rot, 0.15), -PI, PI)
-	else:
-		# With both limits on +/-180 the drag gets a full turn: clamping the target there pins it
-		# to the antipode and parks the sprite on it. Inside a half turn the shortest path already
-		# follows the sign of the target (sine-led or drag-led alike); past it, lerp_angle takes
-		# the short way back and reverses the sprite, so push the gap onto the target's side.
-		target_rot = final_last_rot + deg_to_rad(yvel)
-		if absf(target_rot) > PI:
-			var gap : float = wrapf(target_rot - applied_rotation, -PI, PI)
-			if target_rot > 0.0 and gap < 0.0:
-				gap += TAU
-			elif target_rot < 0.0 and gap > 0.0:
-				gap -= TAU
-			applied_rotation = wrapf(applied_rotation + gap * 0.15, -PI, PI)
-		else:
-			applied_rotation = wrapf(lerp_angle(applied_rotation, target_rot, 0.15), -PI, PI)
+		target_rot = clampf(target_rot, min_rot, max_rot)
+	# Fold the state back into range: at the antipode the shortest path is arbitrary.
+	# Stay on lerp_angle. It only ever walks the short way, so a frame can never move more than
+	# PI * weight -- that bound is the whole reason the rotation reads as continuous. Forcing a
+	# direction on top of an already wrapped state instead injects a whole turn the moment the
+	# state happens to sit on the target modulo TAU, which whips the sprite around at twice the
+	# bound. See .ai/docs/90-坑/07-GDScript与数据驱动.md #42.
+	applied_rotation = wrapf(lerp_angle(applied_rotation, target_rot, 0.15), -PI, PI)
 
 func stretch(length : float) -> void:
 	var syvel : float = (length * actor.get_value("stretchAmount") * 0.01)* (actor.get_value("phys_eff")/200.0)
