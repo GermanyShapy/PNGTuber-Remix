@@ -82,7 +82,8 @@ func _physics_process(delta: float) -> void:
 	if !sleeping:
 		applied_pos = Vector2.ZERO
 	if sleeping:
-		# rest_mode 6 ("sleep and reset"): neutral pose + cleared state instead of a hold.
+		# rest_mode 6 ("sleep and reset"): hold the neutral pose and clear the motion state, so
+		# waking rebuilds the motion from a clean slate instead of the pose frozen at sleep time.
 		if actor.rest_mode == 6:
 			last_wobble_pos = Vector2.ZERO
 			paused_wobble = Vector2.ZERO
@@ -90,14 +91,14 @@ func _physics_process(delta: float) -> void:
 			# by setting this to the clock (zeroing it is a no-op -> the wake residue report).
 			paused_rotation = Global.tick
 			should_rot_rotation = 0.0
-		# Park the dragger too: a stale one would make the first awake frame read the whole parked
-		# distance as lag.
-		if not dragger.global_position.is_equal_approx(modifier_node.global_position):
-			dragger.global_position = modifier_node.global_position
 			applied_pos = Vector2.ZERO
 			applied_rotation = 0.0
 			if not modifier_node.scale.is_equal_approx(Vector2.ONE):
 				modifier_node.scale = Vector2.ONE
+		# Park the dragger too: a stale one would make the first awake frame read the whole parked
+		# distance as lag.
+		if not dragger.global_position.is_equal_approx(modifier_node.global_position):
+			dragger.global_position = modifier_node.global_position
 	elif Global.static_view:
 		static_prev()
 	elif actor.rest_mode in [4,7]:	# Disable
