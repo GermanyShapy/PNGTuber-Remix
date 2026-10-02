@@ -95,8 +95,18 @@ func _physics_process(delta: float) -> void:
 		if actor.rest_mode == 6:
 			last_wobble_pos = Vector2.ZERO
 			paused_wobble = Vector2.ZERO
-			paused_rotation = 0.0
+			# The rotation sine is phase-referenced to Global.tick, so the phase only restarts
+			# from zero when the offset is set to the clock's current value -- zeroing it (it is
+			# already zero in normal running) left the rotation resuming at whatever phase the
+			# global clock happened to be at, i.e. the "sleep and reset keeps a rotation residue"
+			# report. The wobble needs no such trick: paused_wobble is its own accumulator.
+			paused_rotation = Global.tick
 			should_rot_rotation = 0.0
+		# The drag pointer is left behind while the sprite is parked (no drag() runs), and a
+		# stale one makes the first frame after waking measure the whole parked distance as lag
+		# -- that is the rotation kick on waking. Park it with the sprite instead.
+		if not dragger.global_position.is_equal_approx(modifier_node.global_position):
+			dragger.global_position = modifier_node.global_position
 			applied_pos = Vector2.ZERO
 			applied_rotation = 0.0
 			if not modifier_node.scale.is_equal_approx(Vector2.ONE):
