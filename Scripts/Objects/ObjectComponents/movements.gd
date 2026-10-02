@@ -329,21 +329,11 @@ func apply_look_at_ik(target_pos: Vector2, rotation_node : Node2D) -> void:
 	rotation_node.global_rotation = lerp_angle(rotation_node.global_rotation,target_angle_global,lerp_amount)
 
 func add_parent_physics(length : float) -> float:
-	var leng = length
-	if !actor.get_value("physics"):
-		return leng
-	var p = actor.get_parent()
-	if (p is Sprite2D or p is WigglyAppendage2D or p is CustomMesh)  && is_instance_valid(p):
-			# The parent's calc_length is deliberately NOT added any more: the world difference
-			# above already carries the parent's motion once, and the parent's own value contains
-			# *its* parent's, so a nested chain would accumulate the same motion level by level.
-			# Commented out rather than deleted: one uncomment restores the old behaviour.
-			#	var c_parent = actor.get_parent().owner
-			#	if c_parent != null && is_instance_valid(c_parent):
-			#		if c_parent.get_value("physics"):
-			#			leng += c_parent.get_node("%Movements").calc_length
-			pass
-	return leng
+	# The parent's calc_length is deliberately NOT added any more: the world difference
+	# already carries the parent's motion once, and the parent's own value contains *its*
+	# parent's, so a nested chain would accumulate the same motion level by level. Restoring
+	# the old behaviour means adding parent.owner's %Movements.calc_length back here.
+	return length
 
 func drag(_delta : float, p_carry_anchor : bool = false) -> void:
 	var drag_speed = actor.get_value("dragSpeed")
@@ -403,22 +393,35 @@ func rotational_drag(length, delta: float):
 	yvel = ((length * rdrag_str))*(actor.get_value("phys_eff")/200.0)
 
 	# yvel is in degrees here, so the limit has to be applied in degrees (radians capped it).
-	# With both limits on +/-180 (the natural wrap point) the drag gets a full turn instead:
-	# clamping the target there pins it to the antipode and parks the sprite on it. A smaller
-	# limit still clamps exactly.
 	var lmin : float = actor.get_value("rLimitMin")
 	var lmax : float = actor.get_value("rLimitMax")
 	# Exact compares on purpose: the limits come from integer sliders and this runs every frame.
 	var free_wind : bool = (lmin == -180.0) and (lmax == 180.0)
-	yvel = clampf(yvel, -360.0, 360.0) if free_wind else clampf(yvel, lmin, lmax)
 
 	# Two chained lerps never converge on a single target, which left the limits unreachable;
 	# blend both targets once instead.
-	var target_rot : float = final_last_rot + deg_to_rad(yvel)
+	var target_rot : float
 	if !free_wind:
-		target_rot = clampf(target_rot, min_rot, max_rot)
-	# Fold the state back into range: at the antipode the shortest path is arbitrary.
-	applied_rotation = wrapf(lerp_angle(applied_rotation, target_rot, 0.15), -PI, PI)
+		# A smaller limit clamps exactly, and folding the state back into range is safe: at the
+		# antipode the shortest path is arbitrary.
+		yvel = clampf(yvel, lmin, lmax)
+		target_rot = clampf(final_last_rot + deg_to_rad(yvel), min_rot, max_rot)
+		applied_rotation = wrapf(lerp_angle(applied_rotation, target_rot, 0.15), -PI, PI)
+	else:
+		# With both limits on +/-180 the drag gets a full turn: clamping the target there pins it
+		# to the antipode and parks the sprite on it. Inside a half turn the shortest path already
+		# follows the sign of the target (sine-led or drag-led alike); past it, lerp_angle takes
+		# the short way back and reverses the sprite, so push the gap onto the target's side.
+		target_rot = final_last_rot + deg_to_rad(yvel)
+		if absf(target_rot) > PI:
+			var gap : float = wrapf(target_rot - applied_rotation, -PI, PI)
+			if target_rot > 0.0 and gap < 0.0:
+				gap += TAU
+			elif target_rot < 0.0 and gap > 0.0:
+				gap -= TAU
+			applied_rotation = wrapf(applied_rotation + gap * 0.15, -PI, PI)
+		else:
+			applied_rotation = wrapf(lerp_angle(applied_rotation, target_rot, 0.15), -PI, PI)
 
 func stretch(length : float) -> void:
 	var syvel : float = (length * actor.get_value("stretchAmount") * 0.01)* (actor.get_value("phys_eff")/200.0)
