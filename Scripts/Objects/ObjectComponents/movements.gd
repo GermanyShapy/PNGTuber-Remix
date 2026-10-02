@@ -444,7 +444,9 @@ func rotational_drag(length, delta: float):
 	# while the parent had already reversed). A smaller limit still clamps exactly.
 	var lmin : float = actor.get_value("rLimitMin")
 	var lmax : float = actor.get_value("rLimitMax")
-	var free_wind : bool = is_equal_approx(lmin, -180.0) and is_equal_approx(lmax, 180.0)
+	# Exact compares on purpose: the limits come from integer sliders, and this runs every
+	# frame -- two is_equal_approx calls cost ~1.5 us/call in GDScript (measured).
+	var free_wind : bool = (lmin == -180.0) and (lmax == 180.0)
 	yvel = clampf(yvel, -360.0, 360.0) if free_wind else clampf(yvel, lmin, lmax)
 
 	# Two chained lerps only ever reached ~54% of a single target, which made the
