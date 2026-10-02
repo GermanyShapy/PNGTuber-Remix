@@ -437,12 +437,21 @@ func rotational_drag(length, delta: float):
 
 	yvel = ((length * rdrag_str))*(actor.get_value("phys_eff")/200.0)
 
-	# yvel is in degrees here, so clamp with the degree limits (radians capped it at ~3 deg).
-	yvel = clamp(yvel, actor.get_value("rLimitMin"), actor.get_value("rLimitMax"))
+	# yvel is in degrees here, so limit in degrees (radians capped it at ~3 deg).
+	# +/-180 is the natural wrap point of a 2D rotation, so with both limits on it the drag is
+	# allowed up to a full turn and the rotation simply crosses 180 -- clamping the target there
+	# pinned it to the antipode, and the sprite parked on it (measured: 40 frames at 180.0 deg
+	# while the parent had already reversed). A smaller limit still clamps exactly.
+	var lmin : float = actor.get_value("rLimitMin")
+	var lmax : float = actor.get_value("rLimitMax")
+	var free_wind : bool = is_equal_approx(lmin, -180.0) and is_equal_approx(lmax, 180.0)
+	yvel = clampf(yvel, -360.0, 360.0) if free_wind else clampf(yvel, lmin, lmax)
 
 	# Two chained lerps only ever reached ~54% of a single target, which made the
 	# limits unreachable; blend both targets once and clamp the sum instead.
-	var target_rot : float = clamp(final_last_rot + deg_to_rad(yvel), min_rot, max_rot)
+	var target_rot : float = final_last_rot + deg_to_rad(yvel)
+	if !free_wind:
+		target_rot = clampf(target_rot, min_rot, max_rot)
 	# At the +/-180 antipode the shortest-path choice is arbitrary, so the state
 	# used to drift around the circle (measured -442 deg); fold it back into range.
 	applied_rotation = wrapf(lerp_angle(applied_rotation, target_rot, 0.15), -PI, PI)
