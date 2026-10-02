@@ -77,8 +77,8 @@ func _physics_process(delta: float) -> void:
 	# applied_pos / %Modifier while a sprite rests.
 	var sleeping : bool = !Global.static_view and actor.is_rest \
 		and (actor.rest_mode == 2 or actor.rest_mode == 3 or actor.rest_mode == 6)
-	# applied_pos holds only the wobble and the drag lag; %Modifier1 already applies the follow
-	# offset, and seeding it here counted it twice (2x the range, 3x with dragSpeed > 0).
+	# applied_pos holds only the wobble and the drag lag: %Modifier1 already applies the follow
+	# offset to this sprite, so seeding it here would count that offset twice.
 	if !sleeping:
 		applied_pos = Vector2.ZERO
 	if sleeping:
@@ -90,8 +90,8 @@ func _physics_process(delta: float) -> void:
 			# by setting this to the clock (zeroing it is a no-op -> the wake residue report).
 			paused_rotation = Global.tick
 			should_rot_rotation = 0.0
-		# Park the dragger too: a stale one makes the first awake frame read the parked distance
-		# as lag (+14.2 deg kick).
+		# Park the dragger too: a stale one would make the first awake frame read the whole parked
+		# distance as lag.
 		if not dragger.global_position.is_equal_approx(modifier_node.global_position):
 			dragger.global_position = modifier_node.global_position
 			applied_pos = Vector2.ZERO
@@ -265,7 +265,7 @@ func movements(delta: float) -> void:
 		l = glob - dragger.global_position
 	else:
 		# Both samples are read in %Modifier1's frame at the time each was taken, so a parent's
-		# displacement cancels; one shared frame cancels nothing (800 px vs 123 px). The two
+		# displacement cancels; reading both through one shared frame cancels nothing, so the two
 		# frames must stay different on purpose.
 		var m1 : Transform2D = modifier1_node.global_transform
 		var m1_inv : Transform2D = m1.affine_inverse()
@@ -352,7 +352,7 @@ func add_parent_physics(length : float) -> float:
 	if (p is Sprite2D or p is WigglyAppendage2D or p is CustomMesh)  && is_instance_valid(p):
 			# The parent's calc_length is deliberately NOT added any more: the world difference
 			# above already carries the parent's motion once, and the parent's own value contains
-			# *its* parent's, so a 3-level chain accumulated it three times (49.3 / 106.1 / 460.9).
+			# *its* parent's, so a nested chain would accumulate the same motion level by level.
 			# Commented out rather than deleted: one uncomment restores the old behaviour.
 			#	var c_parent = actor.get_parent().owner
 			#	if c_parent != null && is_instance_valid(c_parent):
@@ -370,7 +370,7 @@ func drag(_delta : float, p_carry_anchor : bool = false) -> void:
 		var t = 1.0 / drag_speed
 		# The dragger is world-space while with physics off the lag is measured in %Modifier1's
 		# frame, so carry the state by the anchor's delta first -- without it the lerp re-injects
-		# it as a standing (dragSpeed-1) * anchor step (36.6 px lag for a 34.9 px step).
+		# the anchor's motion as a standing lag.
 		var from : Vector2 = dragger.global_position
 		if p_carry_anchor:
 			from = modifier1_node.global_transform * (prev_modifier1_inv * from)
@@ -418,22 +418,22 @@ func rotational_drag(length, delta: float):
 
 	yvel = ((length * rdrag_str))*(actor.get_value("phys_eff")/200.0)
 
-	# yvel is in degrees here, so limit in degrees (radians capped it at ~3 deg).
+	# yvel is in degrees here, so the limit has to be applied in degrees (radians capped it).
 	# With both limits on +/-180 (the natural wrap point) the drag gets a full turn instead:
-	# clamping the target pinned it to the antipode and the sprite parked there (40 frames at
-	# 180 deg after the parent had reversed). A smaller limit still clamps exactly.
+	# clamping the target there pins it to the antipode and parks the sprite on it. A smaller
+	# limit still clamps exactly.
 	var lmin : float = actor.get_value("rLimitMin")
 	var lmax : float = actor.get_value("rLimitMax")
-	# Exact compares: integer sliders, runs every frame (two is_equal_approx cost ~1.5 us/call).
+	# Exact compares on purpose: the limits come from integer sliders and this runs every frame.
 	var free_wind : bool = (lmin == -180.0) and (lmax == 180.0)
 	yvel = clampf(yvel, -360.0, 360.0) if free_wind else clampf(yvel, lmin, lmax)
 
-	# Two chained lerps only reached ~54% of one target, so the limits were unreachable; blend
-	# both targets once instead.
+	# Two chained lerps never converge on a single target, which left the limits unreachable;
+	# blend both targets once instead.
 	var target_rot : float = final_last_rot + deg_to_rad(yvel)
 	if !free_wind:
 		target_rot = clampf(target_rot, min_rot, max_rot)
-	# Fold the state back into range: the antipode's shortest path is arbitrary (-442 deg drift).
+	# Fold the state back into range: at the antipode the shortest path is arbitrary.
 	applied_rotation = wrapf(lerp_angle(applied_rotation, target_rot, 0.15), -PI, PI)
 
 func stretch(length : float) -> void:
