@@ -376,13 +376,14 @@ func wobble(delta: float) -> void:
 
 func rotational_drag(length, delta: float):
 	var rdrag_str = actor.get_value("rdragStr")
-	
-	if 0.0 == actor.get_value("rot_frq"):
+	var rot_frq = actor.get_value("rot_frq")
+
+	if 0.0 == rot_frq:
 		last_rot = 0.0
 		if 0.0 == rdrag_str:
 			return #no need to rotation drag
 	else:
-		last_rot = sin((Global.tick-paused_rotation) * actor.get_value("rot_frq")) * deg_to_rad(rdrag_str)
+		last_rot = sin((Global.tick-paused_rotation) * rot_frq) * deg_to_rad(rdrag_str)
 
 	var min_rot : float = deg_to_rad(actor.get_value("rLimitMin"))
 	var max_rot : float = deg_to_rad(actor.get_value("rLimitMax"))
@@ -406,12 +407,15 @@ func rotational_drag(length, delta: float):
 		# Recalculate target angle based on the current angle,
 		# add the difference between the current angle and up,
 		# as well as the contribution of original target_rot.
-		if applied_rotation < -0.0 and target_rot > 0.0:
+		if applied_rotation < 0.0 and target_rot > 0.0:
 			target_rot = applied_rotation * 2 + (last_rot + PI) + absf(target_rot - (last_rot + PI))
-		elif applied_rotation > 0.0 and target_rot < -0.0:
+		elif applied_rotation > 0.0 and target_rot < 0.0:
 			target_rot = applied_rotation * 2 + (last_rot - PI) - absf(target_rot - (last_rot - PI))
-	
+
 	var rot_step : float = clampf((target_rot - applied_rotation) * 0.15, -PI * 0.15, PI * 0.15)
+	if not is_finite(rot_step):
+		applied_rotation = 0.0
+		return
 	applied_rotation += rot_step
 
 func stretch(length : float) -> void:
