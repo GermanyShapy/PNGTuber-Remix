@@ -230,6 +230,7 @@ mini_value = -360.0
 step = 0.1
 value_to_update = "rLimitMin"
 has_alt_values = true
+tooltip = "TR_ROT_LIMIT_FREESPIN_TOOLTIP"
 
 [node name="RotationMaxRotBSlider2" parent="VBoxContainer" unique_id=451803759 instance=ExtResource("1_h5u6y")]
 unique_name_in_owner = true
@@ -240,6 +241,7 @@ max_value = 360.0
 step = 0.1
 value_to_update = "rLimitMax"
 has_alt_values = true
+tooltip = "TR_ROT_LIMIT_FREESPIN_TOOLTIP"
 
 [node name="RotationLevelBSlider" parent="VBoxContainer" unique_id=145584341 instance=ExtResource("1_h5u6y")]
 unique_name_in_owner = true

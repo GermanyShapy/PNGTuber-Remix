@@ -13,6 +13,7 @@ enum Type { Both, Spin, Slide, NoLabel, NoLabelSpin }
 @export var ui_type: Type
 @export var value_to_update: String = "position": get = get_value
 @export var has_alt_values := false
+@export var tooltip: String = ""
 
 @export var allow_greater : bool = false
 
@@ -28,6 +29,7 @@ func _ready():
 	setup_spinbox()
 	setup_slider()
 	setup_label()
+	setup_tooltip()
 	
 	%SpinBoxValue.allow_greater = allow_greater
 	%SliderValue.allow_greater = allow_greater
@@ -50,6 +52,16 @@ func setup_slider():
 
 func setup_label():
 	%BetterSliderLabel.text = label_text
+
+func setup_tooltip():
+	if tooltip.is_empty():
+		return
+	# This is an HBoxContainer: its own tooltip only shows where no child covers
+	# it, so give the children the same text.
+	tooltip_text = tooltip
+	%BetterSliderLabel.tooltip_text = tooltip
+	%SpinBoxValue.tooltip_text = tooltip
+	%SliderValue.tooltip_text = tooltip
 
 func ready_type(typ):
 	match typ:
