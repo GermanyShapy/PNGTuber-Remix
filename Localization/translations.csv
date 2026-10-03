@@ -401,7 +401,7 @@ TR_ROT_DEGREE,Rot-Degree,Градус поворота,旋转角度
 TR_ROT_FREQUENCY,Rot-Freq,Частота поворота,旋转频率
 TR_ROT_MAX_ROT,Max-Rot,Макс поворот,最大旋转
 TR_ROT_MIN_ROT,Min-Rot,Мин поворот,最小旋转
-TR_ROT_LIMIT_FREESPIN_TOOLTIP,"Set both limits to -360 / +360 to let the rotation swing past 180 degrees and keep going, falling back from the other side. With a tighter limit the rotation just stops at the limit. At ±360 there is no hard stop: a sustained drag keeps turning.","Установите оба предела на -360 / +360, чтобы вращение проходило за 180 градусов и возвращалось с другой стороны. При более узком пределе вращение просто останавливается на пределе. При ±360 жёсткого предела нет: непрерывное перетаскивание продолжает вращение.",把最小/最大旋转都设为 -360 / +360，旋转才能越过 180° 继续走、并从另一边荡回来。限位更小时旋转只会停在限位处。设为 ±360 后没有硬性限位：持续拖拽会一直转下去。
+TR_ROT_LIMIT_FREESPIN_TOOLTIP,"Movement rotation never goes past the min/max rotation limits (auto rotation excluded).\nWith the limits set to -360/+360 there is no hard stop, and the rotation can swing past 180 degrees and come back from the other side.","Вращение от движения не выходит за пределы минимального/максимального поворота (кроме автоматического вращения).\nПри значениях -360/+360 жёсткого предела нет, и вращение может пройти за 180° и вернуться с другой стороны.",运动旋转的角度不会超过最小/最大旋转的限制（不包括自动旋转）。\n当最小/最大旋转设置为-360/+360时，旋转没有硬性限位，并且可以越过180°从另一边荡回来。
 TR_ROT_SNAP_BUTTON_TOOLTIP,Snaps the rotation to the last movement position,Привязывает вращение к последней точке движения,将“旋转”吸附到最后一个移动位置。
 TR_ROT_SPEED,Rot-Speed,Скорость поворота,旋转速度
 TR_ROT_THRESH,Rot-Threshold,Порог вращения,旋转阈值
