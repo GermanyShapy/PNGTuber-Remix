@@ -18,7 +18,6 @@ var hit_rotation : float = 0.0
 var last_wobble_pos : Vector2 = Vector2.ZERO
 var glob : Vector2 = Vector2.ZERO
 
-var rot_drag : float = 0.0
 var follow_point_rot : float = 0.0
 var should_rot_rotation : float = 0.0
 var last_rot : float = 0.0
@@ -124,7 +123,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		follow_wiggle(delta)
 	if !Global.static_view:
-		var final_rot: float = applied_rotation + rot_drag + follow_point_rot + should_rot_rotation + hit_rotation
+		var final_rot: float = applied_rotation + follow_point_rot + should_rot_rotation + hit_rotation
 		final_rot = GlobalCalculations.is_nan_or_inf(final_rot)
 		# A transform write marks the canvas item dirty for physics interpolation
 		# even when the value is unchanged, and with hundreds of sprites that cost
@@ -380,46 +379,38 @@ func rotational_drag(length, delta: float):
 	
 	if 0.0 == actor.get_value("rot_frq"):
 		last_rot = 0.0
-		if 0.0 == rot_drag and 0.0 == rdrag_str:
+		if 0.0 == rdrag_str:
 			return #no need to rotation drag
 	else:
 		last_rot = sin((Global.tick-paused_rotation) * actor.get_value("rot_frq")) * deg_to_rad(rdrag_str)
 
 	var min_rot : float = deg_to_rad(actor.get_value("rLimitMin"))
 	var max_rot : float = deg_to_rad(actor.get_value("rLimitMax"))
-
+	var free_wind : bool = (min_rot == -TAU) and (max_rot == TAU)
 	var final_last_rot : float = clamp(last_rot, min_rot, max_rot)
 
-	yvel = ((length * rdrag_str))*(actor.get_value("phys_eff")/200.0)
+	yvel = ((length * rdrag_str)) * (actor.get_value("phys_eff")/200.0)
+	yvel = clampf(deg_to_rad(yvel), min_rot, max_rot)
 
-	# yvel is in degrees here, so the limit has to be applied in degrees (radians capped it).
-	var lmin : float = actor.get_value("rLimitMin")
-	var lmax : float = actor.get_value("rLimitMax")
-	# Exact compares on purpose: the limits come from integer sliders and this runs every frame.
-	var free_wind : bool = (lmin == -180.0) and (lmax == 180.0)
-
-	# With both limits on +/-180 the drag gets a full turn: the sum is only folded back into
-	# range on the way out, so a hard drag carries the sprite through the antipode instead of
-	# parking on it. A smaller limit still clamps exactly.
-	yvel = clampf(yvel, -360.0, 360.0) if free_wind else clampf(yvel, lmin, lmax)
-
-	# Two chained lerps never converge on a single target, which left the limits unreachable;
 	# blend both targets once instead.
-	var target_rot : float = final_last_rot + deg_to_rad(yvel)
-	if !free_wind:
-		target_rot = clampf(target_rot, min_rot, max_rot)
-	# Follow the target without folding the state back and without the shortest path.
-	# lerp_angle walks the short way, so the moment the target passes 180 deg the short way
-	# flips and a sweep in the drive's direction comes out as a full turn the other way -- the
-	# exact thing R2 asks for ("past 180, come back from the other side"). A plain follow keeps
-	# the drive's direction and returns the way it came; because the state keeps its winding it
-	# also comes back to rest by the short way, which is what reads as natural.
-	# The state cannot run away: target_rot is a function of the instantaneous lag, so it goes
-	# back to 0 and the state follows it there.
-	# Cap the step at PI * weight -- the same bound the shortest path used to give for free.
-	# It only bites when the gap is more than half a turn, i.e. exactly when the old code would
-	# have flipped direction; a smaller gap is unaffected, so ordinary tracking is unchanged.
-	# See .ai/docs/90-坑/07-GDScript与数据驱动.md #44.
+	var target_rot : float = final_last_rot + yvel
+	target_rot = clampf(target_rot, min_rot, max_rot)
+	
+	# Inertial regression under simulated gravity.
+	# When crossing Y-axis, it will fall from the other side.
+	if free_wind:
+		if applied_rotation > last_rot + PI:
+			applied_rotation -= TAU
+		elif applied_rotation < last_rot - PI:
+			applied_rotation += TAU
+		# Recalculate target angle based on the current angle,
+		# add the difference between the current angle and up,
+		# as well as the contribution of original target_rot.
+		if applied_rotation < -0.0 and target_rot > 0.0:
+			target_rot = applied_rotation * 2 + (last_rot + PI) + absf(target_rot - (last_rot + PI))
+		elif applied_rotation > 0.0 and target_rot < -0.0:
+			target_rot = applied_rotation * 2 + (last_rot - PI) - absf(target_rot - (last_rot - PI))
+	
 	var rot_step : float = clampf((target_rot - applied_rotation) * 0.15, -PI * 0.15, PI * 0.15)
 	applied_rotation += rot_step
 
