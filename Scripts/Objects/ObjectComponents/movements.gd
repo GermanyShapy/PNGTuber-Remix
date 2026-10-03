@@ -398,19 +398,26 @@ func rotational_drag(length, delta: float):
 	target_rot = clampf(target_rot, min_rot, max_rot)
 	
 	# Inertial regression under simulated gravity.
-	# When crossing Y-axis, it will fall from the other side.
+	# When crossing PI, it will fall from the other side.
 	if free_wind:
-		if applied_rotation > last_rot + PI:
+		var crossing_clockwise_rot = final_last_rot + PI
+		var crossing_anticlockwise_rot = final_last_rot - PI
+		if applied_rotation > crossing_clockwise_rot:
 			applied_rotation -= TAU
-		elif applied_rotation < last_rot - PI:
+		elif applied_rotation < crossing_anticlockwise_rot:
 			applied_rotation += TAU
+			
 		# Recalculate target angle based on the current angle,
 		# add the difference between the current angle and up,
 		# as well as the contribution of original target_rot.
-		if applied_rotation < 0.0 and target_rot > 0.0:
-			target_rot = applied_rotation * 2 + (last_rot + PI) + absf(target_rot - (last_rot + PI))
-		elif applied_rotation > 0.0 and target_rot < 0.0:
-			target_rot = applied_rotation * 2 + (last_rot - PI) - absf(target_rot - (last_rot - PI))
+		# Both offsets are measured from final_last_rot, so the crossing is
+		# +/-PI here and not crossing_*_rot -- that would subtract it twice.
+		var _applied_rot = applied_rotation - final_last_rot
+		var _target = target_rot - final_last_rot
+		if _applied_rot < 0.0 and _target > 0.0 and _target - _applied_rot > PI:
+			target_rot = final_last_rot + _applied_rot * 2 + PI + absf(_target - PI)
+		elif _applied_rot > 0.0 and _target < 0.0 and _target - _applied_rot < -PI:
+			target_rot = final_last_rot + _applied_rot * 2 - PI - absf(_target + PI)
 
 	var rot_step : float = clampf((target_rot - applied_rotation) * 0.15, -PI * 0.15, PI * 0.15)
 	if not is_finite(rot_step):
