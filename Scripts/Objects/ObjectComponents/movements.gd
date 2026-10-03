@@ -400,18 +400,15 @@ func rotational_drag(length, delta: float):
 	# Inertial regression under simulated gravity.
 	# When crossing PI, it will fall from the other side.
 	if free_wind:
-		var crossing_clockwise_rot = final_last_rot + PI
-		var crossing_anticlockwise_rot = final_last_rot - PI
-		if applied_rotation > crossing_clockwise_rot:
+		if applied_rotation > final_last_rot + PI:
 			applied_rotation -= TAU
-		elif applied_rotation < crossing_anticlockwise_rot:
+		elif applied_rotation < final_last_rot - PI:
 			applied_rotation += TAU
 			
 		# Recalculate target angle based on the current angle,
 		# add the difference between the current angle and up,
 		# as well as the contribution of original target_rot.
-		# Both offsets are measured from final_last_rot, so the crossing is
-		# +/-PI here and not crossing_*_rot -- that would subtract it twice.
+		# Both offsets are measured from final_last_rot.
 		var _applied_rot = applied_rotation - final_last_rot
 		var _target = target_rot - final_last_rot
 		if _applied_rot < 0.0 and _target > 0.0 and _target - _applied_rot > PI:
