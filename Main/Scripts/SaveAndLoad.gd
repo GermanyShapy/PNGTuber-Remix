@@ -413,15 +413,9 @@ func load_model(path: String) -> void:
 	prune_ghost_cycle_members()
 	restore_cycles()
 
-# Cycle membership lives in settings_dict rather than on the sprites, so a model
-# saved before the delete path cleaned up its whole subtree can still name
-# sprites that no longer exist. cycle.gd wraps forward / backward over
-# cycle.sprites.size(), so a single ghost slot makes one step land on an id no
-# sprite has -- nothing shown and every real member hidden. Drop the dead ids
-# here and re-point pos / last_sprite exactly as remove_sprite_from_cycles()
-# would have. Runs after load_objects() / reparent_objects, where every sprite
-# node is in the "Sprites" group, and before restore_cycles() picks the member
-# to leave visible.
+# A model saved before the delete path released whole subtrees can still name
+# sprites that are gone, and one dead id hides every real member. Re-point
+# pos / last_sprite as remove_sprite_from_cycles() would, before restore_cycles().
 func prune_ghost_cycle_members() -> void:
 	var live : Array = []
 	for sprite in get_tree().get_nodes_in_group("Sprites"):

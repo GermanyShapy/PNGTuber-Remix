@@ -53,9 +53,8 @@ func toggle_backward(cycle):
 	toggle_to(cycle, wrap(cycle.pos - 1, 0, cycle.sprites.size()))
 
 func toggle_to(cycle, pos):
-	# An emptied cycle (every member deleted) still reaches here through the
-	# forward / backward keys, and wrap() over a size of 0 hands back slot 0 --
-	# last_sprite then indexes an empty array.
+	# An emptied cycle still reaches here through the forward / backward keys,
+	# and wrap() over a size of 0 hands back slot 0 -- indexing an empty array.
 	if cycle.sprites.size() < 1 : return
 	cycle.active = true
 	cycle.pos = wrap(pos, 0, cycle.sprites.size())

@@ -409,11 +409,9 @@ func _mapped_id(id_map: Dictionary, old_id) -> Variant:
 			return id_map[k]
 	return null
 
-# free() on the root releases every sprite parented anywhere below it, and both
-# pieces of per-sprite bookkeeping live outside the node -- cycle membership in
-# cycle.sprites, the input actions in the InputMap singleton -- so the whole
-# released subtree has to be unregistered, not just the selected root. Descendants
-# left behind become ghost cycle members with stale input actions.
+# free() releases the whole subtree, but the bookkeeping lives outside the nodes
+# (cycle membership in cycle.sprites, the actions in the InputMap), so every
+# released sprite has to be unregistered, not just the selected root.
 func unregister_sprite_subtree(root : Node) -> void:
 	if root is SpriteObject:
 		remove_sprite_from_cycles(root.sprite_id)
@@ -425,11 +423,8 @@ func unregister_sprite_subtree(root : Node) -> void:
 		unregister_sprite_subtree(child)
 
 # Mirror of register_duplicate_cycle() for the delete path: membership lives in
-# the cycle, not on the sprite, so removing a sprite has to unregister it there.
-# A dead id left in cycle.sprites is counted by every consumer -- cycle.gd wraps
-# forward / backward over cycle.sprites.size(), so a single ghost slot makes one
-# step select an id no sprite has: nothing is shown and every real member of the
-# cycle is hidden.
+# the cycle, not on the sprite, so a dead id left here would be counted by every
+# consumer.
 func remove_sprite_from_cycles(sprite_id) -> void:
 	for cycle in Global.settings_dict.cycles:
 		if !cycle.sprites.has(sprite_id):

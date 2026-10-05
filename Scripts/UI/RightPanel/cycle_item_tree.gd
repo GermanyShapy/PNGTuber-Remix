@@ -40,8 +40,7 @@ func add_cycle_tree_item(name, sprite_id = null):
 	var item = create_item()
 	item.set_text(0, str(get_root().get_child_count()))
 	item.set_text(1, name)
-	# The row remembers which member it stands for: ids without a sprite get no
-	# row, so a row index is not an index into cycle.sprites.
+	# Ids without a sprite get no row, so row index is not an index into the list.
 	item.set_metadata(0, sprite_id)
 
 # Null when the row holds no id: find() then reports -1 and the drop is ignored.
@@ -60,9 +59,8 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 	var item = get_item_at_position(at_position)
 	return item
 
-# -100 means the drop is not over any row -- true both above the first row and
-# below the last one. Those two ends insert at opposite ends of the list, so they
-# are told apart by geometry: anything above the first row's top edge is the head.
+# -100 means the drop is over no row -- true above the first row and below the
+# last one, which insert at opposite ends, so the ends are told apart by geometry.
 func _dropped_above_first_row(y: float) -> bool:
 	var root = get_root()
 	if root == null:
@@ -82,15 +80,13 @@ func _drop_data(at_position: Vector2, data: Variant) -> void:
 	if cycle_id < 0 or cycle_id >= Global.settings_dict.cycles.size():
 		return
 	var cycle = Global.settings_dict.cycles[cycle_id]
-	# Resolved through the id each row carries, not get_index(): a member without
-	# a sprite gets no row, so row order and list order can differ.
+	# Resolved through the id each row carries: row order and list order can differ.
 	var dragged_index : int = cycle.sprites.find(_row_sprite_id(data))
 	if dragged_index < 0:
 		return
 	var target_index : int
 	if n == -100:
-		# Past either end of the list: above the first row inserts at the top,
-		# below the last row appends.
+		# Past either end of the list: the head inserts at the top, the tail appends.
 		target_index = 0 if _dropped_above_first_row(at_position.y) else cycle.sprites.size()
 	else:
 		if item == null:
