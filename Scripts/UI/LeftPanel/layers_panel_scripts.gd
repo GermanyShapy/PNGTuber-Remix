@@ -99,11 +99,7 @@ func enable():
 func _on_delete_button_pressed():
 	for i in Global.held_sprites:
 		if i != null && is_instance_valid(i):
-			if InputMap.has_action(i.disappear_keys):
-				InputMap.erase_action(i.disappear_keys)
-			if InputMap.has_action(str(i.sprite_id)):
-				InputMap.erase_action(str(i.sprite_id))
-			remove_sprite_from_cycles(i.sprite_id)
+			unregister_sprite_subtree(i)
 			i.treeitem.free()
 			i.free()
 	Global.deselect.emit()
@@ -412,6 +408,21 @@ func _mapped_id(id_map: Dictionary, old_id) -> Variant:
 		if k == old_id:
 			return id_map[k]
 	return null
+
+# free() on the root releases every sprite parented anywhere below it, and both
+# pieces of per-sprite bookkeeping live outside the node -- cycle membership in
+# cycle.sprites, the input actions in the InputMap singleton -- so the whole
+# released subtree has to be unregistered, not just the selected root. Descendants
+# left behind become ghost cycle members with stale input actions.
+func unregister_sprite_subtree(root : Node) -> void:
+	if root is SpriteObject:
+		remove_sprite_from_cycles(root.sprite_id)
+		if InputMap.has_action(root.disappear_keys):
+			InputMap.erase_action(root.disappear_keys)
+		if InputMap.has_action(str(root.sprite_id)):
+			InputMap.erase_action(str(root.sprite_id))
+	for child in root.get_children():
+		unregister_sprite_subtree(child)
 
 # Mirror of register_duplicate_cycle() for the delete path: membership lives in
 # the cycle, not on the sprite, so removing a sprite has to unregister it there.

@@ -410,7 +410,48 @@ func load_model(path: String) -> void:
 	Global.load_model.emit()
 	Global.load_sprite_states(0)
 	GlobInput.refresh_action_cache()
+	prune_ghost_cycle_members()
 	restore_cycles()
+
+# Cycle membership lives in settings_dict rather than on the sprites, so a model
+# saved before the delete path cleaned up its whole subtree can still name
+# sprites that no longer exist. cycle.gd wraps forward / backward over
+# cycle.sprites.size(), so a single ghost slot makes one step land on an id no
+# sprite has -- nothing shown and every real member hidden. Drop the dead ids
+# here and re-point pos / last_sprite exactly as remove_sprite_from_cycles()
+# would have. Runs after load_objects() / reparent_objects, where every sprite
+# node is in the "Sprites" group, and before restore_cycles() picks the member
+# to leave visible.
+func prune_ghost_cycle_members() -> void:
+	var live : Array = []
+	for sprite in get_tree().get_nodes_in_group("Sprites"):
+		live.append(sprite.sprite_id)
+	for cycle in Global.settings_dict.cycles:
+		var sprites: Array = cycle.get("sprites", [])
+		var pos : int = cycle.get("pos", 0)
+		var last = cycle.get("last_sprite", null)
+		var kept : Array = []
+		var removed : Array = []
+		var removed_before : int = 0
+		for i in sprites.size():
+			var id = sprites[i]
+			if id in live:
+				kept.append(id)
+			else:
+				removed.append(id)
+				if i < pos:
+					removed_before += 1
+		if removed.is_empty():
+			continue
+		cycle.sprites = kept
+		if kept.is_empty():
+			cycle.pos = 0
+			cycle.last_sprite = 0
+			continue
+		var new_pos : int = clampi(pos - removed_before, 0, kept.size() - 1)
+		cycle.pos = new_pos
+		if last in removed:
+			cycle.last_sprite = kept[new_pos]
 
 # Cycle members that are not assets come back visible from set_common_data (its
 # non-asset branch shows every sprite), so a model whose cycles are built from
