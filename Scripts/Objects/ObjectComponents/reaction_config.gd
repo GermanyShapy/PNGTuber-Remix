@@ -215,6 +215,18 @@ func _process(delta: float) -> void:
 			var holder: Node = sprite_with_id(get_tree(), cycle.last_sprite)
 			if holder != null and holder.sprite_data.is_cycle and holder.hold_to_show and holder.was_active_before:
 				is_trying_to_appear = false
+		
+		# Slot order is the priority order: a later member on screen keeps the
+		# slot until its key is up AND its minimum duration is over, so a lower
+		# slot cannot steal the slot the frame a key comes up. A later slot may
+		# always take over; only the lower direction is gated here.
+		if is_trying_to_appear and cycle_sprite_pos >= 0:
+			var ahead: Node = sprite_with_id(get_tree(), cycle.last_sprite)
+			if ahead != null and ahead != actor and ahead.was_active_before \
+					and cycle.sprites.find(ahead.sprite_id) > cycle_sprite_pos:
+				if ahead.get_node("ReactionConfig").min_duration_timer > 0.0 \
+						or GlobInput.is_input_pressed(ahead.saved_event, ahead.inclusive_key_check):
+					is_trying_to_appear = false
 	
 	#Finally, Show or Hide
 	if auto_hide_now:
