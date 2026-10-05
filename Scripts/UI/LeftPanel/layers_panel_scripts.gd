@@ -14,6 +14,9 @@ var append_obj = preload("res://Misc/AppendageObject/Appendage_object.tscn")
 # together with its appendage leaves the new appendage bound to the old body.
 const SPRITE_ID_LINK_KEYS := ["anchor_id", "sync_appendage"]
 
+# The follow / movement components rewrite these bridges every tick: see copy_runtime_pose().
+const RUNTIME_POSE_NODES := ["%Modifier1", "%Rotation", "%Modifier"]
+
 var has_folder : bool = false
 
 func _ready() -> void:
@@ -143,6 +146,7 @@ func duplicate_single(sprite, id_map):
 	copy_transform(sprite, obj)
 	copy_images(sprite, obj)
 	copy_common(sprite, obj)
+	copy_runtime_pose(sprite, obj)
 	finalize_duplicate(sprite, obj, id_map)
 	return obj
 
@@ -151,6 +155,7 @@ func duplicate_child(parent, t, id_map):
 	copy_transform(t, obj)
 	copy_images(t, obj)
 	copy_common(t, obj)
+	copy_runtime_pose(t, obj)
 	finalize_child_duplicate(parent, t, obj, id_map)
 	return obj
 
@@ -173,6 +178,16 @@ func copy_transform(src, dst):
 	dst.position = src.position
 	dst.scale = src.scale
 	dst.sprite_data.scale = src.scale
+
+# copy_transform() only carries the root transform, so the copy's chain starts
+# neutral; the anchor then bakes the parent's live offset into the child's local
+# position, which the follow re-applies. Runs after copy_common() on purpose.
+func copy_runtime_pose(src, dst) -> void:
+	for path in RUNTIME_POSE_NODES:
+		var src_node : Node2D = src.get_node_or_null(path)
+		var dst_node : Node2D = dst.get_node_or_null(path)
+		if src_node != null and dst_node != null:
+			dst_node.transform = src_node.transform
 
 func duplicate_mesh_data(src: CustomMesh, dst: CustomMesh) -> void:
 	dst.original_vertices = src.original_vertices.duplicate()
