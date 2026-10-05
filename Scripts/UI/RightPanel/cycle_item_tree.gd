@@ -48,12 +48,24 @@ func _can_drop_data(at_position: Vector2, data: Variant) -> bool:
 
 func _get_drag_data(at_position: Vector2) -> Variant:
 	drop_mode_flags = DROP_MODE_INBETWEEN
-	var item = get_item_at_position(at_position - self.position)
+	var item = get_item_at_position(at_position)
 	return item
 
+# -100 means the drop is not over any row -- true both above the first row and
+# below the last one. Those two ends insert at opposite ends of the list, so they
+# are told apart by geometry: anything above the first row's top edge is the head.
+func _dropped_above_first_row(y: float) -> bool:
+	var root = get_root()
+	if root == null:
+		return true
+	var first = root.get_first_child()
+	if first == null:
+		return true
+	return y < get_item_area_rect(first).position.y
+
 func _drop_data(at_position: Vector2, data: Variant) -> void:
-	var n = get_drop_section_at_position(at_position - self.position)
-	var item = get_item_at_position(at_position - self.position)
+	var n = get_drop_section_at_position(at_position)
+	var item = get_item_at_position(at_position)
 	
 	# selected_id 0 ("None") wraps to -1 and a removed cycle leaves the id past the
 	# end; both used to index out of range before any of the work below.
@@ -64,16 +76,18 @@ func _drop_data(at_position: Vector2, data: Variant) -> void:
 	var dragged_index = (data as TreeItem).get_index()
 	if dragged_index < 0 or dragged_index >= cycle.sprites.size():
 		return
-	var target_index: int = 0
-	if n != -100:
-		# Dropped onto a row: -100 means the drop landed below every row.
+	var target_index : int
+	if n == -100:
+		# Past either end of the list: above the first row inserts at the top,
+		# below the last row appends.
+		target_index = 0 if _dropped_above_first_row(at_position.y) else cycle.sprites.size()
+	else:
 		if item == null:
 			return
 		target_index = item.get_index()
+		if n == 1:
+			target_index += 1
 	var temp_sprite_id = cycle.sprites[dragged_index]
-	
-	if n == 1:
-		target_index += 1
 	
 	(cycle.sprites as Array).remove_at(dragged_index)
 	if dragged_index < target_index:
