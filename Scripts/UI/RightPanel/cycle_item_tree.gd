@@ -30,16 +30,25 @@ func update_tree_items():
 		
 		for id in sprite_id_dict:
 			if sprite_id_dict[id] != null:
-				add_cycle_tree_item(sprite_id_dict[id].sprite_name)
+				add_cycle_tree_item(sprite_id_dict[id].sprite_name, id)
 	else:
 		pass
 	
 	update_minimum_size()
 	
-func add_cycle_tree_item(name):
+func add_cycle_tree_item(name, sprite_id = null):
 	var item = create_item()
 	item.set_text(0, str(get_root().get_child_count()))
 	item.set_text(1, name)
+	# The row remembers which member it stands for: ids without a sprite get no
+	# row, so a row index is not an index into cycle.sprites.
+	item.set_metadata(0, sprite_id)
+
+# Null when the row holds no id: find() then reports -1 and the drop is ignored.
+func _row_sprite_id(item) -> Variant:
+	if item == null:
+		return null
+	return item.get_metadata(0)
 
 func _can_drop_data(at_position: Vector2, data: Variant) -> bool:
 	if data is TreeItem and data.get_parent() == get_root():
@@ -73,8 +82,10 @@ func _drop_data(at_position: Vector2, data: Variant) -> void:
 	if cycle_id < 0 or cycle_id >= Global.settings_dict.cycles.size():
 		return
 	var cycle = Global.settings_dict.cycles[cycle_id]
-	var dragged_index = (data as TreeItem).get_index()
-	if dragged_index < 0 or dragged_index >= cycle.sprites.size():
+	# Resolved through the id each row carries, not get_index(): a member without
+	# a sprite gets no row, so row order and list order can differ.
+	var dragged_index : int = cycle.sprites.find(_row_sprite_id(data))
+	if dragged_index < 0:
 		return
 	var target_index : int
 	if n == -100:
@@ -84,7 +95,9 @@ func _drop_data(at_position: Vector2, data: Variant) -> void:
 	else:
 		if item == null:
 			return
-		target_index = item.get_index()
+		target_index = cycle.sprites.find(_row_sprite_id(item))
+		if target_index < 0:
+			return
 		if n == 1:
 			target_index += 1
 	var temp_sprite_id = cycle.sprites[dragged_index]
