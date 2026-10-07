@@ -601,6 +601,8 @@ TR_HOTKEY_NAME_COLUMN,Action,Действие,热键名称
 TR_HOTKEY_COLUMN,Hotkey,Горячая клавиша,热键绑定
 TR_MIN_DURATION,Minimal Duration,Мин. длительность,最短显示时间
 TR_MIN_DURATION_TOOLTIP,Sprite will be showed at least minimal duration to avoid disappearance.,"Спрайт будет показываться минимум указанное время, чтобы избежать исчезновения",精灵将至少持续的显示时间，以避免消失。
+TR_TAIL_DURATION,Tail Duration,Tail Duration,收尾持续时间
+TR_TAIL_DURATION_TOOLTIP,"Keeps the sprite on screen this long after it wants to hide (the key is released, it is toggled off, or the disappear key is pressed), so the tail can be seen before it vanishes.","Keeps the sprite on screen this long after it wants to hide (the key is released, it is toggled off, or the disappear key is pressed), so the tail can be seen before it vanishes.",精灵在想要隐藏时（松开按键、再按一次或按消失键）仍继续显示这么久再隐藏，以便看到收尾动作。
 TR_CAST_TIME,Cast Time,Время приведения,按键施法时间
 TR_CAST_TIME_TOOLTIP,Sprite will be showed when hotkey is continuously pressed for more than the cast time,Спрайт появится только при непрерывном удержании горячей клавиши дольше времени приведения,在持续按下热键直到超过施法时间时，精灵才会显示
 TR_INCLUSIVE_KEY_CHECK,Inclusive Key Check,Совместная проверка клавиш,包容性按键检测

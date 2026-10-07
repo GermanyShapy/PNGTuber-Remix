@@ -304,6 +304,9 @@ var show_only : bool = false
 var should_disappear : bool = false
 var hold_to_show : bool = false
 var min_duration : float = 0.0
+# How long the sprite stays on screen after its own hide intent (key release, a
+# toggle press or the disappear key) instead of hiding at once.
+var tail_duration : float = 0.0
 var cast_time : float = 0.0
 var inclusive_key_check : bool = false
 var saved_keys : Array = []

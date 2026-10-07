@@ -119,6 +119,7 @@ func save_data():
 			"saved_disappear": saved_events,
 			"hold_to_show":sprt.hold_to_show,
 			"min_duration":sprt.min_duration,
+			"tail_duration":sprt.tail_duration,
 			"cast_time":sprt.cast_time,
 			"inclusive_key_check":sprt.inclusive_key_check,
 			"ignore_if_rest":sprt.ignore_if_rest,
@@ -153,6 +154,7 @@ func save_data():
 				"saved_disappear": saved_events,
 				"hold_to_show":sprt.hold_to_show,
 				"min_duration":sprt.min_duration,
+				"tail_duration":sprt.tail_duration,
 				"cast_time":sprt.cast_time,
 				"inclusive_key_check":sprt.inclusive_key_check,
 				"ignore_if_rest":sprt.ignore_if_rest,
@@ -618,6 +620,12 @@ func set_common_data(sprite, sprite_obj):
 			sprite_obj.hold_to_show = sprite.hold_to_show
 		if sprite.has("min_duration"):
 			sprite_obj.min_duration = sprite.min_duration
+		if sprite.has("tail_duration"):
+			sprite_obj.tail_duration = sprite.tail_duration
+		elif sprite.has("min_duration_after_release") and sprite.min_duration_after_release:
+			# Legacy archives stored this as a bool and borrowed min_duration as the
+			# tail, so the value to keep is min_duration rather than the new default.
+			sprite_obj.tail_duration = sprite.min_duration
 		if sprite.has("cast_time"):
 			sprite_obj.cast_time = sprite.cast_time
 		if sprite.has("inclusive_key_check"):

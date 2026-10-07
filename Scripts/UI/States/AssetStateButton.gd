@@ -305,6 +305,10 @@ func _on_min_duration_spin_box_value_changed(value: float) -> void:
 	if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
 		Global.held_sprites[0].min_duration = value
 
+func _on_tail_duration_spin_box_value_changed(value: float) -> void:
+	if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
+		Global.held_sprites[0].tail_duration = value
+
 func _on_inclusive_key_check_on_toggle_check_toggled(toggled_on: bool) -> void:
 	if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
 		Global.held_sprites[0].inclusive_key_check = toggled_on

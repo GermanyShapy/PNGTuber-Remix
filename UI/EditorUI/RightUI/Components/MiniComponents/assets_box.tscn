@@ -203,6 +203,29 @@ focus_mode = 1
 focus_behavior_recursive = 1
 text = "TR_DISAPPEAR_KEYS"
 
+[node name="HBoxTailDuration" type="HBoxContainer" parent="Buttons" unique_id=1894236711]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 1
+focus_behavior_recursive = 1
+
+[node name="TailDurationLabel" type="Label" parent="Buttons/HBoxTailDuration" unique_id=1894236712]
+custom_minimum_size = Vector2(74, 0)
+layout_mode = 2
+tooltip_text = "TR_TAIL_DURATION_TOOLTIP"
+mouse_filter = 1
+theme_override_font_sizes/font_size = 15
+text = "TR_TAIL_DURATION"
+
+[node name="TailDurationSpinBox" type="SpinBox" parent="Buttons/HBoxTailDuration" unique_id=1894236713]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_behavior_recursive = 2
+max_value = 1000.0
+step = 0.01
+script = ExtResource("4_olugq")
+
 [node name="ShouldDisListContainer" type="VBoxContainer" parent="." unique_id=1183921443]
 unique_name_in_owner = true
 layout_mode = 2
@@ -517,6 +540,7 @@ script = ExtResource("11_ef4gi")
 [connection signal="toggled" from="Buttons/AutoShowCheck" to="Buttons/HBoxContainer/IsAssetButton" method="_on_auto_show_on_toggle_check_toggled"]
 [connection signal="toggled" from="Buttons/AutoHideCheck" to="Buttons/HBoxContainer/IsAssetButton" method="_on_auto_hide_on_toggle_check_toggled"]
 [connection signal="toggled" from="Buttons/ShouldDisappearCheck" to="Buttons/HBoxContainer/IsAssetButton" method="_on_should_disappear_check_toggled"]
+[connection signal="value_changed" from="Buttons/HBoxTailDuration/TailDurationSpinBox" to="Buttons/HBoxContainer/IsAssetButton" method="_on_tail_duration_spin_box_value_changed"]
 [connection signal="pressed" from="ShouldDisListContainer/HBoxContainer/ShouldDisAddButton" to="Buttons/HBoxContainer/IsAssetButton" method="_on_should_dis_add_button_pressed"]
 [connection signal="pressed" from="ShouldDisListContainer/HBoxContainer/ShouldDisDelButton" to="Buttons/HBoxContainer/IsAssetButton" method="_on_should_dis_del_button_pressed"]
 [connection signal="toggled" from="ShouldDisListContainer/HBoxContainer/ShouldDisRemapButton" to="Buttons/HBoxContainer/IsAssetButton" method="_on_should_dis_remap_button_toggled"]

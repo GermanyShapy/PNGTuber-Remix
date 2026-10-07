@@ -33,6 +33,7 @@ func nullfy():
 	%DontHideOnToggleCheck.disabled = true
 	%HoldToShowCheck.disabled = true
 	%MinDurationSpinBox.editable = false
+	%TailDurationSpinBox.editable = false
 	%CastTimeSpinBox.editable = false
 	%InclusiveKeyCheck.disabled = true
 	%IgnoreIfRestCheck.disabled = true
@@ -57,6 +58,7 @@ func enable():
 		%DontHideOnToggleCheck.disabled = false
 		%HoldToShowCheck.disabled = false
 		%MinDurationSpinBox.editable = true
+		%TailDurationSpinBox.editable = true
 		%CastTimeSpinBox.editable = true
 		%InclusiveKeyCheck.disabled = false
 		%IgnoreIfRestCheck.disabled = false
@@ -89,6 +91,7 @@ func set_data():
 		%ShouldDisListContainer.hide()
 	%HoldToShowCheck.button_pressed = Global.held_sprites[0].hold_to_show
 	%MinDurationSpinBox.value = Global.held_sprites[0].min_duration
+	%TailDurationSpinBox.value = Global.held_sprites[0].tail_duration
 	%CastTimeSpinBox.value = Global.held_sprites[0].cast_time
 	%InclusiveKeyCheck.button_pressed = Global.held_sprites[0].inclusive_key_check
 	%IgnoreIfRestCheck.button_pressed =  Global.held_sprites[0].ignore_if_rest
