@@ -10,6 +10,9 @@ var min_duration_timer : float = 0.0
 # Keeps the sprite on screen after its own hide intent; the count starts only once
 # the shortest-display window is over (see _request_tail).
 var tail_timer : float = 0.0
+# A hide intent can be re-raised every frame (a hold sprite with its key up), so the
+# tail belongs to the display episode: one request per show, not one per frame.
+var tail_pending : bool = false
 var cast_timer : float = 0.0
 var is_rest :bool = false
 var was_rest_before :bool = false
@@ -18,9 +21,6 @@ var fading_lock : bool = false
 var is_action_just_pressed :bool = false
 var is_action_pressed :bool = false
 var is_disappear_key_just_pressed :bool = false
-
-# No "just released" query exists, so the release edge is a compare against this.
-var was_pressed_before :bool = false
 
 var is_trying_to_appear :bool = false
 var is_trying_to_disappear :bool = false
@@ -151,9 +151,11 @@ func _process(delta: float) -> void:
 		min_duration_timer = 0.0
 
 	# A live tail must not outlive the nap; the early-out below stops the countdown,
-	# so a survivor would resume and suppress the first hide after waking.
+	# so a survivor would resume and suppress the first hide after waking. The latch
+	# goes with it, or the next display would silently lose its tail instead.
 	if auto_hide_now or (is_rest and actor.ignore_if_rest):
 		tail_timer = 0.0
+		tail_pending = false
 
 	was_rest_before = is_rest
 
@@ -201,10 +203,15 @@ func _process(delta: float) -> void:
 			# before the frame renders, so the pulse no longer flashes on screen
 			# while still advancing the model's sprite chain.
 			is_trying_to_disappear = true
-	# The key release is a hide intent no _just_pressed query can see as an edge.
-	if actor.hold_to_show and was_pressed_before and !is_action_pressed:
+	# A key that is down is a live show intent, so a release afterwards is a new one.
+	if is_action_pressed:
+		tail_pending = false
+	# Every hide intent owes the sprite its tail: the release edge (no _just_pressed
+	# query reports it) and the level form a sprite shown by the cycle hand-off or
+	# auto_show only gets. tail_duration first, so a sprite without one only compares.
+	if actor.tail_duration > 0.00001 and actor.hold_to_show \
+			and !is_action_pressed and actor.was_active_before:
 		_request_tail()
-	was_pressed_before = is_action_pressed
 	
 	#Tail -- the sprite keeps the slot for its whole tail, so the hand-off survives
 	# whichever member the loop happens to process first.
@@ -291,6 +298,14 @@ func _request_tail(restart_flow : bool = false) -> void:
 	# waits it out gets the remainder prepended and a spent press must come again.
 	if actor.tail_duration <= 0.00001 or !actor.was_active_before:
 		return
+	# A nap is a hard close: the tail is dropped there, and the hide intent the hold
+	# branch raises while asleep must not arm a fresh one in the same frame.
+	if is_rest:
+		return
+	# One tail per display: a re-raised intent must not restart the countdown, but an
+	# explicit restart (a fresh press or the disappear key) opens the flow again.
+	if tail_pending and !restart_flow:
+		return
 	var head : float = maxf(min_duration_timer, 0.0)
 	if head > 0.0:
 		if !actor.hold_to_show:
@@ -300,6 +315,7 @@ func _request_tail(restart_flow : bool = false) -> void:
 		min_duration_timer = actor.min_duration
 		head = min_duration_timer
 	tail_timer = head + actor.tail_duration
+	tail_pending = true
 	is_trying_to_disappear = false
 
 func update_to_mode_change(mode : int):
@@ -581,6 +597,7 @@ static func sprite_show(aim_actor : Node):
 	# tail_timer instead and is never armed here, so a hand-off cannot renew it.
 	if aim_actor.min_duration > 0.00001:
 		aim_actor.get_node("ReactionConfig").min_duration_timer = aim_actor.min_duration # start the duration protect
+	aim_actor.get_node("ReactionConfig").tail_pending = false # the tail latch belongs to the display starting now
 	if aim_actor.get_value("fade_asset"):
 		aim_actor.fade_asset(aim_actor.was_active_before, aim_actor, aim_sprite2d)
 		aim_actor.was_active_before = true
@@ -597,8 +614,10 @@ static func sprite_show(aim_actor : Node):
 		
 static func sprite_hide(aim_actor : Node):
 	var aim_sprite2d = aim_actor.sprite_object
-	# Hiding ends the cycle a tail counted for; the leftover must not suppress it.
+	# Hiding ends the episode a tail counted for; neither the leftover countdown nor
+	# its latch may suppress the next display.
 	aim_actor.get_node("ReactionConfig").tail_timer = 0.0
+	aim_actor.get_node("ReactionConfig").tail_pending = false
 	
 	if aim_actor.get_value("fade_asset"):
 		aim_actor.fade_asset(aim_actor.was_active_before, aim_actor, aim_sprite2d)
