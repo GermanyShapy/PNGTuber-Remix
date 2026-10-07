@@ -77,6 +77,24 @@ func update_rotation(delta: float) -> void:
 			var rotation_factor = lerp_angle(float(actor.get_value("rot_min")), float(actor.get_value("rot_max")), max((normalized_mouse + 1) / 2, 0.0))
 			target_rot = GlobalCalculations.is_nan_or_inf(clamp_rotations(rotation_factor))
 
+	elif follow_type2 == 19:
+		# Face the cursor: clamp the heading as a circular sector centred on the range
+		# bisector so the wrap seam lands on its far side. Object-origin mode yields a
+		# LOCAL vector, so add the object rotation back to keep it a plain offset.
+		mouse_coords = %FollowPosition.follow_calculation()
+		var heading: float = mouse_coords.angle()
+		if actor.get_value("use_object_pos"):
+			heading += actor.global_rotation
+		if not is_finite(heading):	# NaN sticks in lerp_angle; fall back inside the window
+			heading = 0.0
+		var rot_lo: float = float(actor.get_value("rot_min"))
+		var rot_hi: float = float(actor.get_value("rot_max"))
+		var mid: float = (rot_lo + rot_hi) * 0.5
+		if not is_finite(mid):
+			mid = 0.0
+		var half: float = absf(rot_hi - rot_lo) * 0.5
+		target_rot = mid + clampf(wrapf(heading - mid, -PI, PI), -half, half)
+
 	elif follow_type2 == 1: target_rot = follow_controller_rotation(axis_left)
 	elif follow_type2 == 2: target_rot =  follow_controller_rotation(axis_right)
 	elif follow_type2 == 10: target_rot = follow_controller_rotation(axis_shoulderl)

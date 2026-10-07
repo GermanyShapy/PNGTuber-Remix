@@ -294,6 +294,7 @@ TR_MODEL_OPTIMIZER_TRIM_IMAGES,Trim Images,Обрезать изображени
 TR_MOMENTUM_LABEL,Momentum,Инерция,动量
 TR_MOTION_TYPE,Motion Type,Тип движения,运动类型
 TR_MOUSE,Mouse,Мышь,鼠标
+TR_MOUSE_HEADING,Mouse (Face the Cursor),Мышь (направление на курсор),鼠标(朝向跟随)
 TR_MOUSE_VELOCITY,Mouse Velocity,Скорость мыши,跟随基于鼠标速度
 TR_MOUTH,Mouth,Рот,嘴巴
 TR_MOUTH_CLOSED,Mouth Closed,Рот закрыт,嘴巴闭合
