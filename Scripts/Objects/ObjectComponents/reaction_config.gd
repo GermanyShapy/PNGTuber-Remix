@@ -7,6 +7,9 @@ var currently_speaking : bool = false
 var blinking : bool = false
 var tween : Tween
 var min_duration_timer : float = 0.0
+# Keeps the sprite on screen after its own hide intent; the count starts only once
+# the shortest-display window is over (see _request_tail).
+var tail_timer : float = 0.0
 var cast_timer : float = 0.0
 var is_rest :bool = false
 var was_rest_before :bool = false
@@ -15,6 +18,9 @@ var fading_lock : bool = false
 var is_action_just_pressed :bool = false
 var is_action_pressed :bool = false
 var is_disappear_key_just_pressed :bool = false
+
+# No "just released" query exists, so the release edge is a compare against this.
+var was_pressed_before :bool = false
 
 var is_trying_to_appear :bool = false
 var is_trying_to_disappear :bool = false
@@ -144,6 +150,11 @@ func _process(delta: float) -> void:
 		is_trying_to_disappear = true
 		min_duration_timer = 0.0
 
+	# A live tail must not outlive the nap; the early-out below stops the countdown,
+	# so a survivor would resume and suppress the first hide after waking.
+	if auto_hide_now or (is_rest and actor.ignore_if_rest):
+		tail_timer = 0.0
+
 	was_rest_before = is_rest
 
 	# auto_hide is not key input, so ignore_if_rest must not swallow it.
@@ -167,6 +178,7 @@ func _process(delta: float) -> void:
 				is_trying_to_appear = true
 			else:
 				is_trying_to_disappear = true
+				_request_tail(true)
 	
 	if actor.cast_time > 0.0 and cast_timer <= 0.0: # For "just_pressed" to show during cast time
 		if !actor.hold_to_show and !actor.was_active_before:
@@ -174,6 +186,7 @@ func _process(delta: float) -> void:
 	
 	if is_disappear_key_just_pressed:
 		is_trying_to_disappear = true
+		_request_tail(true)
 	
 	if actor.hold_to_show:
 		if !actor.was_active_before and is_action_pressed:
@@ -188,7 +201,24 @@ func _process(delta: float) -> void:
 			# before the frame renders, so the pulse no longer flashes on screen
 			# while still advancing the model's sprite chain.
 			is_trying_to_disappear = true
-		
+	# The key release is a hide intent no _just_pressed query can see as an edge.
+	if actor.hold_to_show and was_pressed_before and !is_action_pressed:
+		_request_tail()
+	was_pressed_before = is_action_pressed
+	
+	#Tail -- the sprite keeps the slot for its whole tail, so the hand-off survives
+	# whichever member the loop happens to process first.
+	if tail_timer > 0.0:
+		tail_timer -= delta
+		is_trying_to_disappear = false
+		if tail_timer > 0.0:
+			if actor.was_active_before:
+				is_trying_to_appear = true
+		elif !actor.hold_to_show and actor.was_active_before:
+			# A hold sprite re-raises its hide intent from the hold branch every frame;
+			# a non-hold one only ever armed this tail through its own hide intent.
+			is_trying_to_disappear = true
+	
 	#Timer Tick
 	if min_duration_timer > 0.0:
 		min_duration_timer -= delta
@@ -208,24 +238,21 @@ func _process(delta: float) -> void:
 		cycle = Global.settings_dict.cycles[actor.sprite_data.cycle - 1]
 		cycle_sprite_pos = cycle.sprites.find(actor.sprite_id)
 		
-		if !actor.hold_to_show:
-			# This used to walk every sprite in the tree for every cycle sprite
-			# (O(cycle_sprites * sprites) per frame, ~1.4 ms on a 336-sprite
-			# model). Resolve through a per-frame id map instead.
-			var holder: Node = sprite_with_id(get_tree(), cycle.last_sprite)
-			if holder != null and holder.sprite_data.is_cycle and holder.hold_to_show and holder.was_active_before:
-				is_trying_to_appear = false
-		
-		# Slot order is the priority order: a later member on screen keeps the
-		# slot until its key is up AND its minimum duration is over, so a lower
-		# slot cannot steal the slot the frame a key comes up. A later slot may
-		# always take over; only the lower direction is gated here.
 		if is_trying_to_appear and cycle_sprite_pos >= 0:
 			var ahead: Node = sprite_with_id(get_tree(), cycle.last_sprite)
-			if ahead != null and ahead != actor and ahead.was_active_before \
-					and cycle.sprites.find(ahead.sprite_id) > cycle_sprite_pos:
-				if ahead.get_node("ReactionConfig").min_duration_timer > 0.0 \
-						or GlobInput.is_input_pressed(ahead.saved_event, ahead.inclusive_key_check):
+			if ahead != null and ahead != actor and ahead.was_active_before:
+				var a_rc = ahead.get_node("ReactionConfig")
+				# One key query serves both gates below.
+				var held : bool = GlobInput.is_input_pressed(ahead.saved_event, ahead.inclusive_key_check)
+				# Slot order is the priority order: a later member keeps the slot until
+				# its own window is over; only the downward direction is gated here.
+				if cycle.sprites.find(ahead.sprite_id) > cycle_sprite_pos:
+					if a_rc.min_duration_timer > 0.0 or a_rc.tail_timer > 0.0 or held:
+						is_trying_to_appear = false
+				# A hold occupant whose key is STILL DOWN re-raises its appear intent
+				# every frame and would flash the requester, so only it overrides.
+				elif !actor.hold_to_show and ahead.sprite_data.is_cycle \
+						and ahead.hold_to_show and held:
 					is_trying_to_appear = false
 	
 	#Finally, Show or Hide
@@ -258,6 +285,22 @@ func _process(delta: float) -> void:
 		if !actor.is_asset && !actor.sprite_object.visible:
 			actor.sprite_object.visible = true
 			actor.was_active_before = actor.sprite_object.visible
+
+func _request_tail(restart_flow : bool = false) -> void:
+	# The window refuses a hide intent rather than queueing it, so a held key that
+	# waits it out gets the remainder prepended and a spent press must come again.
+	if actor.tail_duration <= 0.00001 or !actor.was_active_before:
+		return
+	var head : float = maxf(min_duration_timer, 0.0)
+	if head > 0.0:
+		if !actor.hold_to_show:
+			return
+	elif restart_flow:
+		# A press once the window is over restarts the flow and opens it again first.
+		min_duration_timer = actor.min_duration
+		head = min_duration_timer
+	tail_timer = head + actor.tail_duration
+	is_trying_to_disappear = false
 
 func update_to_mode_change(mode : int):
 	match mode:
@@ -534,7 +577,8 @@ func not_speaking():
 
 static func sprite_show(aim_actor : Node):
 	var aim_sprite2d = aim_actor.sprite_object
-	
+	# Showing a sprite always restarts its shortest-display window; a tail lives in
+	# tail_timer instead and is never armed here, so a hand-off cannot renew it.
 	if aim_actor.min_duration > 0.00001:
 		aim_actor.get_node("ReactionConfig").min_duration_timer = aim_actor.min_duration # start the duration protect
 	if aim_actor.get_value("fade_asset"):
@@ -553,6 +597,8 @@ static func sprite_show(aim_actor : Node):
 		
 static func sprite_hide(aim_actor : Node):
 	var aim_sprite2d = aim_actor.sprite_object
+	# Hiding ends the cycle a tail counted for; the leftover must not suppress it.
+	aim_actor.get_node("ReactionConfig").tail_timer = 0.0
 	
 	if aim_actor.get_value("fade_asset"):
 		aim_actor.fade_asset(aim_actor.was_active_before, aim_actor, aim_sprite2d)
