@@ -622,10 +622,6 @@ func set_common_data(sprite, sprite_obj):
 			sprite_obj.min_duration = sprite.min_duration
 		if sprite.has("tail_duration"):
 			sprite_obj.tail_duration = sprite.tail_duration
-		elif sprite.has("min_duration_after_release") and sprite.min_duration_after_release:
-			# Legacy archives stored this as a bool and borrowed min_duration as the
-			# tail, so the value to keep is min_duration rather than the new default.
-			sprite_obj.tail_duration = sprite.min_duration
 		if sprite.has("cast_time"):
 			sprite_obj.cast_time = sprite.cast_time
 		if sprite.has("inclusive_key_check"):
