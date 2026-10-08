@@ -672,3 +672,8 @@ TR_INPUT_KEY_DELETE,Delete,Delete,删除
 TR_INPUT_KEY_INSERT,Insert,Insert,插入
 TR_INPUT_DOUBLE_CLICK," (Double Click)"," (двойной щелчок)"," (双击)"
 TR_INPUT_KEY_KP,"Kp ","Num ",小键盘
+TR_CYCLE_HANDOFF,Hand-off after hiding,Hand-off after hiding,隐藏后交接
+TR_CYCLE_HANDOFF_FIRST,Back to the first,Back to the first,回到首位
+TR_CYCLE_HANDOFF_PREV,Back to the previous,Back to the previous,回到上一位
+TR_CYCLE_HANDOFF_NONE,No hand-off,No hand-off,不交接
+TR_CYCLE_HANDOFF_TOOLTIP,"Where the display goes when a member of this cycle hides with nobody claiming the slot. Back to the previous steps one slot down each time a member hides and stops at the first one. A member that never hides on its own stays put, so the chain waits on it as a checkpoint.","Where the display goes when a member of this cycle hides with nobody claiming the slot. Back to the previous steps one slot down each time a member hides and stops at the first one. A member that never hides on its own stays put, so the chain waits on it as a checkpoint.",本循环成员隐藏、且没有其他成员占用显示位时的交接目标。「回到上一位」每次隐藏退一格、退到首位即停。不会自行隐藏的成员会停在那里 —— 相当于链上的一个检查点，要等它自己隐藏后才继续。

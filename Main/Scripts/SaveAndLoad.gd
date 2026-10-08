@@ -459,6 +459,10 @@ func prune_ghost_cycle_members() -> void:
 func restore_cycles() -> void:
 	for cycle in Global.settings_dict.cycles:
 		var sprites: Array = cycle.get("sprites", [])
+		# Older saves predate handoff_mode and behaved like "back to the first";
+		# fill it in so every stored cycle keeps the same shape.
+		if !cycle.has("handoff_mode"):
+			cycle["handoff_mode"] = 0
 		if sprites.is_empty():
 			continue
 		var shown_id = null

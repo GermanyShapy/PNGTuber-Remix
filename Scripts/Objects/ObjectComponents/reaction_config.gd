@@ -283,8 +283,16 @@ func _process(delta: float) -> void:
 			
 	if is_trying_to_disappear:
 		if cycle != null and actor.was_active_before:
-			if cycle_sprite_pos != 0 and cycle_sprite_pos == cycle.pos:
-				GlobInput.cycle.toggle_to(cycle, 0)
+			# Where the display goes when this member hides with nobody claiming the
+			# slot. -1 = no hand-off; "previous" ends at the head because pos 0
+			# yields -1 there.
+			if cycle_sprite_pos == cycle.pos:
+				var handoff := -1
+				match int(cycle.get("handoff_mode", 0)):
+					0: handoff = 0
+					1: handoff = cycle.pos - 1
+				if handoff >= 0 and handoff != cycle.pos:
+					GlobInput.cycle.toggle_to(cycle, handoff)
 		
 		if actor.was_active_before:
 			sprite_hide(actor)
