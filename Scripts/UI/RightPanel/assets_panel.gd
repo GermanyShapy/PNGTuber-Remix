@@ -33,6 +33,7 @@ func nullfy():
 	%DontHideOnToggleCheck.disabled = true
 	%HoldToShowCheck.disabled = true
 	%MinDurationSpinBox.editable = false
+	%TailDurationSpinBox.editable = false
 	%CastTimeSpinBox.editable = false
 	%InclusiveKeyCheck.disabled = true
 	%IgnoreIfRestCheck.disabled = true
@@ -57,6 +58,7 @@ func enable():
 		%DontHideOnToggleCheck.disabled = false
 		%HoldToShowCheck.disabled = false
 		%MinDurationSpinBox.editable = true
+		%TailDurationSpinBox.editable = true
 		%CastTimeSpinBox.editable = true
 		%InclusiveKeyCheck.disabled = false
 		%IgnoreIfRestCheck.disabled = false
@@ -89,6 +91,7 @@ func set_data():
 		%ShouldDisListContainer.hide()
 	%HoldToShowCheck.button_pressed = Global.held_sprites[0].hold_to_show
 	%MinDurationSpinBox.value = Global.held_sprites[0].min_duration
+	%TailDurationSpinBox.value = Global.held_sprites[0].tail_duration
 	%CastTimeSpinBox.value = Global.held_sprites[0].cast_time
 	%InclusiveKeyCheck.button_pressed = Global.held_sprites[0].inclusive_key_check
 	%IgnoreIfRestCheck.button_pressed =  Global.held_sprites[0].ignore_if_rest
@@ -112,6 +115,8 @@ func _on_cycle_choice_item_selected(index: int) -> void:
 		%CycleKey.update_key_text()
 		%CycleForward.update_key_text()
 		%CycleBackward.update_key_text()
+		%CycleHandoff.select(%CycleHandoff.get_item_index(
+				int(Global.settings_dict.cycles[index - 1].get("handoff_mode", 0))))
 	# Always refresh the tree: leaving it filled with another cycle's rows is how
 	# stale entries survive a rebuild (the margin hiding them is not a design).
 	%CycleItemTree.update_tree_items()
@@ -127,6 +132,7 @@ func _on_add_cycle_pressed() -> void:
 		pos = 0,
 		last_sprite = 0,
 		active = false,
+		handoff_mode = 0,
 	})
 	# Adding a cycle is almost always followed by configuring it, so select it.
 	_rebuild_cycle_choice(Global.settings_dict.cycles.size() - 1)
@@ -278,6 +284,13 @@ func _held_sprite_cycle() -> int:
 		return 0
 	var bound: int = sprite.sprite_data.get("cycle", 0)
 	return clampi(bound, 0, Global.settings_dict.cycles.size())
+
+func _on_cycle_handoff_item_selected(index: int) -> void:
+	var cycle_id: int = %CycleChoice.get_selected_id() - 1
+	if cycle_id < 0 or cycle_id >= Global.settings_dict.cycles.size():
+		return
+	# Stored by id, not by index: inserting an option later must not shift it.
+	Global.settings_dict.cycles[cycle_id]["handoff_mode"] = %CycleHandoff.get_item_id(index)
 
 func _on_cycle_name_text_submitted(_new_text: String) -> void:
 	_commit_cycle_name()

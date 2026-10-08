@@ -119,6 +119,7 @@ func save_data():
 			"saved_disappear": saved_events,
 			"hold_to_show":sprt.hold_to_show,
 			"min_duration":sprt.min_duration,
+			"tail_duration":sprt.tail_duration,
 			"cast_time":sprt.cast_time,
 			"inclusive_key_check":sprt.inclusive_key_check,
 			"ignore_if_rest":sprt.ignore_if_rest,
@@ -153,6 +154,7 @@ func save_data():
 				"saved_disappear": saved_events,
 				"hold_to_show":sprt.hold_to_show,
 				"min_duration":sprt.min_duration,
+				"tail_duration":sprt.tail_duration,
 				"cast_time":sprt.cast_time,
 				"inclusive_key_check":sprt.inclusive_key_check,
 				"ignore_if_rest":sprt.ignore_if_rest,
@@ -457,6 +459,10 @@ func prune_ghost_cycle_members() -> void:
 func restore_cycles() -> void:
 	for cycle in Global.settings_dict.cycles:
 		var sprites: Array = cycle.get("sprites", [])
+		# Older saves predate handoff_mode and behaved like "back to the first";
+		# fill it in so every stored cycle keeps the same shape.
+		if !cycle.has("handoff_mode"):
+			cycle["handoff_mode"] = 0
 		if sprites.is_empty():
 			continue
 		var shown_id = null
@@ -618,6 +624,8 @@ func set_common_data(sprite, sprite_obj):
 			sprite_obj.hold_to_show = sprite.hold_to_show
 		if sprite.has("min_duration"):
 			sprite_obj.min_duration = sprite.min_duration
+		if sprite.has("tail_duration"):
+			sprite_obj.tail_duration = sprite.tail_duration
 		if sprite.has("cast_time"):
 			sprite_obj.cast_time = sprite.cast_time
 		if sprite.has("inclusive_key_check"):

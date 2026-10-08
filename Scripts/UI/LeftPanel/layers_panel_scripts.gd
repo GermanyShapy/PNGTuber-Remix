@@ -250,6 +250,7 @@ func copy_common(src, dst):
 	dst.target_ik = src.target_ik
 	dst.hold_to_show = src.hold_to_show
 	dst.min_duration = src.min_duration
+	dst.tail_duration = src.tail_duration
 	dst.cast_time = src.cast_time
 	dst.inclusive_key_check = src.inclusive_key_check
 	dst.ignore_if_rest = src.ignore_if_rest

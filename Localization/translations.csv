@@ -602,6 +602,8 @@ TR_HOTKEY_NAME_COLUMN,Action,Действие,热键名称
 TR_HOTKEY_COLUMN,Hotkey,Горячая клавиша,热键绑定
 TR_MIN_DURATION,Minimal Duration,Мин. длительность,最短显示时间
 TR_MIN_DURATION_TOOLTIP,Sprite will be showed at least minimal duration to avoid disappearance.,"Спрайт будет показываться минимум указанное время, чтобы избежать исчезновения",精灵将至少持续的显示时间，以避免消失。
+TR_TAIL_DURATION,Tail Duration,Tail Duration,收尾持续时间
+TR_TAIL_DURATION_TOOLTIP,"Keeps the sprite on screen this long after it wants to hide (the key is released, it is toggled off, or the disappear key is pressed), so the tail can be seen before it vanishes.","Keeps the sprite on screen this long after it wants to hide (the key is released, it is toggled off, or the disappear key is pressed), so the tail can be seen before it vanishes.",精灵在想要隐藏时（松开按键、再按一次或按消失键）仍继续显示这么久再隐藏，以便看到收尾动作。
 TR_CAST_TIME,Cast Time,Время приведения,按键施法时间
 TR_CAST_TIME_TOOLTIP,Sprite will be showed when hotkey is continuously pressed for more than the cast time,Спрайт появится только при непрерывном удержании горячей клавиши дольше времени приведения,在持续按下热键直到超过施法时间时，精灵才会显示
 TR_INCLUSIVE_KEY_CHECK,Inclusive Key Check,Совместная проверка клавиш,包容性按键检测
@@ -671,3 +673,8 @@ TR_INPUT_KEY_DELETE,Delete,Delete,删除
 TR_INPUT_KEY_INSERT,Insert,Insert,插入
 TR_INPUT_DOUBLE_CLICK," (Double Click)"," (двойной щелчок)"," (双击)"
 TR_INPUT_KEY_KP,"Kp ","Num ",小键盘
+TR_CYCLE_HANDOFF,Hand-off after hiding,Hand-off after hiding,隐藏后交接
+TR_CYCLE_HANDOFF_FIRST,Back to the first,Back to the first,回到首位
+TR_CYCLE_HANDOFF_PREV,Back to the previous,Back to the previous,回到上一位
+TR_CYCLE_HANDOFF_NONE,No hand-off,No hand-off,不交接
+TR_CYCLE_HANDOFF_TOOLTIP,"Where the display goes when a member of this cycle hides with nobody claiming the slot. Back to the previous steps one slot down each time a member hides and stops at the first one. A member that never hides on its own stays put, so the chain waits on it as a checkpoint.","Where the display goes when a member of this cycle hides with nobody claiming the slot. Back to the previous steps one slot down each time a member hides and stops at the first one. A member that never hides on its own stays put, so the chain waits on it as a checkpoint.",本循环成员隐藏、且没有其他成员占用显示位时的交接目标。「回到上一位」每次隐藏退一格、退到首位即停。不会自行隐藏的成员会停在那里 —— 相当于链上的一个检查点，要等它自己隐藏后才继续。
