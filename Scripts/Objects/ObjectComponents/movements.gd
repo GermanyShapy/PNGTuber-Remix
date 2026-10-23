@@ -44,6 +44,34 @@ var last_mouse_position : Vector2 = Vector2.ZERO
 var last_dist : Vector2 = Vector2.ZERO
 var applied_pos_offset : Vector2 = Vector2.ZERO
 
+# T8: per-frame parameter snapshot. Filled at the top of _physics_process and
+# consumed by the helpers below; because it is refreshed every frame there is
+# no invalidation mechanism to maintain. Untyped on purpose: the values come
+# straight out of sprite_data and must keep its null semantics.
+var mv_static_obj
+var mv_should_rotate
+var mv_hidden_item
+var mv_rainbow
+var mv_tint
+var mv_xAmp
+var mv_xFrq
+var mv_yAmp
+var mv_yFrq
+var mv_dragSpeed
+var mv_physics
+var mv_ignore_bounce
+var mv_stretchAmount
+var mv_phys_eff
+var mv_rdragStr
+var mv_rot_frq
+var mv_rLimitMin
+var mv_rLimitMax
+var mv_follow_wa_tip
+var mv_world_axis_movement
+var mv_index_change
+var mv_index_change_y
+var mv_hit_physics
+
 var modifier_global : Vector2 =  Vector2.ZERO
 var yvel : float = 0.0
 
@@ -64,9 +92,62 @@ func _ready() -> void:
 	dragger.global_position = modifier_node.global_position
 
 func _physics_process(delta: float) -> void:
+	# T8: resolve every parameter once per frame. With shared_movement (the
+	# default) get_value() is a plain dictionary read, so the per-call overhead
+	# is dropped by reading sprite_data directly; sprites with mouth variants
+	# keep going through get_value(), which owns the prefix and fallback logic.
+	var d: Dictionary = actor.sprite_data
+	mv_static_obj = d.get("static_obj")
+	mv_should_rotate = d.get("should_rotate")
+	mv_hidden_item = d.get("hidden_item")
+	mv_rainbow = d.get("rainbow")
+	mv_tint = d.get("tint")
+	mv_xAmp = d.get("xAmp")
+	mv_xFrq = d.get("xFrq")
+	mv_yAmp = d.get("yAmp")
+	mv_yFrq = d.get("yFrq")
+	mv_dragSpeed = d.get("dragSpeed")
+	mv_physics = d.get("physics")
+	mv_ignore_bounce = d.get("ignore_bounce")
+	mv_stretchAmount = d.get("stretchAmount")
+	mv_phys_eff = d.get("phys_eff")
+	mv_rdragStr = d.get("rdragStr")
+	mv_rot_frq = d.get("rot_frq")
+	mv_rLimitMin = d.get("rLimitMin")
+	mv_rLimitMax = d.get("rLimitMax")
+	mv_follow_wa_tip = d.get("follow_wa_tip")
+	mv_world_axis_movement = d.get("world_axis_movement")
+	mv_index_change = d.get("index_change")
+	mv_index_change_y = d.get("index_change_y")
+	mv_hit_physics = d.get("hit_physics")
+	if not d.shared_movement:
+		mv_static_obj = actor.get_value("static_obj")
+		mv_should_rotate = actor.get_value("should_rotate")
+		mv_hidden_item = actor.get_value("hidden_item")
+		mv_rainbow = actor.get_value("rainbow")
+		mv_tint = actor.get_value("tint")
+		mv_xAmp = actor.get_value("xAmp")
+		mv_xFrq = actor.get_value("xFrq")
+		mv_yAmp = actor.get_value("yAmp")
+		mv_yFrq = actor.get_value("yFrq")
+		mv_dragSpeed = actor.get_value("dragSpeed")
+		mv_physics = actor.get_value("physics")
+		mv_ignore_bounce = actor.get_value("ignore_bounce")
+		mv_stretchAmount = actor.get_value("stretchAmount")
+		mv_phys_eff = actor.get_value("phys_eff")
+		mv_rdragStr = actor.get_value("rdragStr")
+		mv_rot_frq = actor.get_value("rot_frq")
+		mv_rLimitMin = actor.get_value("rLimitMin")
+		mv_rLimitMax = actor.get_value("rLimitMax")
+		mv_follow_wa_tip = actor.get_value("follow_wa_tip")
+		mv_world_axis_movement = actor.get_value("world_axis_movement")
+		mv_index_change = actor.get_value("index_change")
+		mv_index_change_y = actor.get_value("index_change_y")
+		mv_hit_physics = actor.get_value("hit_physics")
+
 	# Deferring the call costs a message-queue slot for every sprite; only the
 	# few static-pinned ones actually need it.
-	if actor.get_value("static_obj") and not actor.dragging:
+	if mv_static_obj and not actor.dragging:
 		apply_static_object_pin.call_deferred()
 
 	# Sleeping (rest_mode 2/3/6 out of the tree) pauses the movement: nothing is rebuilt, so the
@@ -100,7 +181,7 @@ func _physics_process(delta: float) -> void:
 		static_prev()
 	elif actor.rest_mode in [4,7]:	# Disable
 		# Same per-tick cost rule as below: compare before writing.
-		var tint : Color = actor.get_value("tint")
+		var tint : Color = mv_tint
 		if not modifier_node.position.is_equal_approx(Vector2.ZERO):
 			modifier_node.position = Vector2.ZERO
 		if not is_equal_approx(modifier_node.rotation, 0.0):
@@ -111,14 +192,14 @@ func _physics_process(delta: float) -> void:
 			sprite_node.self_modulate = tint
 		return
 	else:	# Active movements
-		if actor.get_value("should_rotate"):
+		if mv_should_rotate:
 			auto_rotate()
 		else:
 			should_rot_rotation = 0.0
 		rainbow(delta)
 		movements(delta)
 
-	if !actor.get_value("follow_wa_tip"):
+	if !mv_follow_wa_tip:
 		follow_point_rot = 0.0
 	else:
 		follow_wiggle(delta)
@@ -137,7 +218,7 @@ func _physics_process(delta: float) -> void:
 		# %Rotation. Write it back as a world-axis offset (legacy behaviour, so neither
 		# %Rotation's IK look-at nor %Modifier1's follow rotation steers the motion)
 		# or as a %Rotation-local offset (merged behaviour, follows the sprite's rotation).
-		if actor.get_value("world_axis_movement"):
+		if mv_world_axis_movement:
 			# applied_pos no longer holds the follow offset: subtracting modifier1_node.position
 			# here would strip it twice and flip the sprite to -f.
 			var world_pos: Vector2 = modifier1_node.global_position + final_position
@@ -148,15 +229,15 @@ func _physics_process(delta: float) -> void:
 
 	# Reading global_position forces a transform flush; only do it when the
 	# index-change feature actually needs it (almost never).
-	if actor.get_value("index_change") != 0 or actor.get_value("index_change_y") != 0:
+	if mv_index_change != 0 or mv_index_change_y != 0:
 		shadow_target = modifier_node.global_position + follow_component.final_target
 		var test = (shadow_target - actor.global_position).normalized()
 		var signed_len_x = (test.x)
 		var signed_len_y = (test.y)
 		index_change_len = lerp(index_change_len, signed_len_x, 0.95)
 		index_change_len_y = lerp(index_change_len_y, signed_len_y, 0.95)
-		index_change_len = index_change_len * actor.get_value("index_change")
-		index_change_len_y = index_change_len_y * actor.get_value("index_change_y")
+		index_change_len = index_change_len * mv_index_change
+		index_change_len_y = index_change_len_y * mv_index_change_y
 		var new_z: int = clamp(floori(index_change_len + index_change_len_y), -250, 250)
 		if modifier_node.z_index != new_z:
 			modifier_node.z_index = new_z
@@ -179,12 +260,12 @@ func _physics_process(delta: float) -> void:
 		else:
 			var t : Vector2 = (last_modifier_position - %Origin.global_position)
 			var mesh_len = (last_wobble_pos + follow_component.final_target )
-			var amp = Vector2(actor.get_value("xAmp"), actor.get_value("yAmp"))
+			var amp = Vector2(mv_xAmp, mv_yAmp)
 			var middle_x = (abs(actor.get_value("pos_x_min"))+ actor.get_value("pos_x_max"))*0.5
 			var middle_y = (abs(actor.get_value("pos_y_min"))+ actor.get_value("pos_y_max"))*0.5
 			var follow_amp = Vector2(middle_x, middle_y)
 			var final_amp = amp  + follow_amp
-			if actor.get_value("physics"):
+			if mv_physics:
 				mesh_len +=   t
 				var dir = Vector2(actor.get_value("mesh_phys_x"), actor.get_value("mesh_phys_y")).normalized()
 				final_amp -=  (Vector2(300,300) -  abs(Vector2(actor.get_value("mesh_phys_x"), actor.get_value("mesh_phys_y"))))*dir
@@ -205,7 +286,7 @@ func _physics_process(delta: float) -> void:
 		last_modifier_position = last_modifier_position.lerp(%Origin.global_position,0.125 )
 
 func chained_hit_reaction():
-	if actor.get_value("hit_physics"):
+	if mv_hit_physics:
 		var p = actor.get_parent().owner
 		if p.get_value("can_be_hit"):
 			var hit : float = p.get_node("%Movements").hit_rotation * actor.get_value("reaction_strength")
@@ -244,7 +325,7 @@ func movements(delta: float) -> void:
 	apply_recursive_look_at_chain(actor)
 	wobble(delta)
 
-	var physics_on : bool = actor.get_value("physics")
+	var physics_on : bool = mv_physics
 	# A previous anchor frame is usable only while frames are contiguous: after a rest /
 	# static-view gap it is stale, so neither the carry nor the differential may use it.
 	var anchor_ready : bool = !physics_on and prev_modifier1_frame == Engine.get_physics_frames() - 1
@@ -252,7 +333,7 @@ func movements(delta: float) -> void:
 
 	# This pre-compensation moves the previous sample in world space; with physics off the hop is
 	# already inside the frame differential, so applying it again re-injects the dropped motion.
-	if actor.get_value("ignore_bounce") && !actor.get_value("static_obj") && physics_on:
+	if mv_ignore_bounce && !mv_static_obj && physics_on:
 		glob -= Vector2(0.0, Global.sprite_container.bounceChange)
 
 	var l : Vector2
@@ -335,7 +416,7 @@ func add_parent_physics(length : float) -> float:
 	return length
 
 func drag(_delta : float, p_carry_anchor : bool = false) -> void:
-	var drag_speed = actor.get_value("dragSpeed")
+	var drag_speed = mv_dragSpeed
 	# Chase the anchor, not the modifier: the modifier is what this function writes, so a
 	# modifier-based target fed back into itself (inflated offset, half the tracking rate).
 	var target = modifier1_node.global_position + last_wobble_pos
@@ -361,22 +442,22 @@ func wobble(delta: float) -> void:
 	if true: # !actor.get_value("pause_movement"):
 		var offset = delta if Global.settings_dict.should_delta else 1.0
 		
-		if actor.get_value("xAmp") != 0.0:
+		if mv_xAmp != 0.0:
 			paused_wobble.x += offset
-			last_wobble_pos.x = actor.get_value("xAmp") * sin(paused_wobble.x * actor.get_value("xFrq"))
+			last_wobble_pos.x = mv_xAmp * sin(paused_wobble.x * mv_xFrq)
 		else:
 			last_wobble_pos.x = 0
-		if actor.get_value("yAmp") != 0.0:
+		if mv_yAmp != 0.0:
 			paused_wobble.y += offset
-			last_wobble_pos.y = actor.get_value("yAmp") * sin(paused_wobble.y * actor.get_value("yFrq"))
+			last_wobble_pos.y = mv_yAmp * sin(paused_wobble.y * mv_yFrq)
 		else:
 			last_wobble_pos.y = 0
 	
 	applied_pos += last_wobble_pos
 
 func rotational_drag(length, delta: float):
-	var rdrag_str = actor.get_value("rdragStr")
-	var rot_frq = actor.get_value("rot_frq")
+	var rdrag_str = mv_rdragStr
+	var rot_frq = mv_rot_frq
 
 	if 0.0 == rot_frq:
 		last_rot = 0.0
@@ -385,12 +466,12 @@ func rotational_drag(length, delta: float):
 	else:
 		last_rot = sin((Global.tick-paused_rotation) * rot_frq) * deg_to_rad(rdrag_str)
 
-	var min_rot : float = deg_to_rad(actor.get_value("rLimitMin"))
-	var max_rot : float = deg_to_rad(actor.get_value("rLimitMax"))
+	var min_rot : float = deg_to_rad(mv_rLimitMin)
+	var max_rot : float = deg_to_rad(mv_rLimitMax)
 	var free_wind : bool = (min_rot == -TAU) and (max_rot == TAU)
 	var final_last_rot : float = clamp(last_rot, min_rot, max_rot)
 
-	yvel = ((length * rdrag_str)) * (actor.get_value("phys_eff")/200.0)
+	yvel = ((length * rdrag_str)) * (mv_phys_eff/200.0)
 	yvel = clampf(deg_to_rad(yvel), min_rot, max_rot)
 
 	# blend both targets once instead.
@@ -423,7 +504,7 @@ func rotational_drag(length, delta: float):
 	applied_rotation += rot_step
 
 func stretch(length : float) -> void:
-	var syvel : float = (length * actor.get_value("stretchAmount") * 0.01)* (actor.get_value("phys_eff")/200.0)
+	var syvel : float = (length * mv_stretchAmount * 0.01)* (mv_phys_eff/200.0)
 	var target : Vector2 = Vector2(1.0 - syvel, 1.0 + syvel)
 	var next : Vector2 = modifier_node.scale.lerp(target, 0.15)
 	if not modifier_node.scale.is_equal_approx(next):
@@ -466,11 +547,11 @@ func follow_wiggle(_delta : float) -> void:
 	follow_point_rot = clamp(biased, deg_to_rad(actor.get_value("follow_wa_mini")), deg_to_rad(actor.get_value("follow_wa_max")))
 
 func rainbow(delta : float) -> void:
-	if actor.get_value("hidden_item") and Global.mode != 0:
+	if mv_hidden_item and Global.mode != 0:
 		sprite_node.self_modulate.a = 0.0
 		return
 
-	if actor.get_value("rainbow"):
+	if mv_rainbow:
 		var h_speed : float = actor.get_value("rainbow_speed") * delta
 		if actor.get_value("rainbow_self"):
 			sprite_node.self_modulate.s = 1.0
@@ -481,7 +562,7 @@ func rainbow(delta : float) -> void:
 			modifier_node.modulate.s = 1.0
 			modifier_node.modulate.h = wrap(modifier_node.modulate.h + h_speed, 0.0, 1.0)
 	else:
-		var tint: Color = actor.get_value("tint")
+		var tint: Color = mv_tint
 		if sprite_node.self_modulate != tint:
 			sprite_node.self_modulate = tint
 		if modifier_node.modulate.s != 0.0:
