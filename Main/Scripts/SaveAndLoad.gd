@@ -52,6 +52,7 @@ func save_data():
 		input_array.append({
 			"state_name": input.state_name,
 			"hot_key": input.saved_event,
+			"chord_modifiers": input.chord_modifiers,
 			"state_hold_to_show": input.state_hold_to_show,
 			"state_inclusive_key_check": input.state_inclusive_key_check
 		})
@@ -113,10 +114,12 @@ func save_data():
 			"sprite_type": sprt.sprite_type,
 			"is_asset": sprt.is_asset,
 			"saved_event": sprt.saved_event,
+			"chord_modifiers": sprt.chord_modifiers,
 			"was_active_before": sprt.was_active_before,
 			"should_disappear": sprt.should_disappear,
 			"show_only": sprt.show_only,
 			"saved_disappear": saved_events,
+			"saved_disappear_chords": sprt.disappear_chords,
 			"hold_to_show":sprt.hold_to_show,
 			"min_duration":sprt.min_duration,
 			"tail_duration":sprt.tail_duration,
@@ -148,10 +151,12 @@ func save_data():
 				"sprite_type": sprt.sprite_type,
 				"is_asset": sprt.is_asset,
 				"saved_event": sprt.saved_event,
+				"chord_modifiers": sprt.chord_modifiers,
 				"was_active_before": sprt.was_active_before,
 				"should_disappear": sprt.should_disappear,
 				"show_only": sprt.show_only,
 				"saved_disappear": saved_events,
+				"saved_disappear_chords": sprt.disappear_chords,
 				"hold_to_show":sprt.hold_to_show,
 				"min_duration":sprt.min_duration,
 				"tail_duration":sprt.tail_duration,
@@ -202,6 +207,10 @@ func save_data():
 	
 	save_dict = {
 		"version": Global.version,
+		# Chord bindings are additive (read side falls back to []), so no
+		# migration is needed; the marker only records that the file may carry
+		# them.
+		"chord_format": 1,
 		"sprites_array": sprites_array,
 		"settings_dict": Global.settings_dict,
 		"input_array": input_array,
@@ -288,6 +297,9 @@ func load_model(path: String) -> void:
 		load_dict = VersionConverter.convert_save(load_dict, file_version)
 
 	Global.settings_dict.merge(load_dict.settings_dict, true)
+	# Older saves predate chords; the per-hotkey member table is additive.
+	if not Global.settings_dict.has("custom_hotkey_chords"):
+		Global.settings_dict["custom_hotkey_chords"] = {}
 	if Global.settings_dict.monitor != Monitor.ALL_SCREENS:
 		if Global.settings_dict.monitor >= DisplayServer.get_screen_count():
 			Global.settings_dict.monitor = Monitor.ALL_SCREENS
@@ -306,14 +318,14 @@ func load_model(path: String) -> void:
 			var data = load_dict.input_array[i]
 			var btn = buttons[i]
 			if typeof(data) == TYPE_DICTIONARY:
-				btn.saved_event = data.get("hot_key")
+				btn.apply_binding(data.get("hot_key"), data.get("chord_modifiers", []))
 				btn.state_name = data.get("state_name", "")
 				btn.state_hold_to_show = data.get("state_hold_to_show", false)
 				btn.state_inclusive_key_check = data.get("state_inclusive_key_check", false)
 				btn.text = data.get("state_name", "")
 				btn.update_stuff()
 			else:
-				btn.saved_event = data
+				btn.apply_binding(data)
 				btn.update_stuff()
 
 	var state_count = get_tree().get_nodes_in_group("StateButtons").size()
@@ -338,6 +350,8 @@ func load_model(path: String) -> void:
 		i.reference_ik_target()
 		
 
+	# Sprite actions were recreated above; let the native layer see them.
+	GlobInput.refresh_action_cache()
 	Global.slider_values.emit(Global.settings_dict)
 	if Global.main.has_node("%Control"):
 		Global.update_anim.emit()
@@ -616,7 +630,7 @@ func set_common_data(sprite, sprite_obj):
 
 	if sprite.has("is_asset"):
 		sprite_obj.is_asset = sprite.is_asset
-		sprite_obj.saved_event = sprite.saved_event
+		sprite_obj.apply_binding(sprite.saved_event, sprite.get("chord_modifiers", []))
 		sprite_obj.should_disappear = sprite.should_disappear
 		if sprite.has("show_only"):
 			sprite_obj.show_only = sprite.show_only
@@ -662,6 +676,8 @@ func set_common_data(sprite, sprite_obj):
 			for keys in sprite.get("saved_disappear", []):
 				InputMap.action_add_event(sprite_obj.disappear_keys, keys)
 			
+
+		sprite_obj.apply_disappear_chords(sprite.get("saved_disappear_chords", []))
 
 		if !InputMap.has_action(str(sprite.sprite_id)):
 			InputMap.add_action(str(sprite.sprite_id))

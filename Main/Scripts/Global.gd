@@ -14,6 +14,11 @@ signal animation_state
 signal slider_values
 signal light_info
 
+# Binding labels depend on a setting, not on the model: the widgets that draw
+# one connect this and re-derive their own text. Keeps the settings popup from
+# walking the tree and knowing which controls exist.
+signal binding_labels_changed
+
 signal speaking
 signal not_speaking
 
@@ -130,7 +135,11 @@ var settings_dict : Dictionary = {
 
 	trimmed = false,
 	
-	custom_hotkeys = {}
+	custom_hotkeys = {},
+
+	# Which vendor layout joypad labels use: 0 = all three (default), 1 = Xbox,
+	# 2 = PlayStation, 3 = Nintendo. Saved with the model, like every setting.
+	gamepad_labels = 0
 }
 
 var image_manager_data : Array = []

@@ -171,11 +171,102 @@ const BRAND_MARKS: Dictionary = {
 }
 
 
+## Which vendor layout to show for a joypad label. The engine never reports which
+## pad is connected, so the default lists all three (" B / ○ / NS A"); a user who
+## knows their pad can pin one of them in the settings, which also makes every
+## chord short enough to fit a narrow panel. Stored per model in
+## `Global.settings_dict` (key `gamepad_labels`), so it travels with the save.
+##
+## The chosen vendor keeps its marker (icon, or the "NS" prefix): a bare "B" would
+## be indistinguishable from the keyboard key B in a mixed chord.
+const BRAND_ALL := 0
+const BRAND_XBOX := 1
+const BRAND_PS := 2
+const BRAND_NS := 3
+
+
+static func brand_style() -> int:
+	var settings = Global.settings_dict
+	if settings == null:
+		return BRAND_ALL
+	var value = settings.get("gamepad_labels", BRAND_ALL)
+	# A save edited by hand, a JSON round trip (float instead of int) or a
+	# released-then-removed id must not crash the whole binding UI: anything we
+	# cannot trust falls back to listing every vendor, which never hides info.
+	if not (value is int or value is float):
+		return BRAND_ALL
+	var style := int(value)
+	return style if style >= BRAND_ALL and style <= BRAND_NS else BRAND_ALL
+
+
+## Collapses a three-vendor label down to the chosen one. The vendor marker is
+## kept on purpose: the icon (Xbox / PlayStation) or the "NS" prefix is the only
+## thing that tells a joypad button apart from the keyboard key with the same
+## letter. A label that does not have the expected shape is returned untouched --
+## a translator or a future label must never be mangled.
+static func _apply_brand(p_label: String) -> String:
+	var style := brand_style()
+	if style == BRAND_ALL:
+		return p_label
+	var parts := p_label.split(" / ")
+	if parts.size() != 3:
+		return p_label
+	var segment := parts[clampi(style - 1, 0, 2)].strip_edges()
+	return segment if not segment.is_empty() else p_label
+
 ## The display label for any InputEvent. Never use this for comparisons or as a
 ## storage key — several call sites rely on the raw `as_text()` for identity.
-static func text(p_event: InputEvent) -> String:
+##
+## A chord is rendered with the **compact** member labels: the face/shoulder/
+## trigger rows name all three vendor layouts at once, so two members would be
+## ~30 characters and every panel that shows a binding (asset button, disappear
+## list, cycle, hotkey row) clipped it. `full_text()` keeps the complete labels
+## for tooltips, so no information is lost.
+static func text(p_event: InputEvent, p_chord_members: Array = []) -> String:
 	if p_event == null:
 		return ""
+	if p_chord_members == null or p_chord_members.is_empty():
+		return _single_text(p_event)
+	var parts: PackedStringArray = []
+	for m in p_chord_members:
+		# A malformed member (hand-edited save, older format) must be skipped:
+		# a plain `as InputEvent` cast on a non-object raises at runtime.
+		if not (m is InputEvent):
+			continue
+		parts.append(compact(m))
+	parts.append(compact(p_event))
+	return " + ".join(parts)
+
+
+## Every vendor alias spelled out. Only for tooltips / help text.
+static func full_text(p_event: InputEvent, p_chord_members: Array = []) -> String:
+	if p_event == null:
+		return ""
+	var label := _single_text(p_event)
+	if p_chord_members == null or p_chord_members.is_empty():
+		return label
+	var parts: PackedStringArray = []
+	for m in p_chord_members:
+		if not (m is InputEvent):
+			continue
+		parts.append(_single_text(m))
+	parts.append(label)
+	return " + ".join(parts)
+
+
+## One input, short enough to sit in a chord. Joypad rows that list three vendor
+## layouts collapse to the first alias (" B" instead of " B / ○ / NS A"); the
+## brand icon stays, because it is what tells a joypad button apart from the
+## keyboard key printed with the same letter.
+static func compact(p_event: InputEvent) -> String:
+	var label := _single_text(p_event)
+	if not (p_event is InputEventJoypadButton or p_event is InputEventJoypadMotion):
+		return label
+	var cut := label.find(" / ")
+	return label if cut < 0 else label.substr(0, cut)
+
+
+static func _single_text(p_event: InputEvent) -> String:
 	if p_event is InputEventMouseButton:
 		return _mouse_text(p_event)
 	if p_event is InputEventKey:
@@ -205,7 +296,7 @@ static func _brandify(p_label: String) -> String:
 static func _joy_button_text(p_event: InputEventJoypadButton) -> String:
 	var idx := p_event.button_index
 	if JOY_BUTTON_TR.has(idx):
-		var label := _brandify(_lookup(JOY_BUTTON_TR[idx], "Button %d" % idx))
+		var label := _brandify(_apply_brand(_lookup(JOY_BUTTON_TR[idx], "Button %d" % idx)))
 		if idx in JOY_BUTTON_SELF_LABELLED:
 			return label
 		return _joy_prefix() + label
@@ -219,9 +310,9 @@ static func _joy_button_text(p_event: InputEventJoypadButton) -> String:
 static func _joy_motion_text(p_event: InputEventJoypadMotion) -> String:
 	match p_event.axis:
 		JOY_AXIS_TRIGGER_LEFT:
-			return _brandify(_lookup("TR_INPUT_JOY_LT", "LT / L2 / ZL"))
+			return _brandify(_apply_brand(_lookup("TR_INPUT_JOY_LT", "LT / L2 / ZL")))
 		JOY_AXIS_TRIGGER_RIGHT:
-			return _brandify(_lookup("TR_INPUT_JOY_RT", "RT / R2 / ZR"))
+			return _brandify(_apply_brand(_lookup("TR_INPUT_JOY_RT", "RT / R2 / ZR")))
 
 	var positive := "→"
 	var negative := "←"

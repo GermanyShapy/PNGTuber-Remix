@@ -168,9 +168,9 @@ func _process(delta: float) -> void:
 			return
 
 	# Conditions
-	is_action_just_pressed = GlobInput.is_input_just_pressed(actor.saved_event, actor.inclusive_key_check)
-	is_action_pressed = GlobInput.is_input_pressed(actor.saved_event, actor.inclusive_key_check)
-	is_disappear_key_just_pressed = GlobInput.is_action_just_pressed(actor.disappear_keys, actor.inclusive_key_check)
+	is_action_just_pressed = GlobInput.is_input_just_pressed(actor.saved_event, actor.inclusive_key_check, actor.chord_modifiers)
+	is_action_pressed = GlobInput.is_input_pressed(actor.saved_event, actor.inclusive_key_check, actor.chord_modifiers)
+	is_disappear_key_just_pressed = GlobInput.is_action_just_pressed(actor.disappear_keys, actor.inclusive_key_check, actor.disappear_chord_map)
 	
 	if is_action_just_pressed:
 		if actor.show_only:
@@ -250,7 +250,7 @@ func _process(delta: float) -> void:
 			if ahead != null and ahead != actor and ahead.was_active_before:
 				var a_rc = ahead.get_node("ReactionConfig")
 				# One key query serves both gates below.
-				var held : bool = GlobInput.is_input_pressed(ahead.saved_event, ahead.inclusive_key_check)
+				var held : bool = GlobInput.is_input_pressed(ahead.saved_event, ahead.inclusive_key_check, ahead.chord_modifiers)
 				# Slot order is the priority order: a later member keeps the slot until
 				# its own window is over; only the downward direction is gated here.
 				if cycle.sprites.find(ahead.sprite_id) > cycle_sprite_pos:

@@ -35,6 +35,10 @@ extends Button
 ## (not-awaiting) state.
 
 const META_KEY := "_mouse_capture_area"
+## Which mouse buttons were pressed on the pad and have not been released yet.
+## A single bool lost track as soon as two buttons were held at once: the first
+## release cleared it, so the second release looked like a stray one and the
+## chord never committed (it waited for yet another click).
 const META_PRESSED := "_mouse_capture_pressed"
 const PAD_HEIGHT := 26.0
 const MIN_PAD_WIDTH := 120.0
@@ -89,7 +93,7 @@ static func show_for(p_button: Control) -> void:
 static func hide_for(p_button: Control) -> void:
 	# Also drop a half-finished pad press: otherwise a later stray release could
 	# be mistaken for "the user released on the pad" and bind a random key.
-	p_button.set_meta(META_PRESSED, false)
+	p_button.set_meta(META_PRESSED, {})
 	if not p_button.has_meta(META_KEY):
 		return
 	var pad = p_button.get_meta(META_KEY)
@@ -132,12 +136,16 @@ static func step_mouse(p_button: Control, p_event: InputEvent) -> MouseStep:
 	if p_event.is_pressed():
 		if is_over(p_button, p_event.position):
 			_consume(p_button)
-			p_button.set_meta(META_PRESSED, true)
+			var held: Dictionary = p_button.get_meta(META_PRESSED, {})
+			held[p_event.button_index] = true
+			p_button.set_meta(META_PRESSED, held)
 			return MouseStep.PRESS_ON_PAD
 		return MouseStep.PRESS_OUTSIDE
-	if not bool(p_button.get_meta(META_PRESSED, false)):
+	var held: Dictionary = p_button.get_meta(META_PRESSED, {})
+	if not held.has(p_event.button_index):
 		return MouseStep.IGNORE
-	p_button.set_meta(META_PRESSED, false)
+	held.erase(p_event.button_index)
+	p_button.set_meta(META_PRESSED, held)
 	_consume(p_button)
 	return MouseStep.RELEASE_ON_PAD
 

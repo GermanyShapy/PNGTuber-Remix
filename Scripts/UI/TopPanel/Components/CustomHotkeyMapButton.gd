@@ -15,6 +15,9 @@ var hotkey_state_buttons: Array[Node]
 var hotkey_asset_sprites: Array[Node]
 var hotkey_disappear_sprites: Array[Node]
 var hotkey_cycles: Array
+# Collects the inputs pressed while awaiting; a binding commits once every
+# member is released (see BindingSession).
+var _session := BindingSession.new()
 
 func _init():
 	toggle_mode = true
@@ -23,6 +26,9 @@ func _init():
 	
 func _ready():
 	set_process_input(false)
+	_ensure_chord_dict()
+	# Vendor-label style is a setting: re-derive our own text when it changes.
+	Global.binding_labels_changed.connect(update_key_text)
 	update_key_text()
 	refresh_hotkey_ref_arrays()
 	hotkey_name_line_edit.text = hotkey_name
@@ -36,36 +42,38 @@ func refresh_hotkey_ref_arrays():
 	var state_buttons = get_tree().get_nodes_in_group("StateButtons")
 	var sprites = get_tree().get_nodes_in_group("Sprites")
 	
+	var hotkey_members := _current_members()
+
 	for state_btn: StateButton in state_buttons:
 		if state_btn.saved_event == null:
 			continue
-		if is_same_hotkey_event(hotkey_event, state_btn.saved_event):
+		if is_same_binding(hotkey_event, hotkey_members, state_btn.saved_event, state_btn.chord_modifiers):
 			hotkey_state_buttons.append(state_btn)
 			
 	for sprite: SpriteObject in sprites:
 		if sprite.saved_event == null:
 			continue
-		if is_same_hotkey_event(hotkey_event, sprite.saved_event):
+		if is_same_binding(hotkey_event, hotkey_members, sprite.saved_event, sprite.chord_modifiers):
 			hotkey_asset_sprites.append(sprite)
 
 		if InputMap.has_action(sprite.disappear_keys): #disappear keys
 			var dis_action_events = InputMap.action_get_events(sprite.disappear_keys)
 			for id in dis_action_events.size():
-				if is_same_hotkey_event(hotkey_event, dis_action_events[id]):
+				var target_members: Array = sprite.disappear_chords[id] if id < sprite.disappear_chords.size() else []
+				if is_same_binding(hotkey_event, hotkey_members, dis_action_events[id], target_members):
 					hotkey_disappear_sprites.append(sprite)
 					break
 	
 	for cycle in Global.settings_dict.cycles:
-		var toggle_event = cycle.toggle
-		var forward_event = cycle.forward
-		var backward_event = cycle.backward
-		
-		if is_same_hotkey_event(hotkey_event, toggle_event) or is_same_hotkey_event(hotkey_event, forward_event) or is_same_hotkey_event(hotkey_event, backward_event):
+		if is_same_binding(hotkey_event, hotkey_members, cycle.toggle, cycle.get("toggle_chord", [])) \
+			or is_same_binding(hotkey_event, hotkey_members, cycle.forward, cycle.get("forward_chord", [])) \
+			or is_same_binding(hotkey_event, hotkey_members, cycle.backward, cycle.get("backward_chord", [])):
 			hotkey_cycles.append(cycle)
 
 func _toggled(_button_pressed):
 	set_process_input(_button_pressed)
 	if _button_pressed:
+		_session.clear()
 		text = tr("TR_AWAITING_INPUT")
 		release_focus()
 		MouseCaptureArea.show_for(self)
@@ -78,6 +86,7 @@ func _toggled(_button_pressed):
 func cancel_await() -> void:
 	# Drops the awaiting state from any entry point (popup closed, a click
 	# outside the capture pad, ...) without relying on the toggled() gate.
+	_session.clear()
 	set_process_input(false)
 	MouseCaptureArea.hide_for(self)
 	if button_pressed:
@@ -93,14 +102,16 @@ func _input(event):
 		return
 	if event is InputEventMouseMotion:
 		return
-	# A stick binds the moment its direction crosses the deadzone -- see
-	# StandGlobalInput.is_joy_pushed() for why "on release" cannot work.
+	# Sticks report no release edge that can be stored, so coming back into the
+	# deadzone only marks the member released (BindingSession.release_axis).
 	if event is InputEventJoypadMotion:
-		if not GlobInput.is_joy_pushed(event):
-			return
 		get_viewport().set_input_as_handled()
-		update_hotkey_event(GlobInput.normalize_joy_event(event))
-		button_pressed = false
+		if GlobInput.is_joy_pushed(event):
+			_session.press(GlobInput.normalize_joy_event(event))
+			_update_preview()
+		else:
+			_session.release_axis(event.axis)
+			_try_commit()
 		return
 	# `_input` runs before GUI picking, so a press that lands on the capture pad
 	# is swallowed here before the control the pad covers ever reacts. A mouse
@@ -110,25 +121,88 @@ func _input(event):
 		if step == MouseCaptureArea.MouseStep.PRESS_OUTSIDE:
 			cancel_await()
 			return
+		if step == MouseCaptureArea.MouseStep.PRESS_ON_PAD:
+			_session.press(event)
+			_update_preview()
+			return
 		if step != MouseCaptureArea.MouseStep.RELEASE_ON_PAD:
 			return
-	elif not event.is_released():
-		# Swallow the key press too: otherwise the key could still fire a
-		# shortcut or move focus before its release binds it.
+			if not event.pressed:
+				# Released off the pad: drop the member instead of leaving it
+				# "held" in the session forever.
+				_session.release(event)
 		get_viewport().set_input_as_handled()
+		_session.press(event)
+		_session.release(event)
+		_try_commit()
 		return
-	# Swallow the bound event so it cannot also drive the GUI afterwards.
-	get_viewport().set_input_as_handled()
-	update_hotkey_event(event)
+	if event is InputEventKey:
+		get_viewport().set_input_as_handled()
+		if event.pressed:
+			# Auto-repeat is not a new press: it must not reorder the
+			# chord members or become the primary.
+			if event.echo:
+				return
+			# A modifier is part of the key event itself: it never joins a chord,
+			# and it cancels whatever chord was being built (D4).
+			if BindingSession.is_modifier_event(event) or BindingSession.has_modifier(event):
+				_session.clear()
+				return
+			_session.press(event)
+			_update_preview()
+			return
+		# Modifier combos keep using the single-event path.
+		if _session.is_empty() or BindingSession.has_modifier(event):
+			_session.clear()
+			update_hotkey_event(event)
+			button_pressed = false
+			return
+		_session.release(event)
+		_try_commit()
+		return
+	if event is InputEventJoypadButton:
+		get_viewport().set_input_as_handled()
+		if event.pressed:
+			_session.press(event)
+			_update_preview()
+		else:
+			_session.release(event)
+			_try_commit()
+		return
 
+
+func _try_commit() -> void:
+	if not _session.is_ready():
+		_update_preview()
+		return
+	var binding := _session.take()
+	_session.clear()
+	if binding.is_empty():
+		return
+	update_hotkey_event(binding["primary"], binding["members"])
 	button_pressed = false
+
+
+func _update_preview() -> void:
+	var preview := _session.preview_text()
+	text = preview if not preview.is_empty() else tr("TR_AWAITING_INPUT")
+
+
+func _ensure_chord_dict() -> void:
+	if not Global.settings_dict.has("custom_hotkey_chords"):
+		Global.settings_dict["custom_hotkey_chords"] = {}
 
 
 func update_key_text():
 	if hotkey_event != null && is_instance_valid(hotkey_event):
-		text = InputDisplayName.text(hotkey_event)
+		_ensure_chord_dict()
+		var members: Array = Global.settings_dict.custom_hotkey_chords.get(hotkey_name, [])
+		BindingLabel.set_button_text(self, InputDisplayName.text(hotkey_event, members), not members.is_empty())
+		# Compact in the row, full aliases in the tooltip.
+		tooltip_text = InputDisplayName.full_text(hotkey_event, members) if not members.is_empty() else ""
 	else:
-		text = "Null"
+		BindingLabel.set_button_text(self, "Null", false)
+		tooltip_text = ""
 
 static func is_same_hotkey_event(event1: InputEvent, event2: InputEvent) -> bool:
 	if event1 == null or event2 == null:
@@ -165,10 +239,18 @@ static func is_same_hotkey_event(event1: InputEvent, event2: InputEvent) -> bool
 		and event1.alt_pressed == event2.alt_pressed \
 		and event1.meta_pressed == event2.meta_pressed
 
-func update_hotkey_event(event):
-	#Check for duplicate hotkey events
-	for another_hotkey_event: InputEvent in Global.settings_dict.custom_hotkeys.values():
-		if is_same_hotkey_event(event, another_hotkey_event):
+func update_hotkey_event(event, p_members: Array = []):
+	_ensure_chord_dict()
+	var members: Array = p_members.duplicate(true) if p_members != null else []
+	var previous_members := _current_members()
+
+	#Check for duplicate bindings (primary plus members)
+	for another_name in Global.settings_dict.custom_hotkeys:
+		if another_name == hotkey_name:
+			continue
+		var another_event: InputEvent = Global.settings_dict.custom_hotkeys[another_name]
+		var another_members: Array = Global.settings_dict.custom_hotkey_chords.get(another_name, [])
+		if is_same_binding(event, members, another_event, another_members):
 			update_key_text()
 			return
 	
@@ -179,21 +261,25 @@ func update_hotkey_event(event):
 		action_name = state_btn.input_key
 		InputMap.action_erase_events(action_name)
 		InputMap.action_add_event(action_name, new_event)
-		state_btn.saved_event = new_event
+		state_btn.apply_binding(new_event, members)
 			
 	for sprite: SpriteObject in hotkey_asset_sprites:
 		var new_event = (event as InputEvent).duplicate()
 		action_name = str(sprite.sprite_id)
 		InputMap.action_erase_events(action_name)
 		InputMap.action_add_event(action_name, new_event)
-		sprite.saved_event = new_event
+		sprite.apply_binding(new_event, members)
 
 	for sprite: SpriteObject in hotkey_disappear_sprites:
 		var dis_action_events: Array = InputMap.action_get_events(sprite.disappear_keys)
 		var changed := false
 		for id in dis_action_events.size():
-			if is_same_hotkey_event(hotkey_event, dis_action_events[id]):
+			var target_members: Array = sprite.disappear_chords[id] if id < sprite.disappear_chords.size() else []
+			if is_same_binding(hotkey_event, previous_members, dis_action_events[id], target_members):
 				dis_action_events[id] = (event as InputEvent).duplicate()
+				while sprite.disappear_chords.size() <= id:
+					sprite.disappear_chords.append([])
+				sprite.disappear_chords[id] = members.duplicate(true)
 				changed = true
 		# action_add_event appends: erase_event + add_event would move every
 		# replaced row to the end. Rewrite the whole list to keep the order.
@@ -201,23 +287,54 @@ func update_hotkey_event(event):
 			InputMap.action_erase_events(sprite.disappear_keys)
 			for e in dis_action_events:
 				InputMap.action_add_event(sprite.disappear_keys, e)
+			sprite.apply_disappear_chords(sprite.disappear_chords)
 	
 	for cycle in hotkey_cycles:
-		var toggle_event = cycle.toggle
-		var forward_event = cycle.forward
-		var backward_event = cycle.backward
-		
-		if is_same_hotkey_event(hotkey_event, toggle_event):
+		if is_same_binding(hotkey_event, previous_members, cycle.toggle, cycle.get("toggle_chord", [])):
 			cycle.toggle = (event as InputEvent).duplicate()
-		if is_same_hotkey_event(hotkey_event, forward_event):
+			cycle["toggle_chord"] = members.duplicate(true)
+		if is_same_binding(hotkey_event, previous_members, cycle.forward, cycle.get("forward_chord", [])):
 			cycle.forward = (event as InputEvent).duplicate()
-		if is_same_hotkey_event(hotkey_event, backward_event):
+			cycle["forward_chord"] = members.duplicate(true)
+		if is_same_binding(hotkey_event, previous_members, cycle.backward, cycle.get("backward_chord", [])):
 			cycle.backward = (event as InputEvent).duplicate()
+			cycle["backward_chord"] = members.duplicate(true)
 	
 	hotkey_event = (event as InputEvent).duplicate()
+	Global.settings_dict.custom_hotkey_chords[hotkey_name] = members.duplicate(true)
 	GlobInput.refresh_action_cache()
 	update_key_text()
 	TopBarInput.desel_everything()
+
+
+func _current_members() -> Array:
+	_ensure_chord_dict()
+	return Global.settings_dict.custom_hotkey_chords.get(hotkey_name, [])
+
+
+## Full binding identity: primary event plus member set. Two bindings that only
+## share the primary event are different bindings.
+static func is_same_binding(p_e1: InputEvent, p_m1: Array, p_e2: InputEvent, p_m2: Array) -> bool:
+	if not is_same_hotkey_event(p_e1, p_e2):
+		return false
+	var a: Array = p_m1 if p_m1 is Array else []
+	var b: Array = p_m2 if p_m2 is Array else []
+	if a.size() != b.size():
+		return false
+	var used: Array = []
+	for x in a:
+		var found := false
+		for i in range(b.size()):
+			if i in used:
+				continue
+			if is_same_hotkey_event(x, b[i]):
+				used.append(i)
+				found = true
+				break
+		if not found:
+			return false
+	return true
+
 
 func _on_hotkey_name_text_submitted(new_text):
 	if hotkey_name == new_text:
@@ -234,6 +351,12 @@ func _on_hotkey_name_text_submitted(new_text):
 		var event = Global.settings_dict.custom_hotkeys[hotkey_name]
 		Global.settings_dict.custom_hotkeys[new_text] = event
 		Global.settings_dict.custom_hotkeys.erase(hotkey_name)
+		# The chord table is keyed by hotkey name: rename it together with the
+		# binding or the members are orphaned under the old name.
+		_ensure_chord_dict()
+		var members: Array = Global.settings_dict.custom_hotkey_chords.get(hotkey_name, [])
+		Global.settings_dict.custom_hotkey_chords[new_text] = members
+		Global.settings_dict.custom_hotkey_chords.erase(hotkey_name)
 		hotkey_name = new_text
 	else:
 		hotkey_name_line_edit.text = hotkey_name

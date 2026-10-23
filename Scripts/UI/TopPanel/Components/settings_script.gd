@@ -29,6 +29,7 @@ func _ready() -> void:
 			Global.settings_dict.monitor = Monitor.ALL_SCREENS
 			%SelectedScreen.select(0)
 	check_data()
+	_build_gamepad_label_option()
 	init_hotkey_list()
 
 func _populate_languages() -> void:
@@ -48,12 +49,79 @@ func _on_remix_language_set(index: int) -> void:
 	
 func _on_language_changed(_locale: String) -> void:
 	_populate_languages()
+	_localize_gamepad_label_option()
+
+
+# --- Gamepad label style -----------------------------------------------------
+#
+# Built at runtime instead of living in the scene: it is one label plus one
+# dropdown, and adding them here keeps the popup's .tscn untouched. The choice
+# is stored in Global.settings_dict, so it is written into the model and loaded
+# back with it.
+
+const GAMEPAD_LABEL_OPTIONS: Array = [
+	{"id": 0, "text": "TR_GAMEPAD_LABELS_ALL"},
+	{"id": 1, "text": "TR_GAMEPAD_LABELS_XB"},
+	{"id": 2, "text": "TR_GAMEPAD_LABELS_PS"},
+	{"id": 3, "text": "TR_GAMEPAD_LABELS_NS"},
+]
+
+var _gamepad_label_title: Label
+var _gamepad_label_option: OptionButton
+
+
+func _build_gamepad_label_option() -> void:
+	if _gamepad_label_option != null:
+		return
+	var grid: GridContainer = %MaxFPS.get_parent()
+	_gamepad_label_title = Label.new()
+	_gamepad_label_title.name = "GamepadLabelsLabel"
+	_gamepad_label_title.custom_minimum_size = Vector2(144, 0)
+	_gamepad_label_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_gamepad_label_option = OptionButton.new()
+	_gamepad_label_option.name = "GamepadLabelsOption"
+	_gamepad_label_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_child(_gamepad_label_title)
+	grid.add_child(_gamepad_label_option)
+	_gamepad_label_option.item_selected.connect(_on_gamepad_label_selected)
+	_localize_gamepad_label_option()
+	gamepad_label_select(int(Global.settings_dict.get("gamepad_labels", 0)))
+
+
+func _localize_gamepad_label_option() -> void:
+	if _gamepad_label_option == null:
+		return
+	_gamepad_label_title.text = tr("TR_GAMEPAD_LABELS")
+	_gamepad_label_title.tooltip_text = tr("TR_GAMEPAD_LABELS_TOOLTIP")
+	var current := _gamepad_label_option.get_selected_id()
+	_gamepad_label_option.clear()
+	for option in GAMEPAD_LABEL_OPTIONS:
+		_gamepad_label_option.add_item(tr(option["text"]), int(option["id"]))
+	gamepad_label_select(current)
+
+
+## Selects by the *stored value* (item id), never by index: the ids are what the
+## save file holds, and the ones already published must stay put.
+func gamepad_label_select(style_id: int) -> void:
+	if _gamepad_label_option == null:
+		return
+	var idx := _gamepad_label_option.get_item_index(style_id)
+	_gamepad_label_option.select(idx if idx >= 0 else 0)
+
+
+func _on_gamepad_label_selected(index: int) -> void:
+	Global.settings_dict["gamepad_labels"] = _gamepad_label_option.get_item_id(index)
+	# Every binding label is written imperatively (vendor choice, chord members),
+	# so nothing re-derives it on its own: let the widgets that draw one repaint.
+	Global.binding_labels_changed.emit()
 
 func close():
 	get_parent().queue_free()
 
 func check_data():
 	change_setting = false
+	# Null until _build_gamepad_label_option() has run; the build syncs it itself.
+	gamepad_label_select(int(Global.settings_dict.get("gamepad_labels", 0)))
 	%AutoLoadCheck.button_pressed = Settings.theme_settings.auto_load
 	%SaveOnExitCheck.button_pressed = Settings.theme_settings.save_on_exit
 	%AutoSaveCheck.button_pressed = Global.settings_dict.auto_save
@@ -102,62 +170,115 @@ func check_data():
 
 	change_setting = true
 
-func append_unique_hotkey_to_dict(hotkey_event: InputEvent, dict: Dictionary):
+## One row per distinct binding, stored as {"event": InputEvent, "members": Array}.
+## A chord is a primary event plus its member set, so identity can no longer be
+## "primary event only": LB and LB+B would collapse into one row, and the
+## surviving row could neither display nor address the chord (the settings list
+## re-scans every binding when it opens).
+func append_unique_hotkey_to_dict(hotkey_event: InputEvent, dict: Dictionary, members: Array = []):
 	if hotkey_event == null:
 		return
-		
-	for e in dict.values():
-		if CustomHotkeyMapButton.is_same_hotkey_event(e, hotkey_event):
+	for hotkey_name in dict:
+		var entry: Dictionary = dict[hotkey_name]
+		if CustomHotkeyMapButton.is_same_binding(entry["event"], entry["members"], hotkey_event, members):
 			return
-	if hotkey_event.as_text() == "Ctrl+7":
-		pass
-	dict[hotkey_event.as_text()] = hotkey_event.duplicate()
+	dict[_binding_name(hotkey_event, members)] = {
+		"event": hotkey_event.duplicate(),
+		"members": members.duplicate(true),
+	}
+
+
+## Name of a binding row. Built from `as_text()` on purpose: the name is the key
+## of a persisted dictionary, so it must not depend on the UI language or on
+## which controller happens to be connected.
+func _binding_name(hotkey_event: InputEvent, members: Array) -> String:
+	var parts: PackedStringArray = []
+	for m in members:
+		parts.append(_stable_name(m as InputEvent))
+	parts.append(_stable_name(hotkey_event))
+	var base := " + ".join(parts)
+	var name := base
+	var suffix := 2
+	while Global.settings_dict.custom_hotkeys.has(name):
+		name = "%s (%d)" % [base, suffix]
+		suffix += 1
+	return name
+
+
+## `as_text()` on a joypad button appends the whole vendor alias list
+## ("Joypad Button 9 (Left Shoulder, Sony L1, Xbox LB)"). That is noise in a name
+## field, and two members made the row unreadable -- drop the parenthesised part.
+## The number that identifies the button is always outside it.
+func _stable_name(p_event: InputEvent) -> String:
+	var raw := p_event.as_text() if p_event != null else ""
+	var cut := raw.find(" (")
+	return raw if cut < 0 else raw.substr(0, cut)
+
 
 func init_hotkey_list():
+	# This list can be built before any model is loaded, so the chord table may
+	# not exist yet (it is normally created by the binding widgets / on load).
+	if not Global.settings_dict.has("custom_hotkey_chords"):
+		Global.settings_dict["custom_hotkey_chords"] = {}
 	#Search all states and sprites
 	var state_buttons = get_tree().get_nodes_in_group("StateButtons")
 	var sprites = get_tree().get_nodes_in_group("Sprites")
 	var hotkey_dict: Dictionary = {}
 	
 	for state_btn: StateButton in state_buttons:
-		append_unique_hotkey_to_dict(state_btn.saved_event, hotkey_dict)
+		append_unique_hotkey_to_dict(state_btn.saved_event, hotkey_dict, state_btn.chord_modifiers)
 		
 	for sprite: SpriteObject in sprites:
-		append_unique_hotkey_to_dict(sprite.saved_event, hotkey_dict)
+		append_unique_hotkey_to_dict(sprite.saved_event, hotkey_dict, sprite.chord_modifiers)
 
 		if InputMap.has_action(sprite.disappear_keys): #disappear keys
 			var dis_action_events = InputMap.action_get_events(sprite.disappear_keys)
 			for id in dis_action_events.size():
-				append_unique_hotkey_to_dict(dis_action_events[id], hotkey_dict)
+				var dis_members: Array = sprite.disappear_chords[id] if id < sprite.disappear_chords.size() else []
+				append_unique_hotkey_to_dict(dis_action_events[id], hotkey_dict, dis_members)
 	
 	for cycle in Global.settings_dict.cycles:
-		append_unique_hotkey_to_dict(cycle.toggle, hotkey_dict)
-		append_unique_hotkey_to_dict(cycle.forward, hotkey_dict)
-		append_unique_hotkey_to_dict(cycle.backward, hotkey_dict)
-	
+		append_unique_hotkey_to_dict(cycle.toggle, hotkey_dict, cycle.get("toggle_chord", []))
+		append_unique_hotkey_to_dict(cycle.forward, hotkey_dict, cycle.get("forward_chord", []))
+		append_unique_hotkey_to_dict(cycle.backward, hotkey_dict, cycle.get("backward_chord", []))
+
 	#Get intersection of scaned hotkeys and global hotkeys
 	#New hotkeys will be added, named by its event
 	#Unexisting global hotkeys will be removed
 	for hotkey_name in hotkey_dict:
+		var entry: Dictionary = hotkey_dict[hotkey_name]
 		var is_diffent = true
-		for e in Global.settings_dict.custom_hotkeys.values():
-			if CustomHotkeyMapButton.is_same_hotkey_event(hotkey_dict[hotkey_name], e):
+		for existing_name in Global.settings_dict.custom_hotkeys:
+			var existing_members: Array = Global.settings_dict.custom_hotkey_chords.get(existing_name, [])
+			if CustomHotkeyMapButton.is_same_binding(Global.settings_dict.custom_hotkeys[existing_name], existing_members, entry["event"], entry["members"]):
 				is_diffent = false
 				break
 		
 		if is_diffent:
-			Global.settings_dict.custom_hotkeys[hotkey_name] = hotkey_dict[hotkey_name]
+			Global.settings_dict.custom_hotkeys[hotkey_name] = entry["event"]
+			# The member set travels with the name: without it the row displays
+			# the primary only and matches no binding at all.
+			Global.settings_dict.custom_hotkey_chords[hotkey_name] = entry["members"]
 	
 	var union_hotkeys = (Global.settings_dict.custom_hotkeys as Dictionary).duplicate()
 	for hotkey_name in union_hotkeys:
 		var is_diffent = true
-		for e in hotkey_dict.values():
-			if CustomHotkeyMapButton.is_same_hotkey_event(union_hotkeys[hotkey_name], e):
+		var union_members: Array = Global.settings_dict.custom_hotkey_chords.get(hotkey_name, [])
+		for scanned_name in hotkey_dict:
+			var entry: Dictionary = hotkey_dict[scanned_name]
+			if CustomHotkeyMapButton.is_same_binding(union_hotkeys[hotkey_name], union_members, entry["event"], entry["members"]):
 				is_diffent = false
 				break
 		
 		if is_diffent:
 			Global.settings_dict.custom_hotkeys.erase(hotkey_name)
+			Global.settings_dict.custom_hotkey_chords.erase(hotkey_name)
+
+	# Drops member sets orphaned by older builds / hand-edited settings: the
+	# table is keyed by hotkey name, so a name that no longer exists is dead.
+	for chord_name in (Global.settings_dict.custom_hotkey_chords as Dictionary).duplicate():
+		if not Global.settings_dict.custom_hotkeys.has(chord_name):
+			Global.settings_dict.custom_hotkey_chords.erase(chord_name)
 			
 	Global.settings_dict.custom_hotkeys.sort()
 	#####################

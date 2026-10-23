@@ -12,15 +12,18 @@ func update_cycles(settings_dict = Global.settings_dict):
 		var backward = cycle.get("backward", null)
 
 		if toggle != null:
-			if GlobInput.is_input_just_pressed(toggle,true):
+			var toggle_chord : Array = cycle.get("toggle_chord", [])
+			if GlobInput.is_input_just_pressed(toggle, true, toggle_chord):
 				toggle_cycle(cycle)
 
 		if forward != null:
-			if GlobInput.is_input_just_pressed(forward,true):
+			var forward_chord : Array = cycle.get("forward_chord", [])
+			if GlobInput.is_input_just_pressed(forward, true, forward_chord):
 				toggle_forward(cycle)
 
 		if backward != null:
-			if GlobInput.is_input_just_pressed(backward,true):
+			var backward_chord : Array = cycle.get("backward_chord", [])
+			if GlobInput.is_input_just_pressed(backward, true, backward_chord):
 				toggle_backward(cycle)
 
 func toggle_cycle(cycle):

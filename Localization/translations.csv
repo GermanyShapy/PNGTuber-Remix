@@ -678,3 +678,9 @@ TR_CYCLE_HANDOFF_FIRST,Back to the first,Back to the first,回到首位
 TR_CYCLE_HANDOFF_PREV,Back to the previous,Back to the previous,回到上一位
 TR_CYCLE_HANDOFF_NONE,No hand-off,No hand-off,不交接
 TR_CYCLE_HANDOFF_TOOLTIP,"Where the display goes when a member of this cycle hides with nobody claiming the slot. Back to the previous steps one slot down each time a member hides and stops at the first one. A member that never hides on its own stays put, so the chain waits on it as a checkpoint.","Where the display goes when a member of this cycle hides with nobody claiming the slot. Back to the previous steps one slot down each time a member hides and stops at the first one. A member that never hides on its own stays put, so the chain waits on it as a checkpoint.",本循环成员隐藏、且没有其他成员占用显示位时的交接目标。「回到上一位」每次隐藏退一格、退到首位即停。不会自行隐藏的成员会停在那里 —— 相当于链上的一个检查点，要等它自己隐藏后才继续。
+TR_GAMEPAD_LABELS,Gamepad Button Names,Gamepad Button Names,手柄按键显示
+TR_GAMEPAD_LABELS_TOOLTIP,"Which vendor layout to show for gamepad buttons. ""All layouts"" lists Xbox / PlayStation / Nintendo at once; picking one shows only that name and also makes multi-key combos shorter.","Which vendor layout to show for gamepad buttons. ""All layouts"" lists Xbox / PlayStation / Nintendo at once; picking one shows only that name and also makes multi-key combos shorter.",手柄按键用哪一套叫法。「全部并列」会同时列出 Xbox / PlayStation / Nintendo 三种；选一种则只显示该叫法，多键组合也更省地方。
+TR_GAMEPAD_LABELS_ALL,All layouts,All layouts,全部并列
+TR_GAMEPAD_LABELS_XB,Xbox,Xbox,Xbox
+TR_GAMEPAD_LABELS_PS,PlayStation,PlayStation,PlayStation
+TR_GAMEPAD_LABELS_NS,Nintendo,Nintendo,Nintendo

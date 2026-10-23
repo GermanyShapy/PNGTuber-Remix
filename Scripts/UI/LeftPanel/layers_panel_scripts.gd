@@ -257,7 +257,7 @@ func copy_common(src, dst):
 	dst.auto_show = src.auto_show
 	dst.auto_hide = src.auto_hide
 	dst.is_asset = src.is_asset
-	dst.saved_event = src.saved_event
+	dst.apply_binding(src.saved_event, src.chord_modifiers)
 	dst.was_active_before = src.was_active_before
 	dst.visible = dst.was_active_before
 	dst.is_collapsed = src.is_collapsed
@@ -321,6 +321,7 @@ func register_duplicate_input_map(src, obj):
 	if src != null and is_instance_valid(src) and InputMap.has_action(src.disappear_keys):
 		for ev in InputMap.action_get_events(src.disappear_keys):
 			InputMap.action_add_event(dis_action, ev)
+		obj.apply_disappear_chords(src.disappear_chords)
 
 	var show_action : String = str(obj.sprite_id)
 	if InputMap.has_action(show_action):

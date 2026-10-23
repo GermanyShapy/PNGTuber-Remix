@@ -12,6 +12,9 @@ var selected_item = null
 # Row index of the selected disappear key; -1 means "no selection". Kept as an
 # int on purpose: it is used in comparisons and as an ItemList index.
 var id: int = -1
+# Collects the inputs pressed while awaiting; a binding commits once every
+# member is released (see BindingSession).
+var _session := BindingSession.new()
 
 # The stored index can outlive its row (list rebuilt for another sprite, row
 # deleted). Callers must go through this instead of reading `id` directly.
@@ -39,6 +42,8 @@ func _init():
 
 func _ready():
 	set_process_input(false)
+	# Vendor-label style is a setting: re-derive our own text when it changes.
+	Global.binding_labels_changed.connect(update_key_text)
 	update_key_text()
 
 
@@ -47,6 +52,7 @@ func _toggled(_button_pressed):
 	if %IsAssetCheck.button_pressed:
 		set_process_input(_button_pressed)
 		if _button_pressed:
+			_session.clear()
 			# While awaiting we must not hold key focus: a focused Button eats
 			# ui_accept (Enter/Space) and the Tab/arrow ui_* actions before they
 			# reach our _input() handler.
@@ -70,6 +76,7 @@ func cancel_remap() -> void:
 	# Leaves the awaiting state from any entry point (deselect, unchecking
 	# "Is Asset", a click outside the capture pad) without depending on the
 	# toggled() gate, which is skipped while "Is Asset" is off.
+	_session.clear()
 	set_process_input(false)
 	MouseCaptureArea.hide_for(self)
 	MouseCaptureArea.hide_for(%ShouldDisRemapButton)
@@ -93,13 +100,16 @@ func _input(event):
 		return
 	if event is InputEventMouseMotion:
 		return
-	# A stick binds the moment its direction crosses the deadzone -- see
-	# StandGlobalInput.is_joy_pushed() for why "on release" cannot work.
+	# Sticks report no release edge that can be stored, so coming back into the
+	# deadzone only marks the member released (BindingSession.release_axis).
 	if event is InputEventJoypadMotion:
-		if not GlobInput.is_joy_pushed(event):
-			return
 		get_viewport().set_input_as_handled()
-		_bind_event(GlobInput.normalize_joy_event(event))
+		if GlobInput.is_joy_pushed(event):
+			_session.press(GlobInput.normalize_joy_event(event))
+			_update_preview()
+		else:
+			_session.release_axis(event.axis)
+			_try_commit()
 		return
 	var awaiting_button: Control = self if current_remap == Remap.Asset else %ShouldDisRemapButton
 	# `_input` runs before GUI picking, so a press that lands on the visible
@@ -111,30 +121,87 @@ func _input(event):
 		if step == MouseCaptureArea.MouseStep.PRESS_OUTSIDE:
 			cancel_remap()
 			return
+		if step == MouseCaptureArea.MouseStep.PRESS_ON_PAD:
+			_session.press(event)
+			_update_preview()
+			return
 		if step != MouseCaptureArea.MouseStep.RELEASE_ON_PAD:
 			# Press on the pad (already consumed) or an orphan release: keep
+			if not event.pressed:
+				# Released off the pad: drop the member instead of leaving it
+				# "held" in the session forever.
+				_session.release(event)
 			# waiting / ignore, never bind.
 			return
-	elif not event.is_released():
-		# Swallow the key press too: otherwise the key could still fire a
-		# shortcut or move focus before its release binds it.
 		get_viewport().set_input_as_handled()
+		_session.press(event)
+		_session.release(event)
+		_try_commit()
 		return
-	# Swallow the bound event so it cannot also drive the GUI afterwards.
-	get_viewport().set_input_as_handled()
-	_bind_event(event)
+	if event is InputEventKey:
+		get_viewport().set_input_as_handled()
+		if event.pressed:
+			# Auto-repeat is not a new press: it must not reorder the
+			# chord members or become the primary.
+			if event.echo:
+				return
+			# A modifier is part of the key event itself: it never joins a chord,
+			# and it cancels whatever chord was being built (D4).
+			if BindingSession.is_modifier_event(event) or BindingSession.has_modifier(event):
+				_session.clear()
+				return
+			_session.press(event)
+			_update_preview()
+			return
+		if _session.is_empty() or BindingSession.has_modifier(event):
+			_session.clear()
+			_bind_event(event)
+			return
+		_session.release(event)
+		_try_commit()
+		return
+	if event is InputEventJoypadButton:
+		get_viewport().set_input_as_handled()
+		if event.pressed:
+			_session.press(event)
+			_update_preview()
+		else:
+			_session.release(event)
+			_try_commit()
+		return
 
 
-## Applies a bound event to whichever target this widget is currently remapping.
-## Shared by the mouse/keyboard path and the stick path (which passes a
-## normalised axis event).
-func _bind_event(event: InputEvent) -> void:
+func _try_commit() -> void:
+	if not _session.is_ready():
+		_update_preview()
+		return
+	var binding := _session.take()
+	_session.clear()
+	if binding.is_empty():
+		return
+	_bind_event(binding["primary"], binding["members"])
+
+
+func _update_preview() -> void:
+	if current_remap == Remap.Asset:
+		text = _session.preview_text() if not _session.is_empty() else tr("TR_AWAITING_INPUT")
+	else:
+		var sel := _selected_id()
+		if sel >= 0:
+			var preview := _session.preview_text()
+			%ShouldDisList.set_item_text(sel, preview if not preview.is_empty() else tr("TR_AWAITING_INPUT"))
+
+
+## Applies a binding to whichever target this widget is currently remapping.
+## Shared by every input path (a stick passes a normalised axis event).
+func _bind_event(event: InputEvent, members: Array = []) -> void:
 	if current_remap == Remap.Asset:
 		if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
-			Global.held_sprites[0].saved_event = event
+			Global.held_sprites[0].apply_binding(event, members)
 			action = str(Global.held_sprites[0].sprite_id)
 			InputMap.action_erase_events(action)
 			InputMap.action_add_event(action, event)
+		GlobInput.refresh_action_cache()
 		update_other_assets()
 		button_pressed = false
 
@@ -145,8 +212,9 @@ func _bind_event(event: InputEvent) -> void:
 			cancel_remap()
 			return
 		if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
+			var sprite = Global.held_sprites[0]
 			# `:=` cannot infer through an untyped Array element; spelled out.
-			var action_name: String = Global.held_sprites[0].disappear_keys
+			var action_name: String = sprite.disappear_keys
 			if InputMap.has_action(action_name):
 				var input_array: Array = InputMap.action_get_events(action_name)
 				if sel < input_array.size():
@@ -162,8 +230,14 @@ func _bind_event(event: InputEvent) -> void:
 			else:
 				InputMap.add_action(action_name)
 				InputMap.action_add_event(action_name, event)
+
+			while sprite.disappear_chords.size() <= sel:
+				sprite.disappear_chords.append([])
+			sprite.disappear_chords[sel] = members.duplicate(true)
+			sprite.apply_disappear_chords(sprite.disappear_chords)
 		
-		%ShouldDisList.set_item_text(sel, InputDisplayName.text(event))
+		%ShouldDisList.set_item_text(sel, InputDisplayName.text(event, members))
+		GlobInput.refresh_action_cache()
 		%ShouldDisRemapButton.button_pressed = false
 
 
@@ -181,9 +255,17 @@ func update_other_assets():
 
 func update_key_text():
 	if InputMap.action_get_events(action).size() != 0:
-		text = InputDisplayName.text(InputMap.action_get_events(action)[0])
+		var members: Array = []
+		if not Global.held_sprites.is_empty() and Global.held_sprites[0] != null and is_instance_valid(Global.held_sprites[0]):
+			members = Global.held_sprites[0].chord_modifiers
+		var bound: InputEvent = InputMap.action_get_events(action)[0]
+		BindingLabel.set_button_text(self, InputDisplayName.text(bound, members), not members.is_empty())
+		# A chord is drawn with compact labels so it fits the button; the tooltip
+		# keeps every vendor alias of every member.
+		tooltip_text = InputDisplayName.full_text(bound, members) if not members.is_empty() else ""
 	else:
-		text = tr("TR_BIND_KEY")
+		BindingLabel.set_button_text(self, tr("TR_BIND_KEY"), false)
+		tooltip_text = ""
 
 func update_stuff():
 	if Global.held_sprites[0] != null && is_instance_valid(Global.held_sprites[0]):
@@ -196,7 +278,8 @@ func update_stuff():
 func _on_remove_asset_button_pressed():
 	if InputMap.action_get_events(action).size() != 0:
 		InputMap.action_erase_events(action)
-		Global.held_sprites[0].saved_event = null
+		Global.held_sprites[0].apply_binding(null)
+		GlobInput.refresh_action_cache()
 		update_key_text()
 
 func _on_is_asset_check_toggled(toggled_on):
@@ -208,7 +291,7 @@ func _on_is_asset_check_toggled(toggled_on):
 		else:
 			if InputMap.has_action(action):
 				InputMap.erase_action(action)
-				Global.held_sprites[0].saved_event = null
+				Global.held_sprites[0].apply_binding(null)
 				ReactionConfig.sprite_show(Global.held_sprites[0])
 				update_key_text()
 				%IsAssetButton.release_focus()
@@ -250,6 +333,11 @@ func _on_should_dis_del_button_pressed():
 				var events = InputMap.action_get_events(action_name)
 				if sel < events.size():
 					InputMap.action_erase_event(action_name, events[sel])
+				# The chord table is index-parallel: dropping a row must drop its
+				# entry, otherwise every later row inherits the wrong members.
+				if sel < held.disappear_chords.size():
+					held.disappear_chords.remove_at(sel)
+					held.apply_disappear_chords(held.disappear_chords)
 
 	id = -1
 	%ShouldDisList.deselect_all()

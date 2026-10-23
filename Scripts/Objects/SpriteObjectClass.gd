@@ -297,7 +297,23 @@ var played_once : bool = false
 
 var dt = 0.0
 var fidx = 0
-var saved_event : InputEvent
+# Binding storage. A chord keeps its primary event here (the last member
+# pressed) and the other members in `chord_modifiers`. Any raw write to
+# `saved_event` drops the chord, so a binding that lost its member list degrades
+# to a plain key instead of silently keeping a stale chord.
+var saved_event : InputEvent:
+	get:
+		return _saved_event
+	set(value):
+		_saved_event = value
+		chord_modifiers = []
+var _saved_event : InputEvent
+var chord_modifiers : Array = []
+# Parallel to the disappear-key action's event list: element i holds the members
+# of event i (empty = plain key).
+var disappear_chords : Array = []
+# Index -> member array, rebuilt from disappear_chords for action queries.
+var disappear_chord_map : Dictionary = {}
 var is_asset : bool = false
 var was_active_before : bool = true
 var show_only : bool = false
@@ -320,6 +336,24 @@ var auto_hide : bool = false
 # movement component used to keep a private copy of this recomputed by its own
 # visibility_changed handler; the value was always identical, so it lives here.
 var is_rest : bool = false
+
+
+## Writes a binding atomically: the chord members are only ever set together
+## with their primary event.
+func apply_binding(p_event: InputEvent, p_members: Array = []) -> void:
+	saved_event = p_event
+	chord_modifiers = p_members.duplicate(true) if p_members != null else []
+
+
+## Installs the per-row disappear chords and rebuilds the index map used by the
+## action query.
+func apply_disappear_chords(p_chords: Array) -> void:
+	disappear_chords = p_chords.duplicate(true) if p_chords != null else []
+	disappear_chord_map.clear()
+	for i in range(disappear_chords.size()):
+		var members = disappear_chords[i]
+		if members is Array and not members.is_empty():
+			disappear_chord_map[i] = members
 
 var last_mouse_position : Vector2 = Vector2(0,0)
 var last_dist : Vector2 = Vector2(0,0)

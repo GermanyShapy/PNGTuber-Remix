@@ -13,6 +13,9 @@ var _cycle_name_pristine: String = ""
 func _ready() -> void:
 	Global.deselect.connect(nullfy)
 	Global.reinfo.connect(enable)
+	# The disappear rows show binding labels too, and the vendor style is a
+	# setting (see InputDisplayName.brand_style). enable() repopulates them.
+	Global.binding_labels_changed.connect(enable)
 	Global.load_model.connect(update_cycle_choice)
 	Global.new_file.connect(clear_cycle_choice)
 	# Default cycle labels are built imperatively, so they never follow the locale
@@ -80,8 +83,16 @@ func set_data():
 	%DontHideOnToggleCheck.button_pressed = Global.held_sprites[0].show_only
 	%ShouldDisList.clear()
 	if InputMap.has_action(Global.held_sprites[0].disappear_keys):
-		for i in InputMap.action_get_events(Global.held_sprites[0].disappear_keys):
-			%ShouldDisList.add_item(InputDisplayName.text(i))
+		var dis_events: Array = InputMap.action_get_events(Global.held_sprites[0].disappear_keys)
+		for idx in dis_events.size():
+			var members: Array = []
+			if idx < Global.held_sprites[0].disappear_chords.size():
+				members = Global.held_sprites[0].disappear_chords[idx]
+			%ShouldDisList.add_item(InputDisplayName.text(dis_events[idx], members))
+			# The row is drawn with compact chord labels; the item tooltip keeps
+			# the full vendor aliases.
+			if not members.is_empty():
+				%ShouldDisList.set_item_tooltip(idx, InputDisplayName.full_text(dis_events[idx], members))
 	# Rows now belong to another sprite; any previously selected index is stale.
 	%IsAssetButton.reset_selection()
 	%ShouldDisappearCheck.button_pressed = Global.held_sprites[0].should_disappear

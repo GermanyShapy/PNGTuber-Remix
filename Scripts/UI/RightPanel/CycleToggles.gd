@@ -1,8 +1,14 @@
 extends Button
 
+# Collects the inputs pressed while awaiting; a binding commits once every
+# member is released (see BindingSession).
+var _session := BindingSession.new()
+
 
 func _ready():
 	set_process_input(false)
+	# Vendor-label style is a setting: re-derive our own text when it changes.
+	Global.binding_labels_changed.connect(update_key_text)
 	update_key_text()
 
 func _toggled(toggle):
@@ -38,6 +44,17 @@ func _input(event):
 		return
 	if event is InputEventMouseMotion:
 		return
+	# Sticks report no release edge that can be stored, so coming back into the
+	# deadzone only marks the member released (BindingSession.release_axis).
+	if event is InputEventJoypadMotion:
+		get_viewport().set_input_as_handled()
+		if GlobInput.is_joy_pushed(event):
+			_session.press(GlobInput.normalize_joy_event(event))
+			_update_preview()
+		else:
+			_session.release_axis(event.axis)
+			_try_commit()
+		return
 	# `_input` runs before GUI picking, so a press that lands on the capture pad
 	# is swallowed here before the control the pad covers ever reacts. A mouse
 	# press anywhere else cancels the await, never binds a stray mouse button.
@@ -46,33 +63,98 @@ func _input(event):
 		if step == MouseCaptureArea.MouseStep.PRESS_OUTSIDE:
 			cancel_await()
 			return
+		if step == MouseCaptureArea.MouseStep.PRESS_ON_PAD:
+			_session.press(event)
+			_update_preview()
+			return
 		if step != MouseCaptureArea.MouseStep.RELEASE_ON_PAD:
 			return
-	elif not event.is_released():
-		# Swallow the key press too: otherwise the key could still fire a
-		# shortcut or move focus before its release binds it.
+			if not event.pressed:
+				# Released off the pad: drop the member instead of leaving it
+				# "held" in the session forever.
+				_session.release(event)
 		get_viewport().set_input_as_handled()
+		_session.press(event)
+		_session.release(event)
+		_try_commit()
 		return
-	# Swallow the bound event so it cannot also drive the GUI afterwards.
-	get_viewport().set_input_as_handled()
+	if event is InputEventKey:
+		get_viewport().set_input_as_handled()
+		if event.pressed:
+			# Auto-repeat is not a new press: it must not reorder the
+			# chord members or become the primary.
+			if event.echo:
+				return
+			# A modifier is part of the key event itself: it never joins a chord,
+			# and it cancels whatever chord was being built (D4).
+			if BindingSession.is_modifier_event(event) or BindingSession.has_modifier(event):
+				_session.clear()
+				return
+			_session.press(event)
+			_update_preview()
+			return
+		if _session.is_empty() or BindingSession.has_modifier(event):
+			_session.clear()
+			_commit_binding(event)
+			return
+		_session.release(event)
+		_try_commit()
+		return
+	if event is InputEventJoypadButton:
+		get_viewport().set_input_as_handled()
+		if event.pressed:
+			_session.press(event)
+			_update_preview()
+		else:
+			_session.release(event)
+			_try_commit()
+		return
+
+
+func _try_commit() -> void:
+	if not _session.is_ready():
+		_update_preview()
+		return
+	var binding := _session.take()
+	_session.clear()
+	if binding.is_empty():
+		return
+	_commit_binding(binding["primary"], binding["members"])
+
+
+func _update_preview() -> void:
+	var preview := _session.preview_text()
+	text = preview if not preview.is_empty() else tr("TR_AWAITING_INPUT")
+
+
+func _commit_binding(event: InputEvent, members: Array = []) -> void:
 	# Guard the index: selected id 0 ("None") would otherwise wrap to -1 and
 	# silently overwrite the LAST cycle's binding.
 	var cycle_id: int = %CycleChoice.get_selected_id() - 1
 	if cycle_id >= 0 and cycle_id < Global.settings_dict.cycles.size():
 		Global.settings_dict.cycles[cycle_id].toggle = event.duplicate()
+		Global.settings_dict.cycles[cycle_id]["toggle_chord"] = members.duplicate(true)
+	GlobInput.refresh_action_cache()
 	update_key_text()
 	button_pressed = false
 
 func update_key_text():
 	if %CycleChoice.get_selected_id() > 0:
 		if Global.settings_dict.cycles[%CycleChoice.get_selected_id()-1].toggle != null:
-			self.text = InputDisplayName.text(Global.settings_dict.cycles[%CycleChoice.get_selected_id()-1].toggle)
+			var cyc = Global.settings_dict.cycles[%CycleChoice.get_selected_id()-1]
+			var members: Array = cyc.get("toggle_chord", [])
+			BindingLabel.set_button_text(self, InputDisplayName.text(cyc.toggle, members), not members.is_empty())
+			# Compact in the button, full aliases in the tooltip.
+			tooltip_text = InputDisplayName.full_text(cyc.toggle, members) if not members.is_empty() else ""
 		else:
-			self.text = tr("TR_BIND_KEY")
+			BindingLabel.set_button_text(self, tr("TR_BIND_KEY"), false)
+			tooltip_text = ""
 	else:
-		self.text = tr("TR_BIND_KEY")
+		BindingLabel.set_button_text(self, tr("TR_BIND_KEY"), false)
+		tooltip_text = ""
 
 func _on_cycle_del_pressed() -> void:
 	if %CycleChoice.get_selected_id() > 0:
 		Global.settings_dict.cycles[%CycleChoice.get_selected_id()-1].toggle = null
+		Global.settings_dict.cycles[%CycleChoice.get_selected_id()-1]["toggle_chord"] = []
 	update_key_text()

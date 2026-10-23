@@ -3,12 +3,28 @@ class_name StateButton
 
 @export var state : int 
 @export var input_key : String = str(randi())
-var saved_event : InputEvent
+# Same storage rule as the sprites: a raw write to `saved_event` drops the
+# chord, so a binding that lost its members degrades to a plain key.
+var saved_event : InputEvent:
+	get:
+		return _saved_event
+	set(value):
+		_saved_event = value
+		chord_modifiers = []
+var _saved_event : InputEvent
+var chord_modifiers : Array = []
 var state_name : String 
 var state_hold_to_show : bool = false
 var state_inclusive_key_check : bool = false
 static var selected_state : StateButton = null
 static var other_states : Array[StateButton] = []
+
+
+## Writes a binding atomically: the chord members are only ever set together
+## with their primary event.
+func apply_binding(p_event: InputEvent, p_members: Array = []) -> void:
+	saved_event = p_event
+	chord_modifiers = p_members.duplicate(true) if p_members != null else []
 
 func _ready():
 	if state_name.is_empty():
@@ -70,12 +86,12 @@ func _physics_process(_delta: float) -> void:
 		return
 	
 	if state_hold_to_show:
-		var is_action_pressed = GlobInput.is_input_pressed(saved_event, state_inclusive_key_check)
+		var is_action_pressed = GlobInput.is_input_pressed(saved_event, state_inclusive_key_check, chord_modifiers)
 		
 		if is_action_pressed:
 			if Global.current_state == state:
 				pass
-			elif GlobInput.is_input_pressed(selected_state.saved_event, state_inclusive_key_check):
+			elif GlobInput.is_input_pressed(selected_state.saved_event, state_inclusive_key_check, selected_state.chord_modifiers):
 				pass
 			else:
 				select_state()
@@ -85,13 +101,13 @@ func _physics_process(_delta: float) -> void:
 			var target_btn : StateButton = (get_parent().get_child(0) as StateButton)
 			
 			for btn in get_parent().get_children():
-				if btn.state_hold_to_show and GlobInput.is_input_pressed(btn.saved_event, state_inclusive_key_check):
+				if btn.state_hold_to_show and GlobInput.is_input_pressed(btn.saved_event, state_inclusive_key_check, btn.chord_modifiers):
 					target_btn = btn
 				
 			target_btn.select_state()
 			Global.get_sprite_states(target_btn.state)
 			#print("switch off")
-	elif GlobInput.is_input_just_pressed(saved_event, state_inclusive_key_check):
+	elif GlobInput.is_input_just_pressed(saved_event, state_inclusive_key_check, chord_modifiers):
 		select_state()
 		Global.get_sprite_states(state)
 		#print("switch normal")
