@@ -132,6 +132,7 @@ func save_state(id):
 	if id >= 0 and id < states.size() and states[id] == sprite_data:
 		return
 	states[id] = sprite_data.duplicate()
+	bump_states_ver()
 
 # Side-effect half of get_state(); see sprite_object.gd apply_state_side_effects
 # for why it is safe to run this instead of the full get_state().
@@ -140,6 +141,7 @@ func apply_state_side_effects(id) -> void:
 	if id < 0 or id >= states.size(): return
 	if (states[id] as Dictionary).is_empty():
 		states[id] = sprite_data.duplicate(true)
+		bump_states_ver()
 		return
 	if get_value("should_reset_state"):
 		reaction_config.reset_anim()
@@ -246,6 +248,7 @@ func get_state(id):
 		# See sprite_object.gd get_state(): empty slot = seed and re-enter, so the
 		# node-side offset is applied instead of skipped.
 		states[id] = sprite_data.duplicate(true)
+		bump_states_ver()
 		get_state(id)
 
 func set_anchor_sprite(_placeholder = null):

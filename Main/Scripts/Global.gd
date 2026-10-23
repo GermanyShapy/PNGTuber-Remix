@@ -346,10 +346,12 @@ func _apply_state(state):
 		# Safe because is_editor just ran save_state(from), so states[from]
 		# mirrors sprite_data; any real difference, including an unsaved edit,
 		# makes the comparison fail and takes the full path instead.
+		# The compare is a deep dictionary walk per sprite, so the verdict is
+		# cached inside states_content_equal().
 		var st : Array = i.states
 		if (from < st.size() and state < st.size()
 				and i.has_method("apply_state_side_effects")
-				and st[from] == st[state]):
+				and i.states_content_equal(from, state)):
 			i.apply_state_side_effects(state)
 		else:
 			i.get_state(current_state)

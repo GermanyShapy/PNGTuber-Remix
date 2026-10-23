@@ -3,6 +3,40 @@ class_name SpriteObject
 
 var sprite_data := {}
 var cached_defaults := {}
+
+# Bumped whenever this sprite's own states[] slot content is rewritten, so the
+# switch can drop its cached content comparisons. Every writer of states[] must
+# call bump_states_ver(); see .ai/docs/40-设计/切换深比较治理_T11方案.md.
+var states_ver: int = 0
+
+func bump_states_ver() -> void:
+	states_ver += 1
+	# Any rewrite can change the verdict of every (from, to) pair, so drop them
+	# all. A per-key generation stamp would work too, but one int per key costs
+	# more than recomputing the handful of pairs a sprite ever sees.
+	same_cache.clear()
+
+var same_cache: Dictionary = {}
+var _cache_checks: int = 0
+
+# True when states[from] and states[to] carry identical content. The switch asks
+# this for every sprite on every switch, and the raw answer is a deep dictionary
+# walk, so the verdict is cached per (from, to) pair until states[] is rewritten.
+func states_content_equal(from: int, to: int) -> bool:
+	var ck: int = from * 256 + to
+	if same_cache.has(ck):
+		_cache_checks += 1
+		if _cache_checks % 4096 == 0:
+			# Insurance against a missed bump point.
+			var real: bool = (states[from] as Dictionary) == (states[to] as Dictionary)
+			if real != same_cache[ck]:
+				push_warning("T11 stale states cache on '%s'" % name)
+				same_cache[ck] = real
+		return same_cache[ck]
+	var same: bool = (states[from] as Dictionary) == (states[to] as Dictionary)
+	same_cache[ck] = same
+	return same
+
 const DEFAULT_DATA := {
 	# Use mouth closed movement for all mouth states?
 	shared_movement = true,

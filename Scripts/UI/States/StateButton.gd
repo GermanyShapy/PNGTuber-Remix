@@ -133,5 +133,6 @@ static func multi_edit(value, value_name, _obj : SpriteObject, states : Array, s
 					states[i.state][value_name] = value
 			
 			#print(value_name)
+		_obj.bump_states_ver()
 	else:
 		return

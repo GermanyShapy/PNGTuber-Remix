@@ -105,6 +105,7 @@ func save_state(id):
 	if id >= 0 and id < states.size() and states[id] == sprite_data:
 		return
 	states[id] = sprite_data.duplicate(true)
+	bump_states_ver()
 
 func get_state(id):
 	if !states[id].is_empty():
@@ -156,6 +157,7 @@ func get_state(id):
 		# See sprite_object.gd get_state(): empty slot = seed and re-enter, so the
 		# node-side sync above (position, offset, flip scale) still runs.
 		states[id] = sprite_data.duplicate(true)
+		bump_states_ver()
 		get_state(id)
 	
 	mesh.queue_redraw()

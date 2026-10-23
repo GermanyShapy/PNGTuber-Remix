@@ -154,6 +154,7 @@ func _on_add_mesh_pressed() -> void:
 	var states = get_tree().get_nodes_in_group("StateButtons").size()
 	for i in states:
 		sprte_obj.states.append({})
+	sprte_obj.bump_states_ver()
 	Global.update_layers.emit(0, sprte_obj, "Mesh")
 	sprte_obj.sprite_id = sprte_obj.get_instance_id()
 	sprte_obj.get_node("%MeshEditor").regenerate_mesh()

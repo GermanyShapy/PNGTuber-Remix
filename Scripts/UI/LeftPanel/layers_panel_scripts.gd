@@ -244,6 +244,7 @@ func copy_common(src, dst):
 		dst.sprite_data.folder = true
 	dst.sprite_data = src.sprite_data.duplicate(true)
 	dst.states = src.states.duplicate(true)
+	dst.bump_states_ver()
 	dst.saved_keys = src.saved_keys.duplicate(true)
 	dst.should_disappear = src.should_disappear
 	dst.show_only = src.show_only
@@ -477,6 +478,7 @@ func _on_folder_button_pressed():
 	var states = get_tree().get_nodes_in_group("StateButtons").size()
 	for i in states:
 		sprte_obj.states.append({})
+	sprte_obj.bump_states_ver()
 	Global.update_layers.emit(0, sprte_obj, "Sprite2D")
 	sprte_obj.sprite_id = sprte_obj.get_instance_id()
 
@@ -567,6 +569,7 @@ func _on_comments_button_pressed() -> void:
 	var states = get_tree().get_nodes_in_group("StateButtons").size()
 	for i in states:
 		sprte_obj.states.append({})
+	sprte_obj.bump_states_ver()
 	Global.update_layers.emit(0, sprte_obj, "Comment")
 	sprte_obj.sprite_id = sprte_obj.get_instance_id()
 
@@ -579,5 +582,6 @@ func _on_mesh_button_pressed() -> void:
 	var states = get_tree().get_nodes_in_group("StateButtons").size()
 	for i in states:
 		sprte_obj.states.append({})
+	sprte_obj.bump_states_ver()
 	Global.update_layers.emit(0, sprte_obj, "Mesh")
 	sprte_obj.sprite_id = sprte_obj.get_instance_id()

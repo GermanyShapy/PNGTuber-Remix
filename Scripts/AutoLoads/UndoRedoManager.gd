@@ -68,6 +68,7 @@ static func undo_action_object(data):
 				offset_changed = offset_changed or dt.action == "offset"
 			else:
 				dt.node.states[dt.state][dt.action] = dt.value
+				dt.node.bump_states_ver()
 	redo_data.append(data)
 	_refresh_pos_spins(pos_changed, offset_changed)
 
@@ -95,6 +96,7 @@ static func redo_action_object(data):
 				offset_changed = offset_changed or dt.action == "offset"
 			else:
 				dt.node.states[dt.state][dt.action] = dt.new_val
+				dt.node.bump_states_ver()
 	undo_data.append(data)
 	_refresh_pos_spins(pos_changed, offset_changed)
 

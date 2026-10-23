@@ -172,6 +172,7 @@ func load_pngplus_file(path, can_load_plus):
 			var ndict = sprite_obj.sprite_data.duplicate()
 			ndict.visible = costume[l] != 0
 			sprite_obj.states[l] = ndict
+		sprite_obj.bump_states_ver()
 
 		Global.sprite_container.add_child(sprite_obj)
 		sprite_obj.get_node("%Sprite2D/Grab").anchors_preset = Control.LayoutPreset.PRESET_FULL_RECT
@@ -279,5 +280,6 @@ func add_object_to_scene(image_data, add_as_appendage : bool = false, folder : b
 	var states = get_tree().get_nodes_in_group("StateButtons").size()
 	for i in states:
 		spawn.states.append(spawn.sprite_data.duplicate(true))
+	spawn.bump_states_ver()
 	 
 	return spawn

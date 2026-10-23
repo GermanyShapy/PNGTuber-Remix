@@ -229,6 +229,7 @@ func save_state(id):
 	if id >= 0 and id < states.size() and states[id] == sprite_data:
 		return
 	states[id] = sprite_data.duplicate(true)
+	bump_states_ver()
 
 # Side-effect half of get_state(). Global._apply_state() calls this instead of
 # get_state() when the target state's content is identical to the current one:
@@ -240,6 +241,7 @@ func apply_state_side_effects(id) -> void:
 	if id < 0 or id >= states.size(): return
 	if (states[id] as Dictionary).is_empty():
 		states[id] = sprite_data.duplicate(true)
+		bump_states_ver()
 		return
 	if get_value("should_reset_state"):
 		reaction_config.reset_anim()
@@ -363,6 +365,7 @@ func get_state(id):
 		# "skip the sync". Seed it and re-enter so node-side values (e.g. the
 		# trim offset) get applied; the merge that follows is a no-op.
 		states[id] = sprite_data.duplicate(true)
+		bump_states_ver()
 		get_state(id)
 
 func check_talk():
