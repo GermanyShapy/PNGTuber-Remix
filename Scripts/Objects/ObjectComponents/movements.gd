@@ -44,10 +44,8 @@ var last_mouse_position : Vector2 = Vector2.ZERO
 var last_dist : Vector2 = Vector2.ZERO
 var applied_pos_offset : Vector2 = Vector2.ZERO
 
-# T8: per-frame parameter snapshot. Filled at the top of _physics_process and
-# consumed by the helpers below; because it is refreshed every frame there is
-# no invalidation mechanism to maintain. Untyped on purpose: the values come
-# straight out of sprite_data and must keep its null semantics.
+# Per-frame parameter snapshot, refreshed by _refresh_frame_params(). Untyped:
+# values come straight from sprite_data and keep its null semantics.
 var mv_static_obj
 var mv_should_rotate
 var mv_hidden_item
@@ -91,11 +89,9 @@ func _ready() -> void:
 	dragger.top_level = true
 	dragger.global_position = modifier_node.global_position
 
-func _physics_process(delta: float) -> void:
-	# T8: resolve every parameter once per frame. With shared_movement (the
-	# default) get_value() is a plain dictionary read, so the per-call overhead
-	# is dropped by reading sprite_data directly; sprites with mouth variants
-	# keep going through get_value(), which owns the prefix and fallback logic.
+# Direct sprite_data reads beat per-call get_value() overhead; mouth-variant
+# sprites (shared_movement=false) keep get_value() for its prefix fallback.
+func _refresh_frame_params() -> void:
 	var d: Dictionary = actor.sprite_data
 	mv_static_obj = d.get("static_obj")
 	mv_should_rotate = d.get("should_rotate")
@@ -144,6 +140,9 @@ func _physics_process(delta: float) -> void:
 		mv_index_change = actor.get_value("index_change")
 		mv_index_change_y = actor.get_value("index_change_y")
 		mv_hit_physics = actor.get_value("hit_physics")
+
+func _physics_process(delta: float) -> void:
+	_refresh_frame_params()
 
 	# Deferring the call costs a message-queue slot for every sprite; only the
 	# few static-pinned ones actually need it.
