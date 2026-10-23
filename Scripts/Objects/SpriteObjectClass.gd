@@ -4,26 +4,24 @@ class_name SpriteObject
 var sprite_data := {}
 var cached_defaults := {}
 
-# Bumped whenever this sprite's own states[] slot content is rewritten, so the
-# switch can drop its cached content comparisons. Every writer of states[] must
-# call bump_states_ver(); see .ai/docs/40-设计/切换深比较治理_T11方案.md.
+# Bumped on every states[] rewrite; every states[] writer must call this.
 var states_ver: int = 0
 
 func bump_states_ver() -> void:
 	states_ver += 1
-	# Any rewrite can change the verdict of every (from, to) pair, so drop them
-	# all. A per-key generation stamp would work too, but one int per key costs
-	# more than recomputing the handful of pairs a sprite ever sees.
 	same_cache.clear()
 
 var same_cache: Dictionary = {}
 var _cache_checks: int = 0
 
-# True when states[from] and states[to] carry identical content. The switch asks
-# this for every sprite on every switch, and the raw answer is a deep dictionary
-# walk, so the verdict is cached per (from, to) pair until states[] is rewritten.
+# Cached states[from] == states[to] verdict, valid until the next states[] rewrite.
 func states_content_equal(from: int, to: int) -> bool:
-	var ck: int = from * 256 + to
+	# Out-of-range pairs must answer "not equal": negative subscripts read from
+	# the array's end here, comparing the wrong slots.
+	if from < 0 or to < 0 or from >= states.size() or to >= states.size():
+		return false
+	# 16 bits per index: collision-free up to 65536 states.
+	var ck: int = from * 65536 + to
 	if same_cache.has(ck):
 		_cache_checks += 1
 		if _cache_checks % 4096 == 0:

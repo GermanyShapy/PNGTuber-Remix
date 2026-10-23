@@ -34,6 +34,8 @@ func _on_delete_state_pressed():
 		var sprites = get_tree().get_nodes_in_group("Sprites")
 		for i in sprites:
 			i.states.remove_at(Global.current_state)
+			# Removal renumbers the later slots: cached verdicts now point elsewhere.
+			i.bump_states_ver()
 		
 		Global.current_state = 0
 		get_tree().get_first_node_in_group("StateButtons").select_state()
