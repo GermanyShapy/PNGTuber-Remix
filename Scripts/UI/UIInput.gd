@@ -4,6 +4,8 @@ var should_change: bool = false
 
 # Sprite list the chain dropdown was last built from; see _sync_chain_target().
 var _chain_names := PackedStringArray()
+# A never-built dropdown is empty, which also matches "model without sprites".
+var _chain_built := false
 
 
 func _ready() -> void:
@@ -100,7 +102,8 @@ func _sync_chain_target() -> void:
 	for i in group:
 		names.append(i.sprite_name)
 
-	if names != _chain_names:
+	if not _chain_built or names != _chain_names:
+		_chain_built = true
 		_chain_names = names
 		%ChainTarget.clear()
 		%ChainTarget.add_item("None")
