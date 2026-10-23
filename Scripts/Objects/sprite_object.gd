@@ -245,18 +245,15 @@ func apply_state_side_effects(id) -> void:
 		return
 	if get_value("should_reset_state"):
 		reaction_config.reset_anim()
-	# Read once: the two branches below ask the same question, and each answer
-	# costs a full get_value lookup on every sprite of every switch.
-	var blink: bool = get_value("should_blink")
-	if !blink:
+	if !get_value("should_blink"):
 		modifier1.show()
 	else:
 		reaction_config.update_to_mode_change(Global.mode)
 	animation()
 	advanced_lipsyc()
-	if !blink:
+	if !get_value("should_blink"):
 		modifier1.modulate.a = 1
-		# modifier1.show() ran above and nothing since then can hide it.
+		modifier1.show()
 
 func get_state(id):
 	if !states[id].is_empty():
