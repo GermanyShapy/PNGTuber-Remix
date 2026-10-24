@@ -143,16 +143,18 @@ func _input(event):
 			# chord members or become the primary.
 			if event.echo:
 				return
-			# A modifier is part of the key event itself: it never joins a chord,
-			# and it cancels whatever chord was being built (D4).
-			if BindingSession.is_modifier_event(event) or BindingSession.has_modifier(event):
-				_session.clear()
-				return
+			# A modifier key never joins a chord (D4): its bits travel inside the
+			# events of the keys pressed while it is held, so it is only tracked
+			# for the preview. It must not cancel them either -- with a modifier
+			# down, Godot stamps its bit onto every key event, so cancelling would
+			# swallow the whole combination and leave the session empty.
 			_session.press(event)
 			_update_preview()
 			return
-		# Modifier combos keep using the single-event path.
-		if _session.is_empty() or BindingSession.has_modifier(event):
+		if _session.is_empty():
+			# Nothing joined the session: a lone modifier, or a key already down
+			# when the wait started. Bind it on its own, the way the old
+			# single-event path did -- upstream binds a lone modifier too.
 			_session.clear()
 			update_hotkey_event(event)
 			button_pressed = false

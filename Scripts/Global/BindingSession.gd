@@ -14,15 +14,23 @@ const MODIFIER_KEYS: Array = [KEY_CTRL, KEY_SHIFT, KEY_ALT, KEY_META]
 
 var _members: Array = []
 var _seq: int = 0
+# Modifier keys held while the session runs. They never become members: their
+# bits travel inside the events of the keys pressed after them, which is what
+# makes "Ctrl + A" a single binding and "Ctrl + A + B" a chord. Tracked only so
+# the widget can echo a modifier that has no primary key yet.
+var _pending_modifiers: Array = []
 
 
 static func is_modifier_event(p_event: InputEvent) -> bool:
 	return p_event is InputEventKey and (p_event as InputEventKey).keycode in MODIFIER_KEYS
 
 
-## True while any keyboard modifier is part of this event. Such a key is bound
-## through the single-event path (the bits live in the event) and must not join
-## a chord.
+## True while any keyboard modifier is part of this event.
+##
+## This is NOT a test for "the event is a modifier key": while a modifier is
+## physically held, Godot stamps its bit onto *every* key event, so a plain key
+## pressed in that window carries it too. Use it to read the combination of an
+## event, never to decide whether a key may join a session.
 static func has_modifier(p_event: InputEvent) -> bool:
 	if not (p_event is InputEventWithModifiers):
 		return false
@@ -32,6 +40,7 @@ static func has_modifier(p_event: InputEvent) -> bool:
 
 func clear() -> void:
 	_members.clear()
+	_pending_modifiers.clear()
 	_seq = 0
 
 
@@ -46,6 +55,11 @@ func is_empty() -> bool:
 ## the button was pressed after it.
 func press(p_event: InputEvent) -> void:
 	if is_modifier_event(p_event):
+		var mkey := _member_key(p_event)
+		for held in _pending_modifiers:
+			if _member_key(held) == mkey:
+				return
+		_pending_modifiers.append(p_event)
 		return
 	var key := _member_key(p_event)
 	for m in _members:
@@ -63,12 +77,32 @@ func press(p_event: InputEvent) -> void:
 ## Marks a pressed member released. For keys, buttons and mouse buttons the
 ## release event replaces the stored one, matching what the widgets always
 ## stored (only the code and the modifier bits are ever read back).
+##
+## The modifier bits of the *press* are kept: they describe the combination the
+## user pressed, while the release only reports whatever happens to be held at
+## that moment. Letting go of Ctrl before the key would otherwise drop it from
+## the binding.
 func release(p_event: InputEvent) -> void:
 	var key := _member_key(p_event)
+	if is_modifier_event(p_event):
+		for i in range(_pending_modifiers.size()):
+			if _member_key(_pending_modifiers[i]) == key:
+				_pending_modifiers.remove_at(i)
+				return
+		return
 	for m in _members:
 		if m["key"] == key:
 			m["released"] = true
-			m["ev"] = p_event
+			if m["ev"] is InputEventWithModifiers and p_event is InputEventWithModifiers:
+				var s := m["ev"] as InputEventWithModifiers
+				var r := p_event as InputEventWithModifiers
+				s.ctrl_pressed = s.ctrl_pressed or r.ctrl_pressed
+				s.shift_pressed = s.shift_pressed or r.shift_pressed
+				s.alt_pressed = s.alt_pressed or r.alt_pressed
+				s.meta_pressed = s.meta_pressed or r.meta_pressed
+				m["ev"] = s
+			else:
+				m["ev"] = p_event
 			return
 
 
@@ -109,16 +143,20 @@ func take() -> Dictionary:
 func preview_text() -> String:
 	var ordered := _members.duplicate()
 	ordered.sort_custom(func(a, b): return a["seq"] < b["seq"])
-	# A single member previews exactly like the committed binding; from two
-	# members up the preview uses the compact labels so it fits the same control
-	# that will show the finished chord.
-	var single := ordered.size() == 1
-	var parts: PackedStringArray = []
-	for m in ordered:
-		parts.append(InputDisplayName.text(m["ev"]) if single else InputDisplayName.compact(m["ev"]))
-	if parts.is_empty():
-		return ""
-	return " + ".join(parts)
+	if ordered.is_empty():
+		# No primary key yet: echo the modifiers held so far. Once a key joins,
+		# its own event carries the same bits and the preview shows them.
+		var mods: PackedStringArray = []
+		for held in _pending_modifiers:
+			mods.append(InputDisplayName.text(held))
+		return " + ".join(mods) if not mods.is_empty() else ""
+	# Preview exactly like the committed binding: the last member pressed is the
+	# primary, the rest are members, and the shared modifier prints once.
+	var last: InputEvent = ordered[ordered.size() - 1]["ev"]
+	var others: Array = []
+	for i in range(ordered.size() - 1):
+		others.append(ordered[i]["ev"])
+	return InputDisplayName.text(last, others)
 
 
 static func _member_key(p_event: InputEvent) -> String:
