@@ -1,0 +1,73 @@
+name: (Custom) - Build 2D-only Windows export template
+
+# Builds a trimmed template_release for this project only: no 3D, no
+# navigation, no unused media/multiplayer modules. The artifact feeds the
+# "custom_template/release" slot of the Windows export preset.
+
+on:
+  workflow_dispatch:
+    inputs:
+      godot_tag:
+        description: Godot source tag to build
+        required: false
+        default: 4.7.2-stable
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows-template:
+    runs-on: windows-latest
+    timeout-minutes: 150
+    steps:
+      - name: Checkout engine source
+        uses: actions/checkout@v5
+        with:
+          repository: godotengine/godot
+          ref: ${{ inputs.godot_tag }}
+          path: godot
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Setup Python and SCons
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --upgrade scons
+
+      - name: Install Direct3D 12 shader compiler dependencies
+        working-directory: godot
+        run: python misc/scripts/install_d3d12_sdk_windows.py
+
+      - name: Build template (2D only)
+        working-directory: godot
+        shell: cmd
+        run: |
+          scons platform=windows arch=x86_64 target=template_release tools=no production=yes ^
+            disable_3d=yes ^
+            module_navigation_2d_enabled=no module_navigation_3d_enabled=no ^
+            module_godot_physics_3d_enabled=no module_jolt_physics_enabled=no ^
+            module_csg_enabled=no module_gridmap_enabled=no module_lightmapper_rd_enabled=no ^
+            module_raycast_enabled=no module_vhacd_enabled=no module_fbx_enabled=no ^
+            module_gltf_enabled=no module_xatlas_unwrap_enabled=no module_interactive_music_enabled=no ^
+            module_openxr_enabled=no module_webxr_enabled=no module_mobile_vr_enabled=no ^
+            module_webrtc_enabled=no module_upnp_enabled=no module_enet_enabled=no ^
+            module_multiplayer_enabled=no module_jsonrpc_enabled=no module_camera_enabled=no ^
+            module_theora_enabled=no module_noise_enabled=no module_regex_enabled=no ^
+            module_msdfgen_enabled=no module_basis_universal_enabled=no module_ktx_enabled=no ^
+            module_dds_enabled=no module_tga_enabled=no module_hdr_enabled=no ^
+            module_tinyexr_enabled=no module_bmp_enabled=no module_zip_enabled=no
+
+      - name: Report binary size
+        working-directory: godot
+        shell: pwsh
+        run: Get-ChildItem bin/*.exe | Select-Object Name, @{n='MB';e={[math]::Round($_.Length/1MB,1)}}
+
+      - name: Upload template
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-2d-template-${{ inputs.godot_tag }}
+          path: |
+            godot/bin/godot.windows.template_release.x86_64.exe
+            godot/bin/godot.windows.template_release.x86_64.console.exe
+          if-no-files-found: error
