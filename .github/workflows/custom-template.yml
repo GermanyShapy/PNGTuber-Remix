@@ -11,6 +11,11 @@ on:
         description: Godot source tag to build
         required: false
         default: 4.7.2-stable
+  # workflow_dispatch is unavailable until this file sits on the default branch,
+  # so a change to it is enough to kick off a build.
+  push:
+    paths:
+      - .github/workflows/custom-template.yml
 
 permissions:
   contents: read
@@ -19,12 +24,14 @@ jobs:
   build-windows-template:
     runs-on: windows-latest
     timeout-minutes: 150
+    env:
+      GODOT_TAG: ${{ inputs.godot_tag || '4.7.2-stable' }}
     steps:
       - name: Checkout engine source
         uses: actions/checkout@v5
         with:
           repository: godotengine/godot
-          ref: ${{ inputs.godot_tag }}
+          ref: ${{ env.GODOT_TAG }}
           path: godot
           fetch-depth: 1
           submodules: recursive
@@ -66,7 +73,7 @@ jobs:
       - name: Upload template
         uses: actions/upload-artifact@v4
         with:
-          name: windows-2d-template-${{ inputs.godot_tag }}
+          name: windows-2d-template
           path: |
             godot/bin/godot.windows.template_release.x86_64.exe
             godot/bin/godot.windows.template_release.x86_64.console.exe
