@@ -222,6 +222,10 @@ static func _apply_brand(p_label: String) -> String:
 ## ~30 characters and every panel that shows a binding (asset button, disappear
 ## list, cycle, hotkey row) clipped it. `full_text()` keeps the complete labels
 ## for tooltips, so no information is lost.
+##
+## Every member of a chord carries the same modifier bits (the engine stamps
+## them onto each key while the modifier is held), so the prefix is printed
+## once in front instead of repeating it per member.
 static func text(p_event: InputEvent, p_chord_members: Array = []) -> String:
 	if p_event == null:
 		return ""
@@ -233,9 +237,9 @@ static func text(p_event: InputEvent, p_chord_members: Array = []) -> String:
 		# a plain `as InputEvent` cast on a non-object raises at runtime.
 		if not (m is InputEvent):
 			continue
-		parts.append(compact(m))
-	parts.append(compact(p_event))
-	return " + ".join(parts)
+		parts.append(compact(_without_modifiers(m)))
+	parts.append(compact(_without_modifiers(p_event)))
+	return _joined_with_prefix(p_event, parts)
 
 
 ## Every vendor alias spelled out. Only for tooltips / help text.
@@ -249,9 +253,48 @@ static func full_text(p_event: InputEvent, p_chord_members: Array = []) -> Strin
 	for m in p_chord_members:
 		if not (m is InputEvent):
 			continue
-		parts.append(_single_text(m))
-	parts.append(label)
-	return " + ".join(parts)
+		parts.append(_single_text(_without_modifiers(m)))
+	parts.append(_single_text(_without_modifiers(p_event)))
+	return _joined_with_prefix(p_event, parts)
+
+
+## Prefixes the shared modifier of a chord ("Ctrl + A + S"); the parts already
+## render without their own prefix.
+static func _joined_with_prefix(p_event: InputEvent, p_parts: PackedStringArray) -> String:
+	var joined := " + ".join(p_parts)
+	var prefix := modifier_prefix(p_event)
+	return prefix + " + " + joined if prefix != "" else joined
+
+
+## The modifier a key event carries ("Ctrl", "Ctrl+Shift"), or "" when it has
+## none. A chord shares one modifier state, so a label shows it once.
+static func modifier_prefix(p_event: InputEvent) -> String:
+	if not (p_event is InputEventKey):
+		return ""
+	var full := (p_event as InputEventKey).as_text()
+	var bare := _without_modifiers(p_event) as InputEventKey
+	if bare == null:
+		return ""
+	var key_name := bare.as_text()
+	if not full.ends_with(key_name):
+		return ""
+	var prefix := full.substr(0, full.length() - key_name.length())
+	return prefix.substr(0, prefix.length() - 1) if prefix.ends_with("+") else prefix
+
+
+## The same event with every modifier flag cleared: what is left is the bare
+## input, which is what a chord label already prefixed prints per member.
+static func _without_modifiers(p_event: InputEvent) -> InputEvent:
+	if not (p_event is InputEventKey):
+		return p_event
+	var bare := p_event.duplicate() as InputEventKey
+	if bare == null:
+		return p_event
+	bare.ctrl_pressed = false
+	bare.shift_pressed = false
+	bare.alt_pressed = false
+	bare.meta_pressed = false
+	return bare
 
 
 ## One input, short enough to sit in a chord. Joypad rows that list three vendor
