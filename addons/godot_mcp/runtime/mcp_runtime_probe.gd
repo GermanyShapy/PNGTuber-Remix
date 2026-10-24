@@ -925,7 +925,7 @@ func _resolve_material_binding(node_path: String, material_target: String = "aut
 			elif node.has_method("get_material_override") and node.call("get_material_override"):
 				material = node.call("get_material_override")
 				resolved_target = "material_override"
-			elif node is MeshInstance3D:
+			elif node.is_class("MeshInstance3D"):
 				material = node.get_active_material(surface_index)
 				resolved_target = "surface_override"
 		"material":
@@ -937,7 +937,7 @@ func _resolve_material_binding(node_path: String, material_target: String = "aut
 			if node.has_method("get_material_override"):
 				material = node.call("get_material_override")
 		"surface_override":
-			if node is MeshInstance3D:
+			if node.is_class("MeshInstance3D"):
 				material = node.get_active_material(surface_index)
 			else:
 				return {"error": "surface_override target requires MeshInstance3D", "node_path": node_path, "node_type": node.get_class()}
