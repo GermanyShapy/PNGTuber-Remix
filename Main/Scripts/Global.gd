@@ -192,6 +192,22 @@ var mesh_text_node : Node = null
 
 var save_path : String = ""
 
+# --- Freeze diagnostics -------------------------------------------------------
+# Every switch below is opt-in: with none of them set, the build behaves exactly
+# like the release one. The environment-variable form exists because PowerShell
+# parses a bare `--flag` token as its own operator, which broke the first hand
+# run of these tests.
+var _diag_hb_interval: float = 0.0
+var _diag_hb_accum: float = 0.0
+var _diag_file: String = ""
+var _diag_thread: Thread = null
+var _diag_thread_stop: bool = false
+var _diag_mutex: Mutex = Mutex.new()
+var _diag_last_main_ms: int = 0
+var _diag_output_registered: bool = false
+var _diag_trace_on: bool = false
+var _diag_phase: String = ""
+
 # State-switch throttling. When a rendered frame overruns its budget the engine
 # catches up by running several physics ticks in the next one, and StateButton
 # polls its hotkey from _physics_process while StandGlobalInput refreshes
@@ -222,8 +238,130 @@ var folder_texture : Texture2D = null
 
 var obj : Object = Object.new()
 
+## True when a diagnostic switch is set, either as DIAG_<NAME> or after `--`.
+static func has_diag_flag(p_name: String) -> bool:
+	if OS.get_environment("DIAG_" + p_name.to_upper().replace("-", "_")) != "":
+		return true
+	return OS.get_cmdline_user_args().has("--" + p_name)
+
+
+## Heartbeat period in seconds; 0 keeps the log disabled.
+static func get_diag_heartbeat_interval() -> float:
+	var raw := OS.get_environment("DIAG_HEARTBEAT")
+	if raw.is_empty():
+		for arg in OS.get_cmdline_user_args():
+			if arg.begins_with("--heartbeat="):
+				raw = arg.substr("--heartbeat=".length())
+				break
+	if not raw.is_valid_float():
+		return 0.0
+	return maxf(1.0, raw.to_float())
+
+
+func _diag_init() -> void:
+	_diag_hb_interval = get_diag_heartbeat_interval()
+	_diag_trace_on = has_diag_flag("trace")
+	var any_switch := (
+		has_diag_flag("no-rawmouse")
+		or has_diag_flag("no-gihook")
+		or has_diag_flag("no-additional")
+		or _diag_trace_on
+	)
+	if not any_switch and _diag_hb_interval <= 0.0:
+		return
+	_diag_file = OS.get_executable_path().get_base_dir().path_join("diag.log")
+	_diag_write("BOOT", "pid=%d heartbeat=%.1fs no-rawmouse=%s no-gihook=%s no-additional=%s" % [
+		OS.get_process_id(),
+		_diag_hb_interval,
+		str(has_diag_flag("no-rawmouse")),
+		str(has_diag_flag("no-gihook")),
+		str(has_diag_flag("no-additional")),
+	])
+	if _diag_hb_interval <= 0.0:
+		return
+	_diag_last_main_ms = Time.get_ticks_msec()
+	_diag_thread = Thread.new()
+	_diag_thread.start(_diag_thread_loop)
+
+
+func _diag_shutdown() -> void:
+	_diag_thread_stop = true
+	if _diag_thread != null and _diag_thread.is_started():
+		_diag_thread.wait_to_finish()
+	_diag_thread = null
+
+
+## Records a named step so a stall can be attributed to the call that never came
+## back. Only active with DIAG_TRACE, and meant for event-driven steps only: a
+## per-frame caller would turn this into a disk-write loop and change timing.
+func diag_trace(p_tag: String) -> void:
+	if not _diag_trace_on:
+		return
+	_diag_write("TRC", p_tag)
+
+
+## Marks the step the main thread is currently inside; the next heartbeat reports
+## it, so a stall that starts between two beats still names its phase.
+func diag_phase(p_name: String) -> void:
+	_diag_phase = p_name
+
+
+func _diag_write(p_tag: String, p_payload: String) -> void:
+	if _diag_file.is_empty():
+		return
+	_diag_mutex.lock()
+	var mode := FileAccess.READ_WRITE if FileAccess.file_exists(_diag_file) else FileAccess.WRITE
+	var file := FileAccess.open(_diag_file, mode)
+	if file != null:
+		file.seek_end()
+		file.store_line("%s t=%.1fs %s" % [p_tag, Time.get_ticks_msec() / 1000.0, p_payload])
+		file.flush()
+		file.close()
+	_diag_mutex.unlock()
+
+
+func _diag_main_beat() -> void:
+	_diag_mutex.lock()
+	_diag_last_main_ms = Time.get_ticks_msec()
+	_diag_mutex.unlock()
+	var phase := _diag_phase if not _diag_phase.is_empty() else "-"
+	_diag_write("M", "proc=%d drawn=%d phys=%d mem=%dMB nodes=%d orphans=%d phase=%s" % [
+		Engine.get_process_frames(),
+		Engine.get_frames_drawn(),
+		Engine.get_physics_frames(),
+		int(OS.get_static_memory_usage() / 1048576),
+		int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
+		int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)),
+		phase,
+	])
+
+
+## Runs off the main thread on purpose: if the main thread blocks, this one keeps
+## writing, so the log proves whether the whole process died or only the thread
+## that renders and runs game logic.
+func _diag_thread_loop() -> void:
+	var period_ms := int(_diag_hb_interval * 1000.0)
+	while not _diag_thread_stop:
+		var waited := 0
+		while waited < period_ms and not _diag_thread_stop:
+			OS.delay_msec(100)
+			waited += 100
+		if _diag_thread_stop:
+			break
+		_diag_mutex.lock()
+		var silent_ms := Time.get_ticks_msec() - _diag_last_main_ms
+		_diag_mutex.unlock()
+		if silent_ms > period_ms * 5 / 2:
+			_diag_write("STALL", "main_silent=%ds" % (silent_ms / 1000))
+		else:
+			_diag_write("T", "")
+
+
 func _ready():
-	DisplayServer.register_additional_output(obj)
+	_diag_init()
+	if not has_diag_flag("no-additional"):
+		DisplayServer.register_additional_output(obj)
+		_diag_output_registered = true
 	var img = Image.create_empty(32,32, false, Image.FORMAT_RGBA8)
 	folder_texture = ImageTexture.create_from_image(img)
 	create_placeholders()
@@ -234,7 +372,9 @@ func _ready():
 	current_state = 0
 
 func _exit_tree() -> void:
-	DisplayServer.unregister_additional_output(obj)
+	if _diag_output_registered:
+		DisplayServer.unregister_additional_output(obj)
+	_diag_shutdown()
 
 func create_placeholders():
 	image_data.runtime_texture = preload("res://Misc/TestAssets/Placeholder.png")
@@ -410,6 +550,11 @@ func offset(i):
 	update_offset_spins.emit()
 
 func _process(delta):
+	if _diag_hb_interval > 0.0:
+		_diag_hb_accum += delta
+		if _diag_hb_accum >= _diag_hb_interval:
+			_diag_hb_accum = 0.0
+			_diag_main_beat()
 	if _coalesced_state >= 0:
 		var pending := _coalesced_state
 		_coalesced_state = -1

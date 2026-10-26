@@ -86,9 +86,13 @@ func choosing_window(id):
 func _notification(what):
 	if not Global.is_editor:
 		if what == MainLoop.NOTIFICATION_APPLICATION_FOCUS_IN:
+			Global.diag_trace("focus:in enter")
 			get_parent().get_parent().show()
+			Global.diag_trace("focus:in exit")
 		elif what == MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT:
+			Global.diag_trace("focus:out enter")
 			get_parent().get_parent().hide()
+			Global.diag_trace("focus:out exit")
 
 func _on_settings_button_pressed() -> void:
 	Global.top_ui.add_child(settings_scene.instantiate())

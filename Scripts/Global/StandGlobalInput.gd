@@ -14,12 +14,24 @@ func _ready() -> void:
 	call_deferred("_rawmouse_init");
 
 func _rawmouse_init():
+	if Global.has_diag_flag("no-rawmouse"):
+		print("[diag] RawMouseInput disabled by --no-rawmouse")
+		return
 	if rawMouseInput == null and OS.get_name() == "Windows":
 		print("raw input init start")
+		Global.diag_phase("rawmouse_new")
+		Global.diag_trace("rawmouse:new enter")
 		rawMouseInput = RawMouseInput.new()
+		Global.diag_trace("rawmouse:new exit")
 		rawMouseInput.raw_mouse.connect(_on_raw_mouse_input_updated)
 
+		# add_child runs the plugin's _enter_tree/_ready, which is where it hooks
+		# the window procedure and starts its reader thread.
+		Global.diag_phase("rawmouse_add_child")
+		Global.diag_trace("rawmouse:add_child enter")
 		add_child(rawMouseInput);
+		Global.diag_trace("rawmouse:add_child exit")
+		Global.diag_phase("")
 
 		if !rawMouseInput.is_inited:
 			print("raw input init failed")

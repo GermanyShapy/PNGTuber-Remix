@@ -394,9 +394,13 @@ func _apply_grid_size() -> void:
 func _notification(what: int) -> void:
 	if not Global.is_editor:
 		if what == MainLoop.NOTIFICATION_APPLICATION_FOCUS_IN:
+			Global.diag_trace("topbar:focus_in enter")
 			%TopBar.show()
+			Global.diag_trace("topbar:focus_in exit")
 		elif what == MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT:
+			Global.diag_trace("topbar:focus_out enter")
 			%TopBar.hide()
+			Global.diag_trace("topbar:focus_out exit")
 
 
 func _on_inputs_button_pressed() -> void:

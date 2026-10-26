@@ -4,9 +4,22 @@ func _ready() -> void:
 	Global.swtich_session_popup = %MenuScreenPopup
 	await get_tree().create_timer(0.1).timeout
 	#init_switch_session()
+	Global.diag_trace("ready:auto_load_model enter")
 	auto_load_model()
-	GlobInput.start_hook()
+	Global.diag_trace("ready:auto_load_model exit")
+	if Global.has_diag_flag("no-gihook"):
+		print("[diag] GlobInput hook disabled by --no-gihook")
+	else:
+		Global.diag_phase("gi_start_hook")
+		Global.diag_trace("ready:gi_start_hook enter")
+		GlobInput.start_hook()
+		Global.diag_trace("ready:gi_start_hook exit")
+		Global.diag_phase("")
+	Global.diag_phase("update_tracking_backend")
+	Global.diag_trace("ready:update_tracking_backend enter")
 	Settings.update_tracking_backend()
+	Global.diag_trace("ready:update_tracking_backend exit")
+	Global.diag_phase("")
 
 func init_switch_session():
 	if Settings.theme_settings.session == 1:
@@ -23,7 +36,11 @@ func auto_load_model():
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		# This path is what a user hits when the window is stuck: the trace tells
+		# us whether stop_hook() is where it never returns.
+		Global.diag_trace("close:stop_hook enter")
 		GlobInput.stop_hook()
+		Global.diag_trace("close:stop_hook exit")
 		get_tree().quit()
 		OS.kill(OS.get_process_id())
 
