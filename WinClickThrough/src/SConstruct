@@ -12,7 +12,9 @@ def fixpath(p):
     return os.path.abspath(p).replace("\\", "/")
 
 
-godot_cpp_path = fixpath("../../../Godot-Global-Input/godot-cpp")
+# godot-cpp is a submodule of this repo; run `scons` once inside it to generate
+# the bindings and the static library before building this extension.
+godot_cpp_path = fixpath("../godot-cpp")
 mingw_bin_path = os.environ.get("MINGW_BIN", "E:/msys/mingw64/bin")
 
 if not platform.startswith("win"):

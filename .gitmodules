@@ -1,0 +1,3 @@
+[submodule "WinClickThrough/godot-cpp"]
+	path = WinClickThrough/godot-cpp
+	url = git@github.com:godotengine/godot-cpp.git
