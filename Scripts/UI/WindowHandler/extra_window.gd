@@ -3,7 +3,11 @@ class_name ExtraWindow
 
 const WINDOW_SIZE := Vector2(512, 512)
 const BUTTON_MARGIN: int = 16
-const BITMAP_SIZE = 128
+# The silhouette is reduced to a convex hull, so extra sampling resolution buys
+# nothing: 64 already resolves it, and the whole chain costs a third of 128.
+const BITMAP_SIZE = 64
+# Grown in window pixels so the grab margin no longer scales with the sample size.
+const PASSTHROUGH_GROW: float = 10.0
 
 var dragging := false
 var offset := Vector2i.ZERO
@@ -18,6 +22,11 @@ var was_pressed_before := false
 var mouse_pos :Vector2i = Vector2()
 var updated_image :Image
 var update_buffer_lock :bool = false
+var _last_polygon := PackedVector2Array()
+# Downscaled mirror of this window rendered by the GPU. Reading it back costs a
+# small fixed sync instead of transferring the full window every other frame.
+var _sample_view :SubViewport
+var _sample_camera :Camera2D
 
 #var test_frame = 0
 
@@ -66,6 +75,17 @@ func _init(world: World2D, remove_window: Callable, lock_window: Callable, other
 	button.pressed.connect(lock_window.bind(self))
 	
 	self.focus_entered.connect(on_focus_enter)
+	
+	# Same world, same camera, but a BITMAP_SIZE square target: the GPU does the
+	# downscale, so the readback never touches the full-resolution frame.
+	_sample_view = SubViewport.new()
+	_sample_view.size = Vector2i(BITMAP_SIZE, BITMAP_SIZE)
+	_sample_view.transparent_bg = true
+	_sample_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_sample_view.world_2d = world
+	_sample_camera = Camera2D.new()
+	_sample_view.add_child(_sample_camera)
+	add_child(_sample_view)
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("lmb"):
@@ -88,15 +108,15 @@ func _physics_process(_delta: float) -> void:
 	if borderless and mouse_pos == mouse_pos.clamp(position, position + size) and !dragging and !camera.panning:
 		update_buffer_lock = !update_buffer_lock
 		if !update_buffer_lock:
-			updated_image = get_texture().get_image()
+			_sample_camera.global_position = camera.global_position
+			_sample_camera.zoom = camera.zoom * (float(BITMAP_SIZE) / maxf(float(size.x), 1.0))
+			updated_image = _sample_view.get_texture().get_image()
 			return
 			
 		if updated_image == null:
 			return
 		
-		var image_original_size = updated_image.get_size()
-		updated_image.resize(BITMAP_SIZE, BITMAP_SIZE, Image.INTERPOLATE_NEAREST)
-		var scale = Vector2(float(image_original_size.x) / float(BITMAP_SIZE), float(image_original_size.y) / float(BITMAP_SIZE))
+		var scale := Vector2(size) / Vector2(float(BITMAP_SIZE), float(BITMAP_SIZE))
 		var bm = BitMap.new()
 		
 		bm.create_from_image_alpha(updated_image)
@@ -108,24 +128,24 @@ func _physics_process(_delta: float) -> void:
 			var polygon = PackedVector2Array()
 			for p in array:
 				polygon.append_array(p)
-			polygon = Geometry2D.offset_polygon(Geometry2D.convex_hull(polygon),2.5,Geometry2D.JOIN_MITER)[0]
+			polygon = Geometry2D.convex_hull(polygon)
 			for index in polygon.size():
 				polygon[index] *= scale
+			polygon = Geometry2D.offset_polygon(polygon, PASSTHROUGH_GROW, Geometry2D.JOIN_MITER)[0]
+			# Each assignment rebuilds a GDI region and makes the compositor redo the
+			# window shape, so skip it while the silhouette is unchanged.
+			if polygon == _last_polygon:
+				return
+			_last_polygon = polygon
 			mouse_passthrough_polygon = polygon
-			
-			#test_frame += 1
-			#if test_frame % 30 == 0:
-				#print("___ Tick " + str(Engine.get_physics_frames()) + " ___")
-				#print("window: " + str(size) + " in " + str(position))
-				#print("window.stretch_transform: " + str(get_stretch_transform()))
-				#print("image: " + str(image_original_size))
-				#print("viewport.scale: " + str(viewport_container.scale))
-				#print("points: " + str(polygon.size()) + " ->>> " + str(polygon))
 		else:
-			mouse_passthrough_polygon = []
+			if !_last_polygon.is_empty():
+				_last_polygon = PackedVector2Array()
+				mouse_passthrough_polygon = []
 	else:
 		if !mouse_passthrough_polygon.is_empty():
 			updated_image = null
+			_last_polygon = PackedVector2Array()
 			mouse_passthrough_polygon = []
 
 func on_focus_enter():
