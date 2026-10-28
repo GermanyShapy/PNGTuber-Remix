@@ -1,0 +1,56 @@
+import os
+from SCons.Script import *
+
+# Windows-only helper extension: toggles WS_EX_TRANSPARENT on a native window.
+# Reuses the godot-cpp checkout that ships with the GlobalInput fork.
+
+platform = ARGUMENTS.get("platform", "windows")
+build_type = ARGUMENTS.get("build", "debug")
+
+
+def fixpath(p):
+    return os.path.abspath(p).replace("\\", "/")
+
+
+godot_cpp_path = fixpath("../../../Godot-Global-Input/godot-cpp")
+mingw_bin_path = os.environ.get("MINGW_BIN", "E:/msys/mingw64/bin")
+
+if not platform.startswith("win"):
+    print("WinClickThrough only builds for windows (got: %s)" % platform)
+    Exit(0)
+
+env = Environment(tools=["mingw"])
+# SCons shells out via cmd.exe, which cannot consume an MSYS-style PATH, so the
+# toolchain is addressed by absolute path and its native directory is prepended.
+env["CXX"] = fixpath(mingw_bin_path + "/g++")
+env["CC"] = fixpath(mingw_bin_path + "/gcc")
+env["ENV"]["PATH"] = os.path.abspath(mingw_bin_path).replace("/", "\\") \
+    + os.pathsep + env["ENV"].get("PATH", "")
+
+lib_suffix = "windows.template_debug.x86_64" if build_type == "debug" else "windows.template_release.x86_64"
+env["SHLIBSUFFIX"] = ".dll"
+env["SHLIBPREFIX"] = ""
+
+env.Append(CPPPATH=[
+    godot_cpp_path + "/include",
+    godot_cpp_path + "/include/godot_cpp",
+    godot_cpp_path + "/gen/include",
+    godot_cpp_path + "/gdextension",
+])
+
+env.Append(LIBPATH=[godot_cpp_path + "/bin"])
+env.Append(LIBS=["godot-cpp." + lib_suffix, "user32", "gdi32", "winpthread"])
+env.Append(CXXFLAGS=["-std=c++17", "-O2"])
+env.Append(CPPDEFINES=["NOMINMAX"])
+# Link the MinGW runtime statically: exported builds load the extension from a
+# subfolder, where libstdc++-6.dll next to it is not on the search path.
+env.Append(LINKFLAGS=["-shared", "-static-libgcc", "-static-libstdc++"])
+
+os.makedirs("../windows", exist_ok=True)
+
+# The library lives outside this directory, so it is not part of scons' implicit
+# default target and must be declared explicitly.
+Default(env.SharedLibrary(
+    target="../windows/winclickthrough." + lib_suffix + ".dll",
+    source=["win_click_through.cpp", "register_types.cpp"],
+))

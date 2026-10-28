@@ -3,11 +3,14 @@ class_name ExtraWindow
 
 const WINDOW_SIZE := Vector2(512, 512)
 const BUTTON_MARGIN: int = 16
-# The silhouette is reduced to a convex hull, so extra sampling resolution buys
-# nothing: 64 already resolves it, and the whole chain costs a third of 128.
+# Alpha above this counts as solid. The answer comes from the GPU because sprite
+# opacity is produced by the sprite shader, not by a CPU-side alpha mask.
+const PROBE_ALPHA: float = 0.02
+# Sample resolution for the hit test; each texel covers size/BITMAP_SIZE pixels.
 const BITMAP_SIZE = 64
-# Grown in window pixels so the grab margin no longer scales with the sample size.
-const PASSTHROUGH_GROW: float = 10.0
+# Neighbourhood probed around the cursor to absorb the lag between sampling and
+# using the answer.
+const EDGE_SLACK: int = 1
 
 var dragging := false
 var offset := Vector2i.ZERO
@@ -20,13 +23,14 @@ var button := Button.new()
 var control := Control.new()
 var was_pressed_before := false
 var mouse_pos :Vector2i = Vector2()
-var updated_image :Image
 var update_buffer_lock :bool = false
-var _last_polygon := PackedVector2Array()
 # Downscaled mirror of this window rendered by the GPU. Reading it back costs a
 # small fixed sync instead of transferring the full window every other frame.
 var _sample_view :SubViewport
 var _sample_camera :Camera2D
+var _last_sample :Image
+var _wct :Object
+var _hwnd :int = 0
 
 #var test_frame = 0
 
@@ -103,50 +107,74 @@ func _process(_delta: float) -> void:
 	mouse_pos = DisplayServer.mouse_get_position()
 	if dragging:
 		position = mouse_pos - offset
-	
+	_update_click_through()
+
 func _physics_process(_delta: float) -> void:
-	if borderless and mouse_pos == mouse_pos.clamp(position, position + size) and !dragging and !camera.panning:
-		update_buffer_lock = !update_buffer_lock
-		if !update_buffer_lock:
-			_sample_camera.global_position = camera.global_position
-			_sample_camera.zoom = camera.zoom * (float(BITMAP_SIZE) / maxf(float(size.x), 1.0))
-			updated_image = _sample_view.get_texture().get_image()
+	# Only the sample matters now; the silhouette is read from its alpha channel.
+	if !borderless or dragging or camera.panning:
+		return
+	update_buffer_lock = !update_buffer_lock
+	if !update_buffer_lock:
+		return
+	_sample_camera.global_position = camera.global_position
+	_sample_camera.zoom = camera.zoom * (float(BITMAP_SIZE) / maxf(float(size.x), 1.0))
+	_last_sample = _sample_view.get_texture().get_image()
+
+func _ready() -> void:
+	_wct = ClassDB.instantiate("WinClickThrough")
+	if _wct == null:
+		push_warning("WinClickThrough extension missing; native click-through disabled")
+
+func _exit_tree() -> void:
+	if _wct != null and _hwnd != 0:
+		_wct.call("set_click_through", _hwnd, false)
+
+# Switches the whole window between hit-testable and click-through. No GDI region
+# is involved, so rendering is never clipped to a silhouette.
+func _update_click_through() -> void:
+	if _wct == null:
+		return
+	if _hwnd == 0:
+		if !is_visible():
 			return
-			
-		if updated_image == null:
+		_resolve_hwnd()
+		if _hwnd == 0:
 			return
-		
-		var scale := Vector2(size) / Vector2(float(BITMAP_SIZE), float(BITMAP_SIZE))
-		var bm = BitMap.new()
-		
-		bm.create_from_image_alpha(updated_image)
-		#bm.grow_mask(3,Rect2(Vector2(), bm.get_size()))
-		
-		var array = bm.opaque_to_polygons(Rect2(Vector2(), bm.get_size()),1)
-		
-		if !array.is_empty():
-			var polygon = PackedVector2Array()
-			for p in array:
-				polygon.append_array(p)
-			polygon = Geometry2D.convex_hull(polygon)
-			for index in polygon.size():
-				polygon[index] *= scale
-			polygon = Geometry2D.offset_polygon(polygon, PASSTHROUGH_GROW, Geometry2D.JOIN_MITER)[0]
-			# Each assignment rebuilds a GDI region and makes the compositor redo the
-			# window shape, so skip it while the silhouette is unchanged.
-			if polygon == _last_polygon:
-				return
-			_last_polygon = polygon
-			mouse_passthrough_polygon = polygon
-		else:
-			if !_last_polygon.is_empty():
-				_last_polygon = PackedVector2Array()
-				mouse_passthrough_polygon = []
+
+	var through := true
+	if !borderless or dragging or camera.panning:
+		through = false
 	else:
-		if !mouse_passthrough_polygon.is_empty():
-			updated_image = null
-			_last_polygon = PackedVector2Array()
-			mouse_passthrough_polygon = []
+		var local := Vector2(mouse_pos - position)
+		if local.x >= 0.0 and local.y >= 0.0 and local.x < float(size.x) and local.y < float(size.y):
+			through = !_alpha_hit(local)
+	_wct.call("set_click_through", _hwnd, through)
+
+func _alpha_hit(local: Vector2) -> bool:
+	if _last_sample == null:
+		# No sample yet: stay interactive rather than swallow clicks.
+		return true
+	var px := Vector2i(local * float(BITMAP_SIZE) / Vector2(size))
+	for dy in range(-EDGE_SLACK, EDGE_SLACK + 1):
+		for dx in range(-EDGE_SLACK, EDGE_SLACK + 1):
+			var q := px + Vector2i(dx, dy)
+			if q.x < 0 or q.y < 0 or q.x >= _last_sample.get_width() or q.y >= _last_sample.get_height():
+				continue
+			if _last_sample.get_pixel(q.x, q.y).a > PROBE_ALPHA:
+				return true
+	return false
+
+# get_window_id() is 0 until the native window exists, and id 0 means the MAIN
+# window; resolving that id would make the whole application click-through.
+func _resolve_hwnd() -> void:
+	var wid := get_window_id()
+	if wid == 0:
+		return
+	var main_hwnd: int = DisplayServer.window_get_native_handle(DisplayServer.WINDOW_HANDLE, 0)
+	var candidate: int = DisplayServer.window_get_native_handle(DisplayServer.WINDOW_HANDLE, wid)
+	if candidate == 0 or candidate == main_hwnd:
+		return
+	_hwnd = candidate
 
 func on_focus_enter():
 	pass
