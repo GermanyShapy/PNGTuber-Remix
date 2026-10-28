@@ -2,7 +2,9 @@
 
 entry_symbol = "win_click_through_library_init"
 compatibility_minimum = "4.5"
-reloadable = true
+# Not reloadable: ExtraWindow holds a Ref to an instance, so swapping the library
+# underneath it during an editor hot-reload would leave that reference dangling.
+reloadable = false
 
 [libraries]
 

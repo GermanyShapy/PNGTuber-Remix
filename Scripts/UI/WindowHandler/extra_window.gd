@@ -6,11 +6,15 @@ const BUTTON_MARGIN: int = 16
 # Alpha above this counts as solid. The answer comes from the GPU because sprite
 # opacity is produced by the sprite shader, not by a CPU-side alpha mask.
 const PROBE_ALPHA: float = 0.02
-# Sample resolution for the hit test; each texel covers size/BITMAP_SIZE pixels.
+# Long-edge sample resolution for the hit test. The probe keeps the window's
+# aspect ratio, so non-square windows stay aligned.
 const BITMAP_SIZE = 64
 # Neighbourhood probed around the cursor to absorb the lag between sampling and
 # using the answer.
 const EDGE_SLACK: int = 1
+# Give up resolving the native handle after this many attempts; a window that
+# never produces a valid id should not cost two syscalls per frame forever.
+const HWND_RETRIES: int = 120
 
 var dragging := false
 var offset := Vector2i.ZERO
@@ -28,9 +32,12 @@ var update_buffer_lock :bool = false
 # small fixed sync instead of transferring the full window every other frame.
 var _sample_view :SubViewport
 var _sample_camera :Camera2D
+# Window pixels per sample texel; drives the probe zoom and the hit-test mapping.
+var _sample_scale :float = 1.0
 var _last_sample :Image
 var _wct :Object
 var _hwnd :int = 0
+var _hwnd_retries :int = 0
 
 #var test_frame = 0
 
@@ -116,8 +123,16 @@ func _physics_process(_delta: float) -> void:
 	update_buffer_lock = !update_buffer_lock
 	if !update_buffer_lock:
 		return
+	var k := maxf(float(size.x), float(size.y)) / float(BITMAP_SIZE)
+	if !is_equal_approx(k, _sample_scale):
+		_sample_scale = maxf(k, 1.0)
+		var probe := Vector2i(
+			maxi(2, int(round(float(size.x) / _sample_scale))),
+			maxi(2, int(round(float(size.y) / _sample_scale))))
+		if probe != _sample_view.size:
+			_sample_view.size = probe
 	_sample_camera.global_position = camera.global_position
-	_sample_camera.zoom = camera.zoom * (float(BITMAP_SIZE) / maxf(float(size.x), 1.0))
+	_sample_camera.zoom = camera.zoom / _sample_scale
 	_last_sample = _sample_view.get_texture().get_image()
 
 func _ready() -> void:
@@ -135,8 +150,9 @@ func _update_click_through() -> void:
 	if _wct == null:
 		return
 	if _hwnd == 0:
-		if !is_visible():
+		if !is_visible() or _hwnd_retries >= HWND_RETRIES:
 			return
+		_hwnd_retries += 1
 		_resolve_hwnd()
 		if _hwnd == 0:
 			return
@@ -154,11 +170,13 @@ func _alpha_hit(local: Vector2) -> bool:
 	if _last_sample == null:
 		# No sample yet: stay interactive rather than swallow clicks.
 		return true
-	var px := Vector2i(local * float(BITMAP_SIZE) / Vector2(size))
+	var w := _last_sample.get_width()
+	var h := _last_sample.get_height()
+	var px := Vector2i(local / _sample_scale)
 	for dy in range(-EDGE_SLACK, EDGE_SLACK + 1):
 		for dx in range(-EDGE_SLACK, EDGE_SLACK + 1):
 			var q := px + Vector2i(dx, dy)
-			if q.x < 0 or q.y < 0 or q.x >= _last_sample.get_width() or q.y >= _last_sample.get_height():
+			if q.x < 0 or q.y < 0 or q.x >= w or q.y >= h:
 				continue
 			if _last_sample.get_pixel(q.x, q.y).a > PROBE_ALPHA:
 				return true
