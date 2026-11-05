@@ -15,6 +15,9 @@ var hotkey_state_buttons: Array[Node]
 var hotkey_asset_sprites: Array[Node]
 var hotkey_disappear_sprites: Array[Node]
 var hotkey_cycles: Array
+# Rows of the model bounce list sharing this binding, so editing the hotkey here
+# also rewrites them (the panel shows the old key otherwise).
+var hotkey_bounce_rows: Array = []
 # Collects the inputs pressed while awaiting; a binding commits once every
 # member is released (see BindingSession).
 var _session := BindingSession.new()
@@ -38,6 +41,7 @@ func refresh_hotkey_ref_arrays():
 	hotkey_asset_sprites.clear()
 	hotkey_disappear_sprites.clear()
 	hotkey_cycles.clear()
+	hotkey_bounce_rows.clear()
 	
 	var state_buttons = get_tree().get_nodes_in_group("StateButtons")
 	var sprites = get_tree().get_nodes_in_group("Sprites")
@@ -69,6 +73,15 @@ func refresh_hotkey_ref_arrays():
 			or is_same_binding(hotkey_event, hotkey_members, cycle.forward, cycle.get("forward_chord", [])) \
 			or is_same_binding(hotkey_event, hotkey_members, cycle.backward, cycle.get("backward_chord", [])):
 			hotkey_cycles.append(cycle)
+	
+	var bounce_keys: Array = Global.settings_dict.get("bounce_keys", [])
+	var bounce_chords: Array = Global.settings_dict.get("bounce_key_chords", [])
+	for i in range(bounce_keys.size()):
+		var bounce_members: Array = []
+		if i < bounce_chords.size() and bounce_chords[i] is Array:
+			bounce_members = bounce_chords[i]
+		if is_same_binding(hotkey_event, hotkey_members, bounce_keys[i], bounce_members):
+			hotkey_bounce_rows.append(i)
 
 func _toggled(_button_pressed):
 	set_process_input(_button_pressed)
@@ -301,6 +314,21 @@ func update_hotkey_event(event, p_members: Array = []):
 		if is_same_binding(hotkey_event, previous_members, cycle.backward, cycle.get("backward_chord", [])):
 			cycle.backward = (event as InputEvent).duplicate()
 			cycle["backward_chord"] = members.duplicate(true)
+	
+	if not hotkey_bounce_rows.is_empty():
+		var stored_keys = Global.settings_dict.get("bounce_keys", [])
+		var stored_chords = Global.settings_dict.get("bounce_key_chords", [])
+		var bounce_keys: Array = stored_keys.duplicate(true) if stored_keys is Array else []
+		var bounce_chords: Array = stored_chords.duplicate(true) if stored_chords is Array else []
+		for i in hotkey_bounce_rows:
+			if i >= bounce_keys.size():
+				continue
+			bounce_keys[i] = (event as InputEvent).duplicate()
+			while bounce_chords.size() <= i:
+				bounce_chords.append([])
+			bounce_chords[i] = members.duplicate(true)
+		BounceInput.rebuild(bounce_keys, bounce_chords)
+		hotkey_bounce_rows.clear()
 	
 	hotkey_event = (event as InputEvent).duplicate()
 	Global.settings_dict.custom_hotkey_chords[hotkey_name] = members.duplicate(true)

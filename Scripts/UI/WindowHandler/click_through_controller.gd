@@ -110,6 +110,18 @@ func _apply() -> void:
 	_wct.call("set_click_through", _hwnd, through)
 
 
+## True when the cursor sits on a solid pixel of the model.
+## Deliberately requires borderless: the probe only runs in that state, and the
+## window origin includes the title bar otherwise, which offsets the lookup.
+## Returns false (unlike _alpha_hit) when there is no sample yet: swallowing a
+## click is the lesser evil for click-through, but a bounce is not.
+func is_cursor_over_model() -> bool:
+	var w := target
+	if w == null or not w.borderless or _last_sample == null:
+		return false
+	return _alpha_hit(Vector2(w.mouse_pos - w.position))
+
+
 func _alpha_hit(local: Vector2) -> bool:
 	if _last_sample == null:
 		# No sample yet: stay interactive rather than swallow clicks.

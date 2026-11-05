@@ -30,7 +30,22 @@ func _ready() -> void:
 			%SelectedScreen.select(0)
 	check_data()
 	_build_gamepad_label_option()
+	# Deferred: this node readies while the popup is still setting up its
+	# children, and add_child() is refused until that finishes.
+	_build_bounce_on_click.call_deferred()
 	init_hotkey_list()
+	# A new project drops every binding; the rows must not outlive them.
+	Global.new_file.connect(reset_hotkey_rows)
+
+
+## Empties the rows only -- init_hotkey_list() would rescan the old sprites and
+## add them straight back, because new_file fires before they are deleted.
+func reset_hotkey_rows() -> void:
+	if %HotkeyItemList == null:
+		return
+	for child in %HotkeyItemList.get_children():
+		%HotkeyItemList.remove_child(child)
+		child.queue_free()
 
 func _populate_languages() -> void:
 	%LanguageOptions.clear()
@@ -115,9 +130,49 @@ func _on_gamepad_label_selected(index: int) -> void:
 	# so nothing re-derives it on its own: let the widgets that draw one repaint.
 	Global.binding_labels_changed.emit()
 
+# --- Click bounce ------------------------------------------------------------
+#
+# Model-wide, and only the pop-up windows feed clicks to the model (the editor
+# canvas uses the left button for selection and window drags), so the wording
+# says so and the widget lives next to the other model-wide options.
+
+var _bounce_on_click: CheckBox
+
+
+func _build_bounce_on_click() -> void:
+	if _bounce_on_click != null:
+		return
+	var host: Node = %OutOfBounds.get_parent()
+	_bounce_on_click = CheckBox.new()
+	_bounce_on_click.name = "BounceOnClickCheck"
+	_bounce_on_click.text = "TR_BOUNCE_ON_CLICK"
+	_bounce_on_click.tooltip_text = "TR_BOUNCE_ON_CLICK_TOOLTIP"
+	_bounce_on_click.toggled.connect(_on_bounce_on_click_toggled)
+	host.add_child(_bounce_on_click)
+	# Right under "out of bounds", above the hotkey list.
+	if %OutOfBounds.get_parent() == host:
+		host.move_child(_bounce_on_click, %OutOfBounds.get_index() + 1)
+	# A load or a new project replaces the flag wholesale.
+	Global.load_model.connect(_sync_bounce_on_click)
+	Global.new_file.connect(_sync_bounce_on_click)
+	_sync_bounce_on_click()
+
+
+func _sync_bounce_on_click() -> void:
+	if _bounce_on_click == null:
+		return
+	_bounce_on_click.set_pressed_no_signal(Global.settings_dict.get("bounce_on_click", false))
+
+
+func _on_bounce_on_click_toggled(toggled_on: bool) -> void:
+	# Settings toggles stay out of the undo stack: it belongs to edits made on
+	# the canvas / right panel, and a Ctrl+Z here would revert a preference
+	# instead of the sprite the user was working on.
+	Global.settings_dict["bounce_on_click"] = toggled_on
+
+
 func close():
 	get_parent().queue_free()
-
 func check_data():
 	change_setting = false
 	# Null until _build_gamepad_label_option() has run; the build syncs it itself.
@@ -241,6 +296,16 @@ func init_hotkey_list():
 		append_unique_hotkey_to_dict(cycle.toggle, hotkey_dict, cycle.get("toggle_chord", []))
 		append_unique_hotkey_to_dict(cycle.forward, hotkey_dict, cycle.get("forward_chord", []))
 		append_unique_hotkey_to_dict(cycle.backward, hotkey_dict, cycle.get("backward_chord", []))
+
+	# Model-wide bounce keys belong in this list too: the prune below drops every
+	# row the scan did not see, so a lone bounce key could never be remapped here.
+	var bounce_keys: Array = Global.settings_dict.get("bounce_keys", [])
+	var bounce_chords: Array = Global.settings_dict.get("bounce_key_chords", [])
+	for i in range(bounce_keys.size()):
+		var bounce_members: Array = []
+		if i < bounce_chords.size() and bounce_chords[i] is Array:
+			bounce_members = bounce_chords[i]
+		append_unique_hotkey_to_dict(bounce_keys[i], hotkey_dict, bounce_members)
 
 	#Get intersection of scaned hotkeys and global hotkeys
 	#New hotkeys will be added, named by its event

@@ -3,9 +3,20 @@ class_name ExtraWindow
 
 const WINDOW_SIZE := Vector2(512, 512)
 const BUTTON_MARGIN: int = 16
+# A click is a short press that did not travel: longer or farther is a drag and
+# must keep moving the window instead of bouncing the model.
+const CLICK_MAX_TIME := 0.15
+const CLICK_MAX_DIST := 5.0
 
 var dragging := false
 var offset := Vector2i.ZERO
+
+# Gesture start of the current left-button press. _press_valid also records
+# whether that press started on the model, so releasing over empty space cannot
+# count.
+var _press_ms: int = 0
+var _press_pos: Vector2 = Vector2.ZERO
+var _press_valid: bool = false
 
 var viewport_container := SubViewportContainer.new()
 var viewport := SubViewport.new()
@@ -71,13 +82,30 @@ func _init(world: World2D, remove_window: Callable, lock_window: Callable, other
 	click_through.world = world
 	add_child(click_through)
 
+## Pure so the boundaries stay testable without a mouse.
+## A negative duration means the clock jumped; that is not a click.
+static func is_click_gesture(p_ms: int, p_dist: float) -> bool:
+	return p_ms >= 0 and p_ms < int(CLICK_MAX_TIME * 1000.0) and p_dist < CLICK_MAX_DIST
+
+
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("lmb"):
+		# Probe before marking the window as dragging: the click-through sample
+		# pauses while dragging, and the answer must come from the last sample.
+		_press_ms = Time.get_ticks_msec()
+		_press_pos = event.position
+		_press_valid = click_through.is_cursor_over_model()
 		offset = get_mouse_position()
 		dragging = true
-		
 		was_pressed_before = true
 	elif event.is_action_released("lmb"):
+		if _press_valid and is_click_gesture(
+				Time.get_ticks_msec() - _press_ms,
+				_press_pos.distance_to(event.position)):
+			var container = Global.sprite_container
+			if is_instance_valid(container) and container.is_inside_tree():
+				container.request_click_bounce()
+		_press_valid = false
 		dragging = false
 		was_pressed_before = false
 	
