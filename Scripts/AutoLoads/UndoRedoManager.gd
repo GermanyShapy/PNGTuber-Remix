@@ -7,6 +7,9 @@ static var redo_data : Array = []
 static func push_data(data : Variant = null):
 	if data == null: return
 	undo_data.append(data)
+	# A new edit invalidates the redo branch; replaying it would apply a value
+	# that no longer follows the current one.
+	redo_data.clear()
 	#print(data)
 
 static func undo():
@@ -209,6 +212,8 @@ static func undo_sprite_container(data):
 				if !Global.settings_dict.states.is_empty():
 					if Global.settings_dict.states.size() > data.state:
 						Global.settings_dict.states[data.state].current_mo_anim =  data.value
+	# Undo and redo are reciprocal: without this the entry is lost after one step.
+	redo_data.append(data)
 
 static func redo_sprite_container(data):
 	match data.action:
@@ -270,6 +275,7 @@ static func redo_sprite_container(data):
 				if !Global.settings_dict.states.is_empty():
 					if Global.settings_dict.states.size() > data.state:
 						Global.settings_dict.states[data.state].current_mo_anim =  data.new_val
+	undo_data.append(data)
 
 static func undo_mesh_layer(data):
 	for lyr in data:
@@ -299,6 +305,7 @@ static func undo_mesh_layer(data):
 				lyr.layer.target_strength = lyr.value
 			
 	Global.reinfo.emit()
+	redo_data.append(data)
 
 static func redo_mesh_layer(data):
 	for lyr in data:
@@ -328,6 +335,7 @@ static func redo_mesh_layer(data):
 				lyr.layer.target_strength = lyr.new_val
 			
 	Global.reinfo.emit()
+	undo_data.append(data)
 
 static func undo_light(data):
 	match data.action:
@@ -385,6 +393,7 @@ static func undo_light(data):
 				if !Global.settings_dict.light_states.is_empty():
 					if Global.settings_dict.light_states.size() > data.state:
 						Global.settings_dict.light_states[data.state].blend =  data.value
+	redo_data.append(data)
 
 static func redo_light(data):
 	match data.action:
@@ -442,3 +451,4 @@ static func redo_light(data):
 				if !Global.settings_dict.light_states.is_empty():
 					if Global.settings_dict.light_states.size() > data.state:
 						Global.settings_dict.light_states[data.state].blend =  data.new_val
+	undo_data.append(data)
