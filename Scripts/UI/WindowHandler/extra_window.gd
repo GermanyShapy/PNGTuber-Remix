@@ -88,6 +88,14 @@ static func is_click_gesture(p_ms: int, p_dist: float) -> bool:
 	return p_ms >= 0 and p_ms < int(CLICK_MAX_TIME * 1000.0) and p_dist < CLICK_MAX_DIST
 
 
+## Pointer position inside the window, both operands in screen space.
+## `get_mouse_position()` is window-local, so on a bordered window it is short
+## by the title bar and the window jumped when the grab started. A borderless
+## window cancels out, which is why the old form looked correct while locked.
+static func drag_offset(p_screen: Vector2i, p_window_pos: Vector2i) -> Vector2i:
+	return p_screen - p_window_pos
+
+
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("lmb"):
 		# Probe before marking the window as dragging: the click-through sample
@@ -95,7 +103,7 @@ func _input(event: InputEvent) -> void:
 		_press_ms = Time.get_ticks_msec()
 		_press_pos = event.position
 		_press_valid = click_through.is_cursor_over_model()
-		offset = get_mouse_position()
+		offset = drag_offset(DisplayServer.mouse_get_position(), position)
 		dragging = true
 		was_pressed_before = true
 	elif event.is_action_released("lmb"):
