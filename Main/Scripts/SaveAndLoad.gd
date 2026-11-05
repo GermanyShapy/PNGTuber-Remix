@@ -297,6 +297,13 @@ func load_model(path: String) -> void:
 		load_dict = VersionConverter.convert_save(load_dict, file_version)
 
 	Global.settings_dict.merge(load_dict.settings_dict, true)
+	# merge() only overwrites keys the file carries, so a model saved before the
+	# bounce bindings existed would inherit the previous model's triggers. Read
+	# them straight from the file instead.
+	var file_settings: Dictionary = load_dict.settings_dict
+	Global.settings_dict["bounce_on_click"] = file_settings.get("bounce_on_click", false)
+	Global.settings_dict["bounce_inclusive"] = file_settings.get("bounce_inclusive", true)
+	BounceInput.rebuild(file_settings.get("bounce_keys", []), file_settings.get("bounce_key_chords", []))
 	# Older saves predate chords; the per-hotkey member table is additive.
 	if not Global.settings_dict.has("custom_hotkey_chords"):
 		Global.settings_dict["custom_hotkey_chords"] = {}

@@ -18,6 +18,9 @@ signal light_info
 # one connect this and re-derive their own text. Keeps the settings popup from
 # walking the tree and knowing which controls exist.
 signal binding_labels_changed
+# The bounce hotkeys are replaced as a whole set (panel edit, load, hotkey
+# remap), so listeners re-read the list instead of patching one row.
+signal bounce_bindings_changed
 
 signal speaking
 signal not_speaking
@@ -136,6 +139,13 @@ var settings_dict : Dictionary = {
 	trimmed = false,
 	
 	custom_hotkeys = {},
+
+	# Model-wide bounce triggers: one setting for the whole model, unlike the
+	# per-state "bounce when changing states".
+	bounce_on_click = false,
+	bounce_keys = [],
+	bounce_key_chords = [],
+	bounce_inclusive = true,
 
 	# Which vendor layout joypad labels use: 0 = all three (default), 1 = Xbox,
 	# 2 = PlayStation, 3 = Nintendo. Saved with the model, like every setting.
@@ -644,7 +654,7 @@ func rot(i):
 	i.save_state(current_state)
 	update_pos_spins.emit()
 
-const MOVE_KEYS : Array[String] = ["w", "s_move", "a", "d"]
+const MOVE_KEYS : Array[String] = ["w", "s", "a", "d"]
 
 func moving_sprite(delta):
 	var key_down := false
@@ -665,7 +675,7 @@ func moving_sprite(delta):
 				i.position.y -= 10 * delta
 				i.sprite_data.position.y -= 10 * delta
 				update_spins()
-			elif Input.is_action_pressed("s_move"):
+			elif Input.is_action_pressed("s"):
 				i.position.y += 10 * delta
 				i.sprite_data.position.y += 10 * delta
 				update_spins()

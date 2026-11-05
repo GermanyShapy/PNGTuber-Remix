@@ -129,6 +129,10 @@ func _physics_process(delta: float) -> void:
 		modulate = lerp(modulate, dim_color, 0.08)
 	else:
 		modulate = Color.WHITE
+	
+	# Same tick as the physics above, so a bounce starts on a full step.
+	if BounceInput.poll():
+		request_bounce()
 
 func save_state(id):
 	var dict = {
@@ -224,6 +228,22 @@ func speaking():
 func state_bounce():
 	if get_parent().position.y > -16:
 		yVel = ((state_param_mc.bounce_energy + state_param_mo.bounce_energy)/2) * -1
+
+
+## Bounce asked for by a window click or a hotkey. Shares the state-bounce
+## channel on purpose: same energy, same "on the ground" test, same feel.
+func request_bounce() -> void:
+	if Global.static_view:
+		return
+	state_bounce()
+
+
+## Click bounce is model-wide opt-in and the guard belongs here, not in the
+## window: the hotkey path must keep working while it is off.
+func request_click_bounce() -> void:
+	if not Global.settings_dict.get("bounce_on_click", false):
+		return
+	request_bounce()
 
 func set_mc_float():
 	position.y = lerp(position.y, (sin(tick*state_param_mc.yFrq)*(state_param_mc.yAmp)), 0.08)

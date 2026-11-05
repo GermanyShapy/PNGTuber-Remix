@@ -229,6 +229,16 @@ func _on_confirmation_dialog_confirmed():
 	Global.image_manager_data.clear()
 	Global.remake_image_manager.emit()
 	Global.save_path = ""
+	# A fresh project must not inherit bindings: custom hotkeys are a derived
+	# table over the states/sprites/cycles that are about to be deleted, the
+	# cycles themselves point at those sprites, and the bounce triggers are
+	# model-scoped. Cleared before new_file so the listeners read the new state.
+	Global.settings_dict.custom_hotkeys = {}
+	Global.settings_dict.custom_hotkey_chords = {}
+	Global.settings_dict.cycles = []
+	BounceInput.rebuild([], [])
+	Global.settings_dict["bounce_on_click"] = false
+	Global.settings_dict["bounce_inclusive"] = true
 	Global.new_file.emit()
 	clear_sprites()
 	Global.settings_dict.max_fps = 60

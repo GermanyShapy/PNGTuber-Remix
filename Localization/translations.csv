@@ -77,6 +77,10 @@ TR_BOUNCE_AMOUNT_TOOLTIP,Affects Model Bouncing,Влияет на силу от�
 TR_BOUNCE_GRAVITY,Bounce Gravity,Гравитация прыжка,弹跳重力
 TR_BOUNCE_GRAVITY_LABEL,Bounce Gravity,Гравитация прыжка,弹跳重力
 TR_BOUNCE_WHEN_CHANGING_STATES,Bounce when changing states,Прыжок при смене состояния,状态切换时弹跳
+TR_BOUNCE_ON_CLICK,"Bounce on model click (pop-up windows only)","Bounce on model click (pop-up windows only)","点击模型时弹跳（仅副窗口生效）"
+TR_BOUNCE_ON_CLICK_TOOLTIP,"A short left click on the model inside a locked pop-up window (Add Window) bounces the whole model. Clicks in the editor window never bounce.","A short left click on the model inside a locked pop-up window (Add Window) bounces the whole model. Clicks in the editor window never bounce.","在锁定位置的副窗口（新建窗口）内短按点击模型，整个模型会弹跳；主窗口/编辑区点击不触发。"
+TR_BOUNCE_KEYS,Bounce Key(s),Bounce Key(s),弹跳按键
+TR_BOUNCE_KEYS_TOOLTIP,"Press any bound key to bounce the model. The inclusive key check applies","Press any bound key to bounce the model. The inclusive key check applies",按下任意已绑定的按键即可让模型弹跳；包容性按键检测对此生效
 TR_BOUNCY,Bouncy,Прыгучий,弹性
 TR_CANCEL,Cancel,Отмена,取消
 TR_CENTER_WINDOW,Center Window,Центрировать окно,窗口置于中心
