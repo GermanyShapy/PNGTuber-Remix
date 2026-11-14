@@ -105,7 +105,7 @@ func _input(event: InputEvent) -> void:
 		_press_ms = Time.get_ticks_msec()
 		_press_pos = event.position
 		_press_valid = click_through.is_cursor_over_model()
-		offset = drag_offset(DisplayServer.mouse_get_position(), position)
+		offset = drag_offset(GlobInput.get_cursor_screen_position(), position)
 		dragging = true
 		was_pressed_before = true
 	elif event.is_action_released("lmb"):
@@ -122,7 +122,7 @@ func _input(event: InputEvent) -> void:
 	viewport.push_input(event)
 
 func _process(_delta: float) -> void:
-	mouse_pos = DisplayServer.mouse_get_position()
+	mouse_pos = GlobInput.get_cursor_screen_position()
 	if dragging:
 		position = mouse_pos - offset
 

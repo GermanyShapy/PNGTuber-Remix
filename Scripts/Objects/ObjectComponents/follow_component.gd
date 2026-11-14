@@ -133,14 +133,14 @@ func follow_calculation(_delta = 0.0):
 	if WindowHandler.windows:
 		mouse_coords = Vector2.ZERO
 		if main_marker.current_screen == Monitor.ALL_SCREENS or main_marker.mouse_in_current_screen():
-			mouse_coords = get_mouse_coords(main_marker, 0)
+			mouse_coords = get_mouse_coords(main_marker, main_marker.get_mouse_screen())
 	elif main_marker.current_screen != Monitor.ALL_SCREENS:
 		if !main_marker.mouse_in_current_screen() && Global.settings_dict.snap_out_of_bounds:
 			mouse_coords = Vector2.ZERO
 		else:
 			mouse_coords = get_mouse_coords(main_marker, main_marker.current_screen)
 	else:
-		mouse_coords = get_mouse_coords(main_marker, 0)
+		mouse_coords = get_mouse_coords(main_marker, main_marker.get_mouse_screen())
 	return mouse_coords
 
 func get_mouse_coords(main_marker, screen) -> Vector2:
@@ -151,7 +151,9 @@ func get_mouse_coords(main_marker, screen) -> Vector2:
 		coord = (actor.get_local_mouse_position() - offset)  / Global.camera.zoom.clampf(0.001, 10.0)
 	else:
 		var display_size : Vector2 = main_marker.get_screen_size()
-		var mouse_pos = Vector2(DisplayServer.mouse_get_position()) - Vector2(main_marker.get_cached_screen_position(screen))
+		# Prefers the pen's own absolute report while it is fresh: a pen driver
+		# freezes GetCursorPos, which is what mouse_get_position() reads.
+		var mouse_pos = GlobInput.get_cursor_screen_position() - Vector2(main_marker.get_cached_screen_position(screen))
 		# The follow origin is the centre of the selected screen area, NOT the
 		# sprite's on-screen position: that one moves with the camera, which used
 		# to shift the origin whenever the canvas was panned.
