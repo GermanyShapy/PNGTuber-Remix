@@ -17,6 +17,9 @@ const EDGE_SLACK: int = 1
 # Give up resolving the native handle after this many attempts; a window that
 # never produces a valid id should not cost two syscalls per frame forever.
 const HWND_RETRIES: int = 120
+# Hover fade duration; short enough to feel immediate, long enough to avoid a
+# visible pop when the alpha changes.
+const FADE_TIME: float = 0.1
 
 # The owning window. Kept as Node to avoid a class cycle with ExtraWindow.
 var target: Node
@@ -39,6 +42,15 @@ var pass_through_all := false
 # helper because the engine's WINDOW_FLAG_NO_FOCUS path rewrites GWL_STYLE
 # without WS_VISIBLE and hides the window for good.
 var no_activate := false
+# Opacity applied while the cursor rests on solid artwork during passthrough.
+# Clamped so a stale save value can never make the window invisible.
+var hover_alpha: float = 0.5:
+	set(value):
+		hover_alpha = clampf(value, 0.1, 1.0)
+# Cursor state used by the fade and by the sampling gate.
+var _hover_inside := false
+var _hover_on_model := false
+var _current_alpha := 1.0
 
 
 func _ready() -> void:
@@ -62,6 +74,7 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	if _wct != null and _hwnd != 0:
 		_wct.call("set_click_through", _hwnd, false)
+		_wct.call("set_alpha", _hwnd, 255)
 
 
 func set_pass_through_all(enabled: bool) -> void:
@@ -70,10 +83,10 @@ func set_pass_through_all(enabled: bool) -> void:
 	pass_through_all = enabled
 	# The probe stops running in this mode; a stale sample must not outlive it.
 	_last_sample = null
-	# Nothing is rendered from the probe while it is idle.
-	if _sample_view != null:
-		_sample_view.render_target_update_mode = (
-			SubViewport.UPDATE_DISABLED if enabled else SubViewport.UPDATE_ALWAYS)
+	if !enabled:
+		_hover_inside = false
+		_hover_on_model = false
+		_current_alpha = 1.0
 	_apply()
 
 
@@ -84,15 +97,28 @@ func set_no_activate(enabled: bool) -> void:
 	_apply()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_update_hover(delta)
 	_apply()
 
 
+## Hover only matters for the fade, so it is evaluated every frame and keeps the
+## sampling gate cheap: no sampling at all while the cursor is outside.
+func _update_hover(delta: float) -> void:
+	var w := target
+	var local := Vector2(w.mouse_pos - w.position)
+	_hover_inside = w.borderless and local.x >= 0.0 and local.y >= 0.0 \
+		and local.x < float(w.size.x) and local.y < float(w.size.y)
+	# Without a sample there is nothing to hit; never fade on a guess.
+	_hover_on_model = _hover_inside and _last_sample != null and _alpha_hit(local)
+	var goal := hover_alpha if pass_through_all and _hover_on_model else 1.0
+	_current_alpha = move_toward(_current_alpha, goal, delta / FADE_TIME)
+
+
 func _physics_process(_delta: float) -> void:
-	# Constant answer in this mode: no sampling, no GPU readback.
-	if pass_through_all:
-		return
 	# Only the sample matters here; the silhouette is read from its alpha channel.
+	# _wants_sample() already narrows this to "cursor inside" while passthrough
+	# is on, so the readback stays off whenever the window is not hovered.
 	if !_wants_sample():
 		return
 	_sample_toggle = !_sample_toggle
@@ -114,6 +140,9 @@ func _physics_process(_delta: float) -> void:
 
 func _wants_sample() -> bool:
 	var w := target
+	if pass_through_all:
+		# Only the hover fade needs the silhouette while passthrough is on.
+		return w.borderless and _hover_inside
 	return w.borderless and !w.dragging and !w.camera.panning
 
 
@@ -139,7 +168,10 @@ func _apply() -> void:
 			if local.x >= 0.0 and local.y >= 0.0 and local.x < float(w.size.x) and local.y < float(w.size.y):
 				through = !_alpha_hit(local)
 	_wct.call("set_no_activate", _hwnd, no_activate)
+	# Must come after set_click_through: that call rewrites LWA_ALPHA to 255
+	# whenever it restores WS_EX_LAYERED, and the fade has to win the same frame.
 	_wct.call("set_click_through", _hwnd, through)
+	_wct.call("set_alpha", _hwnd, int(round(_current_alpha * 255.0)))
 
 
 ## True when the cursor sits on a solid pixel of the model.

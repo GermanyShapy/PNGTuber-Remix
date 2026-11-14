@@ -23,6 +23,7 @@ func new_window() -> void:
 	windows.append(window)
 	add_child(window)
 	window.set_pass_through_all(Settings.theme_settings.window_pass_through)
+	window.click_through.hover_alpha = float(Settings.theme_settings.window_pass_through_alpha) / 100.0
 	window.show() #popup_centered()
 
 ## One preference drives every extra window, matching how borders/always-on-top work.
@@ -31,6 +32,11 @@ static func set_all_pass_through(enabled: bool) -> void:
 	for window in windows:
 		if is_instance_valid(window):
 			window.set_pass_through_all(enabled)
+
+static func set_hover_alpha(value: float) -> void:
+	for window in windows:
+		if is_instance_valid(window):
+			window.click_through.hover_alpha = value
 
 func remove_window(window: ExtraWindow) -> void:
 	windows.erase(window)

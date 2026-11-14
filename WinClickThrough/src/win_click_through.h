@@ -30,6 +30,11 @@ public:
 	bool set_no_activate(int64_t p_hwnd, bool p_enabled);
 	bool is_no_activate(int64_t p_hwnd) const;
 
+	// Whole-window opacity via LWA_ALPHA. No-op unless the window is layered.
+	void set_alpha(int64_t p_hwnd, int32_t p_alpha) const;
+	// Current LWA_ALPHA value, 255 when unset, -1 on failure.
+	int32_t get_alpha(int64_t p_hwnd) const;
+
 	// True when the point (screen pixels) resolves to this very window, i.e. a
 	// click there would be swallowed instead of reaching the desktop.
 	bool hits_window(int64_t p_hwnd, int32_t p_x, int32_t p_y) const;

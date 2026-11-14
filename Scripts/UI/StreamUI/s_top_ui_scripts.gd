@@ -1,6 +1,7 @@
 extends Node
 
 var settings_scene = preload("res://UI/EditorUI/TopUI/Components/Settings_popup.tscn")
+var pass_through_alpha_dialog: PassThroughAlphaDialog = null
 
 func _ready() -> void:
 	Global.top_ui = get_parent()
@@ -85,16 +86,29 @@ func choosing_window(id):
 			Settings.center_window()
 		101: # Window click-through, kept in sync with the editor menu.
 			Settings.set_window_pass_through(!Settings.theme_settings.window_pass_through)
+		106:
+			_show_pass_through_alpha_dialog()
+
+
+func _show_pass_through_alpha_dialog() -> void:
+	if pass_through_alpha_dialog == null or !is_instance_valid(pass_through_alpha_dialog):
+		pass_through_alpha_dialog = PassThroughAlphaDialog.new()
+		get_tree().current_scene.add_child(pass_through_alpha_dialog)
+	pass_through_alpha_dialog.open(Settings.current_theme, int(Settings.theme_settings.window_pass_through_alpha))
 
 ## Menu items are shared with the editor menu through Settings, so the check
 ## mark has to be pulled on every popup instead of cached in the scene.
 func _sync_window_menu() -> void:
 	var menu: PopupMenu = %WindowButton.get_popup()
 	var idx: int = menu.get_item_index(TopBarInput.WindowMenuId.PASS_THROUGH)
-	if idx == -1:
-		return
-	menu.set_item_checked(idx, Settings.theme_settings.window_pass_through)
-	menu.set_item_tooltip(idx, tr("TR_PASS_THROUGH_HINT"))
+	if idx != -1:
+		menu.set_item_checked(idx, Settings.theme_settings.window_pass_through)
+		menu.set_item_tooltip(idx, tr("TR_PASS_THROUGH_HINT"))
+	var alpha_idx: int = menu.get_item_index(TopBarInput.WindowMenuId.PASS_THROUGH_ALPHA)
+	if alpha_idx != -1:
+		menu.set_item_text(alpha_idx, "%s: %d%%" % [tr("TR_PASS_THROUGH_ALPHA"),
+			int(Settings.theme_settings.window_pass_through_alpha)])
+		menu.set_item_tooltip(alpha_idx, tr("TR_PASS_THROUGH_ALPHA_HINT"))
 
 func _notification(what):
 	if not Global.is_editor:

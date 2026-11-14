@@ -34,6 +34,7 @@ const SAVED_LAYOUT_PATH := "user://layout.tres"
 	save_raw_sprite = false, #save the original sprite even when trimmed
 	always_on_top = false,
 	window_pass_through = false,
+	window_pass_through_alpha = 50,
 	menu_popup = true,
 	software_mode = 0,
 	ui_scaling = 1.0,
@@ -328,6 +329,14 @@ func set_always_on_top(toggle):
 func set_window_pass_through(val: bool) -> void:
 	theme_settings.window_pass_through = val
 	WindowHandler.set_all_pass_through(val)
+	save()
+
+## Hover opacity while passthrough is on, as an integer percentage. Clamped here
+## as well so a hand-edited save file cannot push the window fully invisible.
+func set_window_pass_through_alpha(val: int) -> void:
+	val = clampi(val, 10, 100)
+	theme_settings.window_pass_through_alpha = val
+	WindowHandler.set_hover_alpha(float(val) / 100.0)
 	save()
 
 func get_custom_cursor() -> Image:

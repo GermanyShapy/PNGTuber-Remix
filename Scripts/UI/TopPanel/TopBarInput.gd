@@ -33,6 +33,7 @@ const WindowMenuId := {
 	BOTTOM_BAR = 7,
 	EDIT_WINDOWS = 100,
 	PASS_THROUGH = 101,
+	PASS_THROUGH_ALPHA = 106,
 }
 
 var settings_scene := preload("res://UI/EditorUI/TopUI/Components/Settings_popup.tscn")
@@ -41,6 +42,7 @@ var tutorial_scene := preload("res://UI/EditorUI/TopUI/Components/tutorial_pop_u
 var file_import_submenu: PopupMenu = PopupMenu.new()
 var grid_size_dialog: AcceptDialog = null
 var grid_size_spinbox: SpinBox = null
+var pass_through_alpha_dialog: PassThroughAlphaDialog = null
 
 @onready var file_submenu_item_demos: PopupMenu = %Demos
 
@@ -116,16 +118,23 @@ func _update_window_button() -> void:
 		break
 
 	var pass_idx: int = menu.get_item_index(WindowMenuId.PASS_THROUGH)
+	var locked := false
+	for window in WindowHandler.windows:
+		if is_instance_valid(window) and window.borderless:
+			locked = true
+			break
 	if pass_idx != -1:
 		menu.set_item_checked(pass_idx, Settings.theme_settings.window_pass_through)
 		# Only meaningful once an extra window exists and is locked.
-		var locked := false
-		for window in WindowHandler.windows:
-			if is_instance_valid(window) and window.borderless:
-				locked = true
-				break
 		menu.set_item_disabled(pass_idx, !locked)
 		menu.set_item_tooltip(pass_idx, tr("TR_PASS_THROUGH_HINT"))
+
+	var current_alpha := int(Settings.theme_settings.window_pass_through_alpha)
+	var alpha_idx: int = menu.get_item_index(WindowMenuId.PASS_THROUGH_ALPHA)
+	if alpha_idx != -1:
+		menu.set_item_text(alpha_idx, "%s: %d%%" % [tr("TR_PASS_THROUGH_ALPHA"), current_alpha])
+		menu.set_item_disabled(alpha_idx, !locked)
+		menu.set_item_tooltip(alpha_idx, tr("TR_PASS_THROUGH_ALPHA_HINT"))
 
 
 func _check_auto_saves() -> void:
@@ -171,6 +180,15 @@ func _on_window_id_pressed(id: int) -> void:
 		WindowMenuId.PASS_THROUGH:
 			# Toggle from the stored value: a checkable item also flips itself.
 			Settings.set_window_pass_through(!Settings.theme_settings.window_pass_through)
+		WindowMenuId.PASS_THROUGH_ALPHA:
+			_show_pass_through_alpha_dialog()
+
+
+func _show_pass_through_alpha_dialog() -> void:
+	if pass_through_alpha_dialog == null or !is_instance_valid(pass_through_alpha_dialog):
+		pass_through_alpha_dialog = PassThroughAlphaDialog.new()
+		get_tree().current_scene.add_child(pass_through_alpha_dialog)
+	pass_through_alpha_dialog.open(Settings.current_theme, int(Settings.theme_settings.window_pass_through_alpha))
 
 
 func _on_files_id_pressed(id: int) -> void:

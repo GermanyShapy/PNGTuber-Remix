@@ -13,6 +13,8 @@ void WinClickThrough::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_click_through", "hwnd", "enabled"), &WinClickThrough::set_click_through);
 	ClassDB::bind_method(D_METHOD("set_no_activate", "hwnd", "enabled"), &WinClickThrough::set_no_activate);
 	ClassDB::bind_method(D_METHOD("is_no_activate", "hwnd"), &WinClickThrough::is_no_activate);
+	ClassDB::bind_method(D_METHOD("set_alpha", "hwnd", "alpha"), &WinClickThrough::set_alpha);
+	ClassDB::bind_method(D_METHOD("get_alpha", "hwnd"), &WinClickThrough::get_alpha);
 	ClassDB::bind_method(D_METHOD("is_click_through", "hwnd"), &WinClickThrough::is_click_through);
 	ClassDB::bind_method(D_METHOD("get_extended_style", "hwnd"), &WinClickThrough::get_extended_style);
 	ClassDB::bind_method(D_METHOD("is_window", "hwnd"), &WinClickThrough::is_window);
@@ -93,6 +95,40 @@ bool WinClickThrough::is_no_activate(int64_t p_hwnd) const {
 		return false;
 	}
 	return (GetWindowLongPtrW(hwnd, GWL_EXSTYLE) & WS_EX_NOACTIVATE) != 0;
+}
+
+void WinClickThrough::set_alpha(int64_t p_hwnd, int32_t p_alpha) const {
+	HWND hwnd = to_hwnd(p_hwnd);
+	if (!IsWindow(hwnd)) {
+		return;
+	}
+	// A window without LAYERED has no per-window alpha to set.
+	if ((GetWindowLongPtrW(hwnd, GWL_EXSTYLE) & WS_EX_LAYERED) == 0) {
+		return;
+	}
+	BYTE want = static_cast<BYTE>(p_alpha < 0 ? 0 : (p_alpha > 255 ? 255 : p_alpha));
+	COLORREF color = 0;
+	BYTE current = 0;
+	DWORD flags = 0;
+	// Every write re-composites the window, so skip when nothing changes.
+	if (GetLayeredWindowAttributes(hwnd, &color, &current, &flags) && (flags & LWA_ALPHA) && current == want) {
+		return;
+	}
+	SetLayeredWindowAttributes(hwnd, 0, want, LWA_ALPHA);
+}
+
+int32_t WinClickThrough::get_alpha(int64_t p_hwnd) const {
+	HWND hwnd = to_hwnd(p_hwnd);
+	if (!IsWindow(hwnd)) {
+		return -1;
+	}
+	COLORREF color = 0;
+	BYTE current = 0;
+	DWORD flags = 0;
+	if (!GetLayeredWindowAttributes(hwnd, &color, &current, &flags)) {
+		return -1;
+	}
+	return (flags & LWA_ALPHA) ? static_cast<int32_t>(current) : 255;
 }
 
 int64_t WinClickThrough::get_extended_style(int64_t p_hwnd) const {
