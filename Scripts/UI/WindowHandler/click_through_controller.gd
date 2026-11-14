@@ -32,6 +32,13 @@ var _hwnd_retries: int = 0
 # Window pixels per sample texel; drives the probe zoom and the lookup scale.
 var _sample_scale: float = 1.0
 var _sample_toggle: bool = false
+# Whole-window passthrough: the cursor ignores this window entirely, solid
+# pixels included. Driven by ExtraWindow.apply_pass_through().
+var pass_through_all := false
+# WS_EX_NOACTIVATE, kept separate from passthrough. Applied through the native
+# helper because the engine's WINDOW_FLAG_NO_FOCUS path rewrites GWL_STYLE
+# without WS_VISIBLE and hides the window for good.
+var no_activate := false
 
 
 func _ready() -> void:
@@ -57,11 +64,34 @@ func _exit_tree() -> void:
 		_wct.call("set_click_through", _hwnd, false)
 
 
+func set_pass_through_all(enabled: bool) -> void:
+	if pass_through_all == enabled:
+		return
+	pass_through_all = enabled
+	# The probe stops running in this mode; a stale sample must not outlive it.
+	_last_sample = null
+	# Nothing is rendered from the probe while it is idle.
+	if _sample_view != null:
+		_sample_view.render_target_update_mode = (
+			SubViewport.UPDATE_DISABLED if enabled else SubViewport.UPDATE_ALWAYS)
+	_apply()
+
+
+func set_no_activate(enabled: bool) -> void:
+	if no_activate == enabled:
+		return
+	no_activate = enabled
+	_apply()
+
+
 func _process(_delta: float) -> void:
 	_apply()
 
 
 func _physics_process(_delta: float) -> void:
+	# Constant answer in this mode: no sampling, no GPU readback.
+	if pass_through_all:
+		return
 	# Only the sample matters here; the silhouette is read from its alpha channel.
 	if !_wants_sample():
 		return
@@ -100,13 +130,15 @@ func _apply() -> void:
 			return
 
 	var through := true
-	if !_wants_sample():
-		through = false
-	else:
-		var w := target
-		var local := Vector2(w.mouse_pos - w.position)
-		if local.x >= 0.0 and local.y >= 0.0 and local.x < float(w.size.x) and local.y < float(w.size.y):
-			through = !_alpha_hit(local)
+	if !pass_through_all:
+		if !_wants_sample():
+			through = false
+		else:
+			var w := target
+			var local := Vector2(w.mouse_pos - w.position)
+			if local.x >= 0.0 and local.y >= 0.0 and local.x < float(w.size.x) and local.y < float(w.size.y):
+				through = !_alpha_hit(local)
+	_wct.call("set_no_activate", _hwnd, no_activate)
 	_wct.call("set_click_through", _hwnd, through)
 
 

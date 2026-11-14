@@ -639,6 +639,8 @@ TR_SNAP_SIZE_INFO,Snap distance (0.1 to 100 pixels):,Snap distance (0.1 to 100 p
 TR_ALWAYS_ACTIVE,Always Active,Always Active,始终激活
 TR_DISABLE_BOTH,Disable Both,Disable Both,禁用两者
 TR_EDIT_WINDOWS,Edit Windows,Edit Windows,解锁窗口尺寸
+TR_PASS_THROUGH,Window Click-Through,Window Click-Through,副窗口穿透
+TR_PASS_THROUGH_HINT,Mouse passes through the whole window including the artwork. Takes effect once the size is locked; click bounce is disabled while on.,Mouse passes through the whole window including the artwork. Takes effect once the size is locked; click bounce is disabled while on.,鼠标完全穿过该窗口（含画面）。锁定尺寸后生效；开启期间点击弹跳失效。
 TR_USE_SCREEN_EDGE_RANGE,Use Screen Edge as Range,Use Screen Edge as Range,以屏幕边缘为跟随范围
 TR_USE_SCREEN_EDGE_RANGE_TOOLTIP,"Off (default): the Range X/Y sliders define how far the mouse must be from the screen centre to reach min/max, so min/max can be hit before the mouse reaches the screen edge.\nOn: min/max is only reached when the mouse touches the screen edge.","Off (default): the Range X/Y sliders define how far the mouse must be from the screen centre to reach min/max, so min/max can be hit before the mouse reaches the screen edge.\nOn: min/max is only reached when the mouse touches the screen edge.",关闭（默认）：鼠标离屏幕中心多远才达到最大/最小值由「范围 X/Y」滑条决定，因此鼠标还没到屏幕边缘就可能已经到达最大/最小值。\n开启：鼠标移动到屏幕边缘时才达到最大/最小值。
 TR_INVERT_TOOLTIP,The effect of following movement will be reversed.,The effect of following the movement will be reversed.,跟随运动的效果会反转

@@ -28,6 +28,8 @@ var was_pressed_before := false
 var mouse_pos :Vector2i = Vector2()
 # Hit-test / click-through state machine, kept in its own node.
 var click_through :ClickThroughController
+# Preference copied from Settings; the effective state also needs borderless.
+var pass_through_all := false
 
 #var test_frame = 0
 
@@ -123,6 +125,27 @@ func _process(_delta: float) -> void:
 	mouse_pos = DisplayServer.mouse_get_position()
 	if dragging:
 		position = mouse_pos - offset
+
+
+func set_pass_through_all(enabled: bool) -> void:
+	pass_through_all = enabled
+	apply_pass_through()
+
+
+## Recomputes the effective state only. Also called on lock/unlock, so the
+## preference survives an unlock without making the window undraggable.
+func apply_pass_through() -> void:
+	var active := pass_through_all and borderless
+	click_through.set_pass_through_all(active)
+	# Never via Window.unfocusable: the engine's NO_FOCUS path rewrites GWL_STYLE
+	# without WS_VISIBLE and never re-shows the window, so the window disappears
+	# and stays hidden even after the flag is cleared.
+	click_through.set_no_activate(active)
+	if active:
+		# A transparent window never sees the release event; a stale drag would
+		# pin it to the cursor forever.
+		dragging = false
+
 
 func on_focus_enter():
 	pass

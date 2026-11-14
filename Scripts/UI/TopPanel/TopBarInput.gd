@@ -32,6 +32,7 @@ const WindowMenuId := {
 	SPRITE_VIEW = 6,
 	BOTTOM_BAR = 7,
 	EDIT_WINDOWS = 100,
+	PASS_THROUGH = 101,
 }
 
 var settings_scene := preload("res://UI/EditorUI/TopUI/Components/Settings_popup.tscn")
@@ -114,6 +115,18 @@ func _update_window_button() -> void:
 		menu.add_item(tr("TR_EDIT_WINDOWS"), WindowMenuId.EDIT_WINDOWS)
 		break
 
+	var pass_idx: int = menu.get_item_index(WindowMenuId.PASS_THROUGH)
+	if pass_idx != -1:
+		menu.set_item_checked(pass_idx, Settings.theme_settings.window_pass_through)
+		# Only meaningful once an extra window exists and is locked.
+		var locked := false
+		for window in WindowHandler.windows:
+			if is_instance_valid(window) and window.borderless:
+				locked = true
+				break
+		menu.set_item_disabled(pass_idx, !locked)
+		menu.set_item_tooltip(pass_idx, tr("TR_PASS_THROUGH_HINT"))
+
 
 func _check_auto_saves() -> void:
 	if not DirAccess.dir_exists_absolute(Settings.autosave_location):
@@ -155,6 +168,9 @@ func _on_window_id_pressed(id: int) -> void:
 			Settings.window_size_changed()
 		WindowMenuId.EDIT_WINDOWS:
 			Global.edit_windows.emit()
+		WindowMenuId.PASS_THROUGH:
+			# Toggle from the stored value: a checkable item also flips itself.
+			Settings.set_window_pass_through(!Settings.theme_settings.window_pass_through)
 
 
 func _on_files_id_pressed(id: int) -> void:

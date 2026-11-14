@@ -211,7 +211,7 @@ layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 14
 text = "TR_WINDOW"
-item_count = 9
+item_count = 10
 popup/item_0/text = "TR_TOGGLE_BORDERS"
 popup/item_0/id = 0
 popup/item_1/text = "TR_SAVE_WINDOW_POSITIONS"
@@ -237,6 +237,9 @@ popup/item_8/text = "TR_BOTTOM_BAR"
 popup/item_8/checkable = 1
 popup/item_8/checked = true
 popup/item_8/id = 7
+popup/item_9/text = "TR_PASS_THROUGH"
+popup/item_9/checkable = 1
+popup/item_9/id = 101
 
 [node name="AboutButton" type="MenuButton" parent="TopBar/HBox" unique_id=1689104778]
 unique_name_in_owner = true

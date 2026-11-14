@@ -8,6 +8,7 @@ func _ready() -> void:
 	%ModeButton.get_popup().connect("id_pressed",choosing_mode)
 	%BGButton.get_popup().connect("id_pressed",choosing_bg_color)
 	%WindowButton.get_popup().connect("id_pressed",choosing_window)
+	%WindowButton.get_popup().about_to_popup.connect(_sync_window_menu)
 	
 	await get_tree().physics_frame
 	choosing_mode(Settings.theme_settings.software_mode)
@@ -82,6 +83,18 @@ func choosing_window(id):
 			Settings.set_always_on_top(%WindowButton.get_popup().is_item_checked(2))
 		3:
 			Settings.center_window()
+		101: # Window click-through, kept in sync with the editor menu.
+			Settings.set_window_pass_through(!Settings.theme_settings.window_pass_through)
+
+## Menu items are shared with the editor menu through Settings, so the check
+## mark has to be pulled on every popup instead of cached in the scene.
+func _sync_window_menu() -> void:
+	var menu: PopupMenu = %WindowButton.get_popup()
+	var idx: int = menu.get_item_index(TopBarInput.WindowMenuId.PASS_THROUGH)
+	if idx == -1:
+		return
+	menu.set_item_checked(idx, Settings.theme_settings.window_pass_through)
+	menu.set_item_tooltip(idx, tr("TR_PASS_THROUGH_HINT"))
 
 func _notification(what):
 	if not Global.is_editor:

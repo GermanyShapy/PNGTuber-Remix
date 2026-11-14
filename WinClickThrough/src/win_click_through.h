@@ -24,6 +24,12 @@ public:
 	int64_t get_extended_style(int64_t p_hwnd) const;
 	bool is_window(int64_t p_hwnd) const;
 
+	// Adds or removes WS_EX_NOACTIVATE on its own. Deliberately bypasses the
+	// engine's WINDOW_FLAG_NO_FOCUS path: that path rewrites GWL_STYLE without
+	// WS_VISIBLE and never re-shows the window, hiding it permanently.
+	bool set_no_activate(int64_t p_hwnd, bool p_enabled);
+	bool is_no_activate(int64_t p_hwnd) const;
+
 	// True when the point (screen pixels) resolves to this very window, i.e. a
 	// click there would be swallowed instead of reaching the desktop.
 	bool hits_window(int64_t p_hwnd, int32_t p_x, int32_t p_y) const;

@@ -11,6 +11,8 @@ using namespace godot;
 
 void WinClickThrough::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_click_through", "hwnd", "enabled"), &WinClickThrough::set_click_through);
+	ClassDB::bind_method(D_METHOD("set_no_activate", "hwnd", "enabled"), &WinClickThrough::set_no_activate);
+	ClassDB::bind_method(D_METHOD("is_no_activate", "hwnd"), &WinClickThrough::is_no_activate);
 	ClassDB::bind_method(D_METHOD("is_click_through", "hwnd"), &WinClickThrough::is_click_through);
 	ClassDB::bind_method(D_METHOD("get_extended_style", "hwnd"), &WinClickThrough::get_extended_style);
 	ClassDB::bind_method(D_METHOD("is_window", "hwnd"), &WinClickThrough::is_window);
@@ -45,12 +47,19 @@ void WinClickThrough::set_click_through(int64_t p_hwnd, bool p_enabled) {
 		// call is mandatory even though it changes no pixel.
 		SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
 	} else {
-		// Keep WS_EX_LAYERED: removing it re-composites the window and flashes.
-		LONG_PTR want = ex & ~static_cast<LONG_PTR>(WS_EX_TRANSPARENT);
+		// LAYERED must stay present even with passthrough off: the engine rewrites
+		// the whole extended style on borderless/focus changes and drops it, and a
+		// transparent D3D12 window without LAYERED is not composited at all.
+		// Restoring it here makes every _apply() call self-healing in both modes.
+		LONG_PTR want = (ex | WS_EX_LAYERED) & ~static_cast<LONG_PTR>(WS_EX_TRANSPARENT);
 		if (ex == want) {
 			return;
 		}
 		SetWindowLongPtrW(hwnd, GWL_EXSTYLE, want);
+		// A layered window without attributes set is never composited.
+		if ((ex & WS_EX_LAYERED) == 0) {
+			SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
+		}
 	}
 }
 
@@ -60,6 +69,30 @@ bool WinClickThrough::is_click_through(int64_t p_hwnd) const {
 		return false;
 	}
 	return (GetWindowLongPtrW(hwnd, GWL_EXSTYLE) & WS_EX_TRANSPARENT) != 0;
+}
+
+bool WinClickThrough::set_no_activate(int64_t p_hwnd, bool p_enabled) {
+	HWND hwnd = to_hwnd(p_hwnd);
+	if (!IsWindow(hwnd)) {
+		return false;
+	}
+	LONG_PTR ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+	LONG_PTR want = p_enabled ? (ex | WS_EX_NOACTIVATE) : (ex & ~static_cast<LONG_PTR>(WS_EX_NOACTIVATE));
+	if (ex == want) {
+		return false;
+	}
+	// Only GWL_EXSTYLE is touched. Writing GWL_STYLE here would drop WS_VISIBLE,
+	// because the style the caller would have to reconstruct is not known here.
+	SetWindowLongPtrW(hwnd, GWL_EXSTYLE, want);
+	return true;
+}
+
+bool WinClickThrough::is_no_activate(int64_t p_hwnd) const {
+	HWND hwnd = to_hwnd(p_hwnd);
+	if (!IsWindow(hwnd)) {
+		return false;
+	}
+	return (GetWindowLongPtrW(hwnd, GWL_EXSTYLE) & WS_EX_NOACTIVATE) != 0;
 }
 
 int64_t WinClickThrough::get_extended_style(int64_t p_hwnd) const {

@@ -22,7 +22,15 @@ func new_window() -> void:
 	var window := ExtraWindow.new(%SubViewport.world_2d, remove_window, lock_window, %Camera2D, %SubViewportContainer.material, %Effects.material)
 	windows.append(window)
 	add_child(window)
+	window.set_pass_through_all(Settings.theme_settings.window_pass_through)
 	window.show() #popup_centered()
+
+## One preference drives every extra window, matching how borders/always-on-top work.
+## Static because Settings owns the preference and has no scene reference.
+static func set_all_pass_through(enabled: bool) -> void:
+	for window in windows:
+		if is_instance_valid(window):
+			window.set_pass_through_all(enabled)
 
 func remove_window(window: ExtraWindow) -> void:
 	windows.erase(window)
@@ -52,6 +60,7 @@ func lock_window(window: ExtraWindow) -> void:
 	window.position = window_pos
 	window.size = window_size
 	window.button.hide()
+	window.apply_pass_through()
 
 func update_theme(new_theme: Theme) -> void:
 	for window in windows:
@@ -59,6 +68,7 @@ func update_theme(new_theme: Theme) -> void:
 
 func unlock_windows() -> void:
 	for window in windows:
+		if !is_instance_valid(window): continue
 		var window_size = window.size
 		var window_pos = window.position
 		window.borderless = false
@@ -66,3 +76,5 @@ func unlock_windows() -> void:
 		window.position = window_pos
 		window.button.show()
 		window.button.release_focus()
+		# Passthrough only applies while locked; the preference itself stays set.
+		window.apply_pass_through()

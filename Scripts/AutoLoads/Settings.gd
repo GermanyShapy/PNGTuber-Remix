@@ -33,6 +33,7 @@ const SAVED_LAYOUT_PATH := "user://layout.tres"
 	enable_trimmer = true,
 	save_raw_sprite = false, #save the original sprite even when trimmed
 	always_on_top = false,
+	window_pass_through = false,
 	menu_popup = true,
 	software_mode = 0,
 	ui_scaling = 1.0,
@@ -320,6 +321,13 @@ func center_window():
 func set_always_on_top(toggle):
 	Settings.theme_settings.always_on_top = toggle
 	get_window().always_on_top = Settings.theme_settings.always_on_top
+	save()
+
+## Global preference shared by every extra window; a window only consumes it
+## while its size is locked, so the value itself is never cleared on unlock.
+func set_window_pass_through(val: bool) -> void:
+	theme_settings.window_pass_through = val
+	WindowHandler.set_all_pass_through(val)
 	save()
 
 func get_custom_cursor() -> Image:
