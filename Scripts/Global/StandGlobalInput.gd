@@ -84,6 +84,9 @@ func _input(event: InputEvent) -> void:
 
 func _ready() -> void:
 	# use_physics_frames = true
+	# Consumers read the per-frame cursor cache, so this must refresh before any
+	# of them. Autoload order alone would only be guaranteed by tree position.
+	process_priority = -100
 	call_deferred("_rawmouse_init");
 	_cursor_trace = Global.has_diag_flag("cursor-trace")
 

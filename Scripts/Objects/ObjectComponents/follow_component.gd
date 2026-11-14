@@ -4,8 +4,11 @@ extends Node
 @export var modifier: Node2D
 @export var mesh : CustomMesh = null
 
-var last_mouse_position : Vector2 = Vector2(0,0)
 var last_dist : Vector2 = Vector2(0,0)
+## Cursor position at the previous rendered frame. Diffed instead of the raw
+## relative report, which a pen never produces.
+var _cursor_pos_last : Vector2 = Vector2.ZERO
+var _cursor_pos_valid : bool = false
 var mouse_coords : Vector2 = Vector2(0,0)
 var vel = Vector2.ZERO
 var distance : Vector2 = Vector2.ZERO
@@ -29,6 +32,9 @@ const VELOCITY_FOLLOW_RATE: float = 0.35
 ## Per-render-frame convergence of the return-to-origin decay at 60 fps.
 ## Kept separate from VELOCITY_FOLLOW_RATE so the spring-back can be tuned alone.
 const VELOCITY_RETURN_RATE: float = 0.35
+## No real input jumps this far in one frame, so a bigger difference means the
+## cursor source switched (pen latch engaging, a screen change) rather than motion.
+const VELOCITY_SOURCE_JUMP_PX: float = 300.0
 
 var target_x : float = 0.0
 var target_y : float = 0.0
@@ -82,16 +88,25 @@ func reset_modifier() -> void:
 		modifier.scale = Vector2.ONE
 
 func mouse_delay():
-	#get mouse delta with relative movement in mouse inputs
-	if GlobInput.rawMouseInput != null:
-		if GlobInput.is_mouse_relative_movement:
-			mouse_delta = -GlobInput.mouse_relative_movement
-		else:
-			mouse_delta = Vector2.ZERO
+	# Raw Input reports the physical motion of a mouse and stays the most
+	# responsive source while it has data. A pen never produces those reports,
+	# so fall back to diffing the unified cursor: same unit (px per frame), and
+	# it already carries the pen position the event path recovers.
+	var pos: Vector2 = GlobInput.get_cursor_screen_position()
+	var derived: Vector2 = _cursor_pos_last - pos
+	_cursor_pos_last = pos
+
+	if !_cursor_pos_valid:
+		# First call has no previous sample; diffing against zero would fire a
+		# displacement on whatever the cursor happened to be.
+		_cursor_pos_valid = true
+		mouse_delta = Vector2.ZERO
+	elif GlobInput.rawMouseInput != null and GlobInput.is_mouse_relative_movement:
+		mouse_delta = -GlobInput.mouse_relative_movement
+	elif derived.length() <= VELOCITY_SOURCE_JUMP_PX:
+		mouse_delta = derived
 	else:
-		mouse_delta = last_mouse_position - mouse_coords
-	
-	last_mouse_position = mouse_coords
+		mouse_delta = Vector2.ZERO
 
 func _process(delta: float) -> void:
 	if actor.get_value("follow_mouse_velocity"):
