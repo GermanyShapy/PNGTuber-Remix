@@ -103,7 +103,7 @@ func mouse_delay():
 		mouse_delta = Vector2.ZERO
 	elif GlobInput.rawMouseInput != null and GlobInput.is_mouse_relative_movement:
 		mouse_delta = -GlobInput.mouse_relative_movement
-	elif derived.length() <= VELOCITY_SOURCE_JUMP_PX:
+	elif derived.length_squared() <= VELOCITY_SOURCE_JUMP_PX * VELOCITY_SOURCE_JUMP_PX:
 		mouse_delta = derived
 	else:
 		mouse_delta = Vector2.ZERO
@@ -162,8 +162,12 @@ func get_mouse_coords(main_marker, screen) -> Vector2:
 	var coord : Vector2 = Vector2.ZERO
 	if actor.get_value("use_object_pos"):
 		screen_half = Vector2.ZERO # object-relative mode keeps its own origin
-		var offset = Vector2(main_marker.get_cached_screen_position(screen))
-		coord = (actor.get_local_mouse_position() - offset)  / Global.camera.zoom.clampf(0.001, 10.0)
+		# get_local_mouse_position() is already in canvas space, so no screen
+		# origin belongs here. Subtracting one shifted the whole offset by the
+		# monitor position and pinned the sprite to a clamp edge on a secondary
+		# display. The old code passed a literal 0, which only looked harmless
+		# because the primary screen usually sits at the virtual origin.
+		coord = actor.get_local_mouse_position() / Global.camera.zoom.clampf(0.001, 10.0)
 	else:
 		var display_size : Vector2 = main_marker.get_screen_size()
 		# Prefers the pen's own absolute report while it is fresh: a pen driver

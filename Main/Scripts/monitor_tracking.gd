@@ -35,36 +35,46 @@ func _screen_layout() -> Array[Rect2]:
 			_screen_rects.append(Rect2(
 					Vector2(DisplayServer.screen_get_position(i)),
 					Vector2(DisplayServer.screen_get_size(i))))
+		# _mouse_screen_rect is a copy, so a rebuilt layout leaves it stale until
+		# the cursor happens to leave it. Re-resolve on the next frame instead.
+		_mouse_screen_ready = false
 		_screen_rects_refresh_at = now + 2000
 	return _screen_rects
 
+func _set_mouse_screen(index: int, rect: Rect2) -> void:
+	_mouse_screen = index
+	_mouse_screen_rect = rect
+	_mouse_screen_ready = true
+
 func _refresh_mouse_screen() -> void:
 	var pos: Vector2 = GlobInput.get_cursor_screen_position()
+	var layout := _screen_layout()
 	if _mouse_screen_ready and _mouse_screen_rect.has_point(pos):
 		return
-	for i in _screen_layout().size():
-		if _screen_rects[i].has_point(pos):
-			_mouse_screen = i
-			_mouse_screen_rect = _screen_rects[i]
-			_mouse_screen_ready = true
+	for i in layout.size():
+		if layout[i].has_point(pos):
+			_set_mouse_screen(i, layout[i])
 			return
 	# Outside the cached layout: a resolution or monitor change happened.
 	_screen_rects_refresh_at = 0
-	for i in _screen_layout().size():
-		if _screen_rects[i].has_point(pos):
-			_mouse_screen = i
-			_mouse_screen_rect = _screen_rects[i]
-			_mouse_screen_ready = true
+	layout = _screen_layout()
+	for i in layout.size():
+		if layout[i].has_point(pos):
+			_set_mouse_screen(i, layout[i])
 			return
-	_mouse_screen = DisplayServer.SCREEN_PRIMARY
-	_mouse_screen_rect = Rect2(
-			Vector2(DisplayServer.screen_get_position(DisplayServer.SCREEN_PRIMARY)),
-			Vector2(DisplayServer.screen_get_size(DisplayServer.SCREEN_PRIMARY)))
-	_mouse_screen_ready = true
+	# Still unmatched, so the layout is mid-change or there are no monitors at
+	# all. Fall back to the primary screen as an INDEX: SCREEN_PRIMARY is a
+	# constant (-2), not a valid index, and screen_get_* return ZERO for it,
+	# which zeroed the follow origin instead of providing a safe default.
+	if layout.is_empty():
+		_set_mouse_screen(0, Rect2())
+		return
+	var primary: int = clampi(DisplayServer.get_primary_screen(), 0, layout.size() - 1)
+	_set_mouse_screen(primary, layout[primary])
 
-## Index of the screen the cursor is on. Returns SCREEN_PRIMARY (-2) when the
-## cursor matches no cached rect, which keeps callers working right after a
-## monitor change.
+## Index of the screen the cursor is on. Falls back to the primary screen's
+## index when the cursor matches no cached rect, which keeps callers working
+## right after a monitor change.
 func get_mouse_screen() -> int:
 	if not _mouse_screen_ready:
 		_refresh_mouse_screen()
@@ -110,13 +120,19 @@ func _physics_process(_delta: float) -> void:
 			screen_based_position()
 	viewport_mouse_position = get_viewport().get_mouse_position()
 
-func mouse_in_current_screen():
-	var screen_pos = Vector2(DisplayServer.screen_get_position(current_screen)) - Vector2(1,1)
-	var screen_size = Vector2(DisplayServer.screen_get_size(current_screen))+ Vector2(1,1)
-	var mouse_pos = GlobInput.get_cursor_screen_position()
-
-	return (mouse_pos.x >= screen_pos.x and mouse_pos.x < (screen_size.x + screen_pos.x) and 
-			mouse_pos.y >= screen_pos.y and mouse_pos.y < (screen_size.y + screen_pos.y))
+## Whether the cursor is on the configured screen. ALL_SCREENS means "any", and
+## an index past the current layout (a monitor unplugged while it was selected)
+## clamps to the last real screen instead of testing a zero-size rect, which used
+## to report "outside" and silently zero the follow offset. Reads the cached
+## layout because every sprite asks this once per physics frame.
+func mouse_in_current_screen() -> bool:
+	if current_screen == ALL_SCREENS:
+		return true
+	var layout := _screen_layout()
+	if layout.is_empty():
+		return true
+	var idx: int = clampi(current_screen, 0, layout.size() - 1)
+	return layout[idx].has_point(GlobInput.get_cursor_screen_position())
 
 func set_mouse_positions():
 	var global_mouse_pos = get_local_mouse_position()
