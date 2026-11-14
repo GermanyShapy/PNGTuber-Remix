@@ -19,6 +19,9 @@ const EVENT_CURSOR_MAX_AGE_MS: int = 150
 
 var mouse_absolute_position: Vector2 = Vector2.ZERO
 var mouse_absolute_age_ms: int = -1
+## (absolute, relative) report totals from the extension. Diagnostic only: it
+## tells which unit the delta of a given tablet is expressed in.
+var raw_report_counts: Vector2i = Vector2i.ZERO
 
 ## Cached once per frame: the follow code runs per sprite, and
 ## DisplayServer.mouse_get_position() / window_get_position() enumerate the
@@ -129,6 +132,7 @@ func _process(_delta: float) -> void:
 		var absolute: Vector2i = rawMouseInput.get_mouse_absolute_position()
 		mouse_absolute_position = Vector2(absolute)
 		mouse_absolute_age_ms = rawMouseInput.get_mouse_absolute_age_ms()
+		raw_report_counts = rawMouseInput.get_report_counts()
 
 	_update_cursor_screen_position()
 
@@ -139,10 +143,10 @@ func _process(_delta: float) -> void:
 			# Three candidate sources side by side: the system cursor, the raw
 			# absolute report, and the engine's own viewport position (which a
 			# pen pointer event updates even when GetCursorPos is frozen).
-			print("[cursor] cur=%s sys=%s abs=%s age=%d vp=%s win=%s rel=%s rawrel=%s ev=%s evg=%s evage=%d" % [
+			print("[cursor] cur=%s sys=%s abs=%s age=%d cnt=%s vp=%s win=%s rel=%s rawrel=%s ev=%s evg=%s evage=%d" % [
 					cursor_screen_position,
 					DisplayServer.mouse_get_position(), mouse_absolute_position,
-					mouse_absolute_age_ms, get_viewport().get_mouse_position(),
+					mouse_absolute_age_ms, raw_report_counts, get_viewport().get_mouse_position(),
 					DisplayServer.window_get_position(), is_mouse_relative_movement,
 					mouse_relative_movement, mouse_event_position, mouse_event_global,
 					-1 if mouse_event_tick < 0 else Time.get_ticks_msec() - mouse_event_tick])
