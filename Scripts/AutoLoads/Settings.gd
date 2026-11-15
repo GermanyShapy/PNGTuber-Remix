@@ -9,6 +9,16 @@ var save_timer : Timer = Timer.new()
 var current_theme : Theme = preload("res://Themes/PurpleTheme/GUITheme.tres")
 const SAVED_LAYOUT_PATH := "user://layout.tres"
 
+## Godot's OS font cascade is unreliable on macOS (the CJK-tofu saga), so the
+## bundled Noto Sans SC must be injected into every UI font chain there.
+## Other platforms keep the stock chains and let the system do CJK as before.
+const CJK_FALLBACK_PATH := "res://Scripts/Fonts/NotoSansSC-Regular.ttf"
+const EMBEDDED_FONT_THEMES: Array[String] = [
+	"res://Themes/PurpleTheme/GUITheme.tres",
+	"res://Themes/WhiteTheme/WhiteTheme.tres",
+	"res://Themes/FrutigerAeroTheme/FrutigerAero.tres",
+]
+
 @warning_ignore("integer_division")
 @onready var theme_settings : Dictionary = {
 	theme_id = 0,
@@ -70,9 +80,36 @@ var autosave_location = ""
 var websocket_api = ""
 
 func _enter_tree() -> void:
+	apply_cjk_font_fallback()
 	save_location = path_helper(OS.get_executable_path().get_base_dir(), "/Preferences.pRDat")
 	autosave_location = path_helper(OS.get_executable_path().get_base_dir(), "/autosaves")
 	websocket_api = path_helper(OS.get_executable_path().get_base_dir(), "/WebsocketDocumentation.txt")
+
+## Prepends the bundled CJK font to every UI font chain. Windows builds never
+## trigger this: their Chinese renders through the system cascade (YaHei),
+## which is what users expect. Pass force=true from tests on non-mac hosts.
+func apply_cjk_font_fallback(force: bool = false) -> void:
+	if not force and not OS.has_feature("macos"):
+		return
+	var cjk: Font = load(CJK_FALLBACK_PATH)
+	if cjk == null:
+		push_warning("CJK fallback font missing: " + CJK_FALLBACK_PATH)
+		return
+	var base: Font = load("res://Scripts/Fonts/AppFont.tres")
+	if base != null and cjk not in base.fallbacks:
+		var chain: Array[Font] = [cjk]
+		chain.append_array(base.fallbacks)
+		base.fallbacks = chain
+	for path in EMBEDDED_FONT_THEMES:
+		var th: Theme = load(path)
+		if th == null:
+			continue
+		for type in th.get_font_type_list():
+			for fname in th.get_font_list(type):
+				var f: Font = th.get_font(fname, type)
+				if f is FontFile and cjk not in f.fallbacks:
+					var arr: Array[Font] = [cjk]
+					f.fallbacks = arr
 
 func save_before_closing():
 	if theme_settings.save_on_exit:
