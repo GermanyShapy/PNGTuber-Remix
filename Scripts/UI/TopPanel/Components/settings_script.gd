@@ -33,6 +33,7 @@ func _ready() -> void:
 	# Deferred: this node readies while the popup is still setting up its
 	# children, and add_child() is refused until that finishes.
 	_build_bounce_on_click.call_deferred()
+	_build_pen_driver_option.call_deferred()
 	init_hotkey_list()
 	# A new project drops every binding; the rows must not outlive them.
 	Global.new_file.connect(reset_hotkey_rows)
@@ -65,6 +66,7 @@ func _on_remix_language_set(index: int) -> void:
 func _on_language_changed(_locale: String) -> void:
 	_populate_languages()
 	_localize_gamepad_label_option()
+	_localize_pen_driver_option()
 
 
 # --- Gamepad label style -----------------------------------------------------
@@ -130,6 +132,77 @@ func _on_gamepad_label_selected(index: int) -> void:
 	# so nothing re-derives it on its own: let the widgets that draw one repaint.
 	Global.binding_labels_changed.emit()
 
+# --- Tablet driver -----------------------------------------------------------
+#
+# WinInk double-fires pen clicks, so the driver is user-visible. The choice is a
+# property of the machine rather than of the model, so it lives in
+# Settings.theme_settings and is written to Preferences.pRDat.
+
+const PEN_DRIVER_OPTIONS: Array = [
+	{"id": 0, "value": "auto", "text": "TR_TABLET_DRIVER_AUTO"},
+	{"id": 1, "value": "winink", "text": "TR_TABLET_DRIVER_WININK"},
+	{"id": 2, "value": "wintab", "text": "TR_TABLET_DRIVER_WINTAB"},
+	{"id": 3, "value": "dummy", "text": "TR_TABLET_DRIVER_DUMMY"},
+]
+
+var _pen_driver_title: Label
+var _pen_driver_option: OptionButton
+
+
+func _build_pen_driver_option() -> void:
+	if _pen_driver_option != null or !OS.has_feature("windows"):
+		return
+	# Right under the tracking backend: both pick a native input source.
+	var grid: GridContainer = %BackendOption.get_parent()
+	_pen_driver_title = Label.new()
+	_pen_driver_title.name = "PenDriverLabel"
+	_pen_driver_title.custom_minimum_size = Vector2(144, 0)
+	_pen_driver_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_pen_driver_option = OptionButton.new()
+	_pen_driver_option.name = "PenDriverOption"
+	_pen_driver_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_child(_pen_driver_title)
+	grid.add_child(_pen_driver_option)
+	_pen_driver_option.item_selected.connect(_on_pen_driver_selected)
+	_localize_pen_driver_option()
+	pen_driver_select(str(Settings.theme_settings.get("pen_driver", "auto")))
+
+
+func _localize_pen_driver_option() -> void:
+	if _pen_driver_option == null:
+		return
+	_pen_driver_title.text = tr("TR_TABLET_DRIVER")
+	_pen_driver_title.tooltip_text = tr("TR_TABLET_DRIVER_TOOLTIP")
+	var current := _pen_driver_option.get_selected_id()
+	_pen_driver_option.clear()
+	for option in PEN_DRIVER_OPTIONS:
+		_pen_driver_option.add_item(tr(option["text"]), int(option["id"]))
+	pen_driver_select_id(current)
+
+
+## Selects by the stored driver name; "auto" stays selectable as the default.
+func pen_driver_select(driver: String) -> void:
+	for option in PEN_DRIVER_OPTIONS:
+		if str(option["value"]) == driver:
+			pen_driver_select_id(int(option["id"]))
+			return
+	pen_driver_select_id(0)
+
+
+func pen_driver_select_id(driver_id: int) -> void:
+	if _pen_driver_option == null:
+		return
+	var idx := _pen_driver_option.get_item_index(driver_id)
+	_pen_driver_option.select(idx if idx >= 0 else 0)
+
+
+func _on_pen_driver_selected(index: int) -> void:
+	var driver_id := _pen_driver_option.get_item_id(index)
+	for option in PEN_DRIVER_OPTIONS:
+		if int(option["id"]) == driver_id:
+			Settings.set_pen_driver(str(option["value"]))
+			return
+
 # --- Click bounce ------------------------------------------------------------
 #
 # Model-wide, and only the pop-up windows feed clicks to the model (the editor
@@ -177,6 +250,7 @@ func check_data():
 	change_setting = false
 	# Null until _build_gamepad_label_option() has run; the build syncs it itself.
 	gamepad_label_select(int(Global.settings_dict.get("gamepad_labels", 0)))
+	pen_driver_select(str(Settings.theme_settings.get("pen_driver", "auto")))
 	%AutoLoadCheck.button_pressed = Settings.theme_settings.auto_load
 	%SaveOnExitCheck.button_pressed = Settings.theme_settings.save_on_exit
 	%AutoSaveCheck.button_pressed = Global.settings_dict.auto_save

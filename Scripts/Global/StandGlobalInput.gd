@@ -92,6 +92,25 @@ func _ready() -> void:
 	process_priority = -100
 	call_deferred("_rawmouse_init");
 	_cursor_trace = Global.has_diag_flag("cursor-trace")
+	_install_pen_fix()
+
+## Pen samples need their `relative` rebuilt (see PenMotionFix). Popups are real
+## OS windows here -- embed_subwindows=false -- so they are separate viewports:
+## the main window is covered by an instance under this autoload, every other
+## window gets its own as it enters the tree.
+func _install_pen_fix() -> void:
+	var main_fix := PenMotionFix.new()
+	main_fix.name = "PenMotionFix"
+	add_child(main_fix)
+	for window in get_tree().root.find_children("*", "Window", true, false):
+		_on_node_added(window)
+	get_tree().node_added.connect(_on_node_added)
+
+func _on_node_added(node: Node) -> void:
+	if node is Window and node != get_tree().root and node.get_node_or_null("PenMotionFix") == null:
+		var fix := PenMotionFix.new()
+		fix.name = "PenMotionFix"
+		node.add_child(fix)
 
 func _rawmouse_init():
 	if Global.has_diag_flag("no-rawmouse"):

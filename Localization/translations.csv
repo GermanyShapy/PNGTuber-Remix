@@ -694,3 +694,9 @@ TR_GAMEPAD_LABELS_ALL,All layouts,All layouts,全部并列
 TR_GAMEPAD_LABELS_XB,Xbox,Xbox,Xbox
 TR_GAMEPAD_LABELS_PS,PlayStation,PlayStation,PlayStation
 TR_GAMEPAD_LABELS_NS,Nintendo,Nintendo,Nintendo
+TR_TABLET_DRIVER,Tablet driver,Tablet driver,数位板驱动
+TR_TABLET_DRIVER_TOOLTIP,"Which driver reads the pen. Windows Ink can turn one pen tap into two clicks and leave the cursor hidden after dragging a spin box; WinTab avoids both but needs the tablet vendor driver installed.","Which driver reads the pen. Windows Ink can turn one pen tap into two clicks and leave the cursor hidden after dragging a spin box; WinTab avoids both but needs the tablet vendor driver installed.","用哪个驱动来读取笔。Windows Ink 会把一次落笔变成两次点击，并在拖动数值框后让光标消失；WinTab 没有这两个问题，但需要先装板厂驱动。"
+TR_TABLET_DRIVER_AUTO,Automatic (prefer WinTab),Automatic (prefer WinTab),自动（优先 WinTab）
+TR_TABLET_DRIVER_WININK,Windows Ink,Windows Ink,Windows Ink
+TR_TABLET_DRIVER_WINTAB,WinTab,WinTab,WinTab
+TR_TABLET_DRIVER_DUMMY,Off (use it as a mouse),Off (use it as a mouse),关闭（当鼠标用）

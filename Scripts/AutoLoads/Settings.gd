@@ -63,6 +63,7 @@ const SAVED_LAYOUT_PATH := "user://layout.tres"
 	phys_jitter = 0.5,
 	dev_mode = false,
 	use_glob_input = false,
+	pen_driver = "auto",
 }
 var save_location = ""
 var autosave_location = ""
@@ -188,6 +189,7 @@ func _ready():
 			GlobalMicAudio.mic_input.start_audio()
 
 	change_cursor()
+	apply_pen_driver()
 	Engine.physics_jitter_fix = theme_settings.phys_jitter
 	Engine.physics_ticks_per_second = theme_settings.phys_tick_per_frame
 	Engine.max_physics_steps_per_frame = theme_settings.phys_steps
@@ -360,6 +362,33 @@ func change_cursor():
 		Input.set_custom_mouse_cursor(get_custom_cursor())
 	else:
 		Input.set_custom_mouse_cursor(null)
+
+# WinInk delivers one pen contact twice (WM_POINTER plus the synthesized mouse
+# messages), so UI clicks land twice and the cursor state machine misses the
+# release. WinTab has neither problem, hence the preference order below.
+const PEN_DRIVERS: Array[String] = ["auto", "winink", "wintab", "dummy"]
+const WINTAB_DLL := "C:/Windows/System32/Wintab32.dll"
+
+## Applies the saved driver. "auto" resolves to WinTab when the vendor library
+## is installed; without it WinTab cannot initialise, so the engine default stays.
+func apply_pen_driver() -> void:
+	# Only the native Windows backends drive a tablet; headless has no cursor.
+	if !OS.has_feature("windows") or DisplayServer.get_name() == "headless":
+		return
+	# A command line override is the diagnostic escape hatch and must win.
+	if OS.get_cmdline_args().has("--tablet-driver"):
+		return
+	var driver := str(theme_settings.pen_driver)
+	if driver == "auto":
+		driver = "wintab" if FileAccess.file_exists(WINTAB_DLL) else "winink"
+	DisplayServer.tablet_set_current_driver(driver)
+
+func set_pen_driver(driver: String) -> void:
+	if !PEN_DRIVERS.has(driver):
+		return
+	theme_settings.pen_driver = driver
+	apply_pen_driver()
+	save()
 
 func set_ui_pieces(val : int, id : int):
 	if id == 5:
