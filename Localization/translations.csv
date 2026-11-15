@@ -664,7 +664,7 @@ TR_INPUT_JOY_LEFT_STICK,Left Stick,Левый стик,左摇杆
 TR_INPUT_JOY_RIGHT_STICK,Right Stick,Правый стик,右摇杆
 TR_INPUT_JOY_PREFIX,"Gamepad ","Геймпад ",手柄
 TR_INPUT_JOY_DPAD,"D-Pad ","Крестовина ",手柄十字键
-TR_INPUT_JOY_B_BOTTOM,{xb} A / {ps} ✕ / NS B,{xb} A / {ps} ✕ / NS B,{xb} A / {ps} ✕ / NS B
+TR_INPUT_JOY_B_BOTTOM,{xb} A / {ps} × / NS B,{xb} A / {ps} × / NS B,{xb} A / {ps} × / NS B
 TR_INPUT_JOY_B_RIGHT,{xb} B / {ps} ○ / NS A,{xb} B / {ps} ○ / NS A,{xb} B / {ps} ○ / NS A
 TR_INPUT_JOY_B_LEFT,{xb} X / {ps} □ / NS Y,{xb} X / {ps} □ / NS Y,{xb} X / {ps} □ / NS Y
 TR_INPUT_JOY_B_TOP,{xb} Y / {ps} △ / NS X,{xb} Y / {ps} △ / NS X,{xb} Y / {ps} △ / NS X

@@ -101,7 +101,7 @@ const DOUBLE_CLICK_SUFFIX := " (Double Click)"
 
 ## Joypad button -> translations.csv key. Every user-visible pad label lives in
 ## the CSV: the face/shoulder/trigger rows name all three vendor layouts at once
-## ("Xb A / PS ✕ / NS B"), because the engine only exposes a *position*
+## ("Xb A / PS × / NS B"), because the engine only exposes a *position*
 ## (0 = bottom, 1 = right, 2 = left, 3 = top) and never reports which pad is
 ## connected -- listing them beats guessing. Those self-identifying rows carry no
 ## prefix; L3 / R3 / Back / Guide / Start do.
