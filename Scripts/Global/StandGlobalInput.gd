@@ -17,8 +17,16 @@ const ABSOLUTE_CURSOR_MAX_AGE_MS: int = 150
 ## How long an event position stays usable after the last mouse event.
 const EVENT_CURSOR_MAX_AGE_MS: int = 150
 
+## Distance within which an absolute report and the system cursor describe the
+## same point. A wrong mapping is off by a whole screen edge, never by pixels.
+const ABSOLUTE_CURSOR_AGREE_PX: float = 8.0
+
 var mouse_absolute_position: Vector2 = Vector2.ZERO
 var mouse_absolute_age_ms: int = -1
+## Whether the absolute reports of the current device can be interpreted as
+## screen coordinates. Decided only while the system cursor is alive, because
+## that is the one moment the two can be compared; see _update_absolute_trust().
+var _absolute_report_trusted: bool = false
 ## (absolute, relative) report totals from the extension. Diagnostic only: it
 ## tells which unit the delta of a given tablet is expressed in.
 var raw_report_counts: Vector2i = Vector2i.ZERO
@@ -50,6 +58,9 @@ func _update_cursor_screen_position() -> void:
 		_sys_last = sys
 		_sys_stable_frames = 0
 		_use_event_cursor = false
+		# A moving cursor is the only thing an absolute report can be checked
+		# against, so this is the only moment the mapping can be judged.
+		_update_absolute_trust(sys)
 
 	var event_age: int = -1 if mouse_event_tick < 0 else Time.get_ticks_msec() - mouse_event_tick
 	if event_age >= 0 and event_age <= EVENT_CURSOR_MAX_AGE_MS:
@@ -61,10 +72,29 @@ func _update_cursor_screen_position() -> void:
 
 	if _use_event_cursor:
 		cursor_screen_position = _event_cursor_position
-	elif mouse_absolute_age_ms >= 0 and mouse_absolute_age_ms <= ABSOLUTE_CURSOR_MAX_AGE_MS:
+	elif _absolute_report_usable():
 		cursor_screen_position = mouse_absolute_position
 	else:
 		cursor_screen_position = sys
+
+## A pen display may normalise its absolute reports over its own screen without
+## setting MOUSE_VIRTUAL_DESKTOP. Reading those as primary-screen coordinates
+## offsets them by a whole monitor width, which would drag the sprite to a clamp
+## edge -- and the absolute channel outranks the cursor, so it would mask the one
+## source that is right. While the cursor is alive the two can be compared, so a
+## device that disagrees is marked untrusted; it only earns trust by agreeing.
+func _update_absolute_trust(p_sys: Vector2) -> void:
+	if mouse_absolute_age_ms < 0 or mouse_absolute_age_ms > ABSOLUTE_CURSOR_MAX_AGE_MS:
+		return # nothing to judge against, keep the previous verdict
+	_absolute_report_trusted = mouse_absolute_position.distance_squared_to(p_sys) \
+			<= ABSOLUTE_CURSOR_AGREE_PX * ABSOLUTE_CURSOR_AGREE_PX
+
+## A pinned cursor cannot cross-check the report, so the last verdict stands:
+## that is the case the channel exists for. Freshness still applies either way.
+func _absolute_report_usable() -> bool:
+	return _absolute_report_trusted \
+			and mouse_absolute_age_ms >= 0 \
+			and mouse_absolute_age_ms <= ABSOLUTE_CURSOR_MAX_AGE_MS
 
 ## Diagnostic (`-- --cursor-trace`): prints every cursor source four times a
 ## second, so "the pen freezes GetCursorPos" can be told apart from "the pen
