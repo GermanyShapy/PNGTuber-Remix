@@ -3,45 +3,61 @@ extends Node
 
 ## Makes a pen drag on a spin box behave like a mouse drag.
 ##
-## Measured on this project (logs of 2026-11-15, plus engine source):
-## * SpinBox captures the pointer while an arrow is dragged. Captured mode parks
-##   the cursor at the window centre and clips it to the client rect, which turns
-##   the engine's `relative` into "position - centre": one sign for the whole
-##   gesture and orders of magnitude too large.
-## * Hover is computed inside `push_input`, after `Node._input`, so
-##   `window_input` is the only hook early enough to pin what the GUI sees.
+## A spin box drag accumulates `relative` and maps the running total through a
+## power curve, so its value is a function of the whole distance travelled and a
+## single stray pixel late in a gesture is amplified. A mouse feeds that total
+## with a continuous stream. A pen only reports where it is, and while the engine
+## has the pointer captured its `relative` is the offset from the capture point
+## rather than a movement.
 ##
-## The capture is therefore kept -- it is the only thing that keeps the pointer
-## hidden and unable to leave the window -- and only the movement is rebuilt from
-## consecutive pen positions, with the reported position pinned at the press
-## point so a hover never follows the pen across the UI.
+## Samples whose `relative` is that offset are rewritten here into a real
+## movement -- or into zero when the position cannot be trusted -- so nothing the
+## engine derived from the absolute position reaches a widget. Everything else is
+## left untouched, which is what keeps mouse drags working.
 ##
-## Leaving captured mode for a hidden pointer was tried and reverted: hiding
-## drops the clip, but the hidden cursor style only applies inside the owning
-## window, so the pointer reappears outside it, and warping it back emits a
-## synthetic motion every frame whose `relative` undoes the step just taken --
-## the value and the pointer both oscillate.
+## The test is per sample, never per gesture: the pen and the mouse can both
+## report during one gesture (a pen resting on the tablet keeps sending samples),
+## and latching a device would break whichever one was not latched.
 ##
-## Only `pressure > 0` samples are touched: a mouse reports exactly 0, and
-## rewriting mouse samples made the engine's own deltas oscillate.
+## Positions are also reported at the press point, because hover is computed
+## inside `push_input`, after Node._input -- which is why the hook is
+## `window_input`, emitted before the event is pushed.
+##
+## The capture is kept: it is what keeps the pointer hidden and unable to leave
+## the window. Its clip is dropped through the extension, because a clipped pen
+## position stops at the window border and a small window would then bound the
+## reachable range.
 
-## A pen that stopped reporting begins a new gesture.
-const PEN_GAP_MS: int = 1000
+## A pen that stopped reporting has left the tablet's range, not moved.
+const SAMPLE_GAP_MS: int = 120
+## Fastest believable travel. A larger step is a re-acquired position.
+const MAX_SPEED_PX_S: float = 8000.0
+## Bounds for the measured sample interval, so a stalled frame cannot license a
+## large step.
+const DT_MIN_MS: float = 4.0
+const DT_MAX_MS: float = 40.0
+## Slack for matching `relative` against the offset from the capture point. The
+## engine computes both in whole pixels, so anything above rounding is a
+## different quantity.
+const ECHO_TOL_PX: float = 0.75
 ## Safety net for a release whose event never arrives.
 const HOLD_MS: int = 3000
 
 var _last_pos: Vector2 = Vector2.ZERO
 var _last_ms: int = 0
+## The previous position is usable as a reference.
 var _valid: bool = false
-## Set while a pen drag is being rewritten: positions are reported at `_anchor`.
+## Left button held.
+var _gesture: bool = false
+## Positions are being reported at `_anchor` instead of where the pen is.
 var _frozen: bool = false
 var _anchor: Vector2 = Vector2.ZERO
-var _anchor_valid: bool = false
-## The press carries the real pen position; the samples after the capture only
-## report the warped cursor point.
+## Where the engine parked the cursor when it captured the pointer.
+var _centre: Vector2 = Vector2.ZERO
 var _press_pos: Vector2 = Vector2.ZERO
-var _press_ms: int = 0
-var _press_valid: bool = false
+var _authored: Vector2 = Vector2.ZERO
+var _samples: int = 0
+var _dropped: int = 0
 var _trace: bool = false
 var _trace_count: int = 0
 
@@ -51,9 +67,6 @@ func _ready() -> void:
 	# reliably forward user args, and a diagnostic that silently does nothing is
 	# worse than none.
 	_trace = Global.has_diag_flag("pen-trace") or FileAccess.file_exists("res://pen_trace.on")
-	# `window_input` is emitted by Window::_window_input before it calls
-	# push_input, so it is the only hook that runs before the engine computes
-	# hover from the event.
 	var window := get_viewport() as Window
 	if window != null:
 		window.window_input.connect(_on_window_input)
@@ -71,13 +84,12 @@ func _on_window_input(event: InputEvent) -> void:
 		fix(motion)
 		return
 	var button := event as InputEventMouseButton
-	if button != null and button.button_index == MOUSE_BUTTON_LEFT:
-		if button.pressed:
-			_press_pos = button.position
-			_press_ms = Time.get_ticks_msec()
-			_press_valid = true
-		else:
-			end_drag()
+	if button == null or button.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if button.pressed:
+		_begin_gesture(button.position)
+	else:
+		end_drag()
 
 
 ## Fallback for viewports that are not a Window; `_input` is only enabled then.
@@ -89,41 +101,80 @@ func _engine_captured() -> bool:
 	return Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED
 
 
+func _begin_gesture(p_pos: Vector2) -> void:
+	_gesture = true
+	_press_pos = p_pos
+	_authored = Vector2.ZERO
+	_samples = 0
+	_dropped = 0
+	# The press point is where the widget must stay: every sample after the
+	# capture reports the parked cursor instead.
+	_valid = false
+
+
+func end_drag() -> void:
+	if !_gesture and !_frozen:
+		return
+	if _trace:
+		print("[pen] gesture end samples=%d authored=%s net=%s dropped=%d" % [
+			_samples, _authored, _last_pos - _press_pos, _dropped])
+	_gesture = false
+	_frozen = false
+	_valid = false
+	set_process(false)
+
+
 ## Captured mode clips the cursor to the client rect, and a pen then reports
-## positions clamped to it: the reachable range shrinks with the window. Dropping
-## the clip keeps the capture -- the cursor stays parked at the window centre, so
-## it is never drawn -- while the pen reports its real position again.
+## positions clamped to it: the reachable range would shrink with the window.
+## Dropping the clip keeps the capture, which parks the cursor inside the window
+## and therefore never draws it, while the pen reports its real position again.
 func _release_clip() -> void:
 	var raw: RawMouseInput = GlobInput.rawMouseInput
 	if raw != null and raw.has_method("release_cursor_clip"):
 		raw.release_cursor_clip()
 
 
-func start_drag(p_now: int, p_real: Vector2) -> void:
+func start_drag(p_real: Vector2) -> void:
 	_frozen = true
-	if !_anchor_valid:
-		_anchor = _press_pos if _press_valid and p_now - _press_ms <= PEN_GAP_MS else p_real
-		_anchor_valid = true
+	_anchor = _press_pos if _gesture else p_real
+	_centre = get_viewport().get_visible_rect().size * 0.5
 	_release_clip()
 	set_process(true)
-
-
-func end_drag() -> void:
-	if !_frozen:
-		return
-	_frozen = false
-	_anchor_valid = false
-	set_process(false)
-	if _trace:
-		print("[pen] drag end")
 
 
 func _process(_delta: float) -> void:
 	# The engine re-applies the clip whenever the mouse mode is set again.
 	_release_clip()
-	# The engine ends the drag itself, but a lost release must not pin forever.
-	if Time.get_ticks_msec() - _last_ms > HOLD_MS:
+	if _frozen and Time.get_ticks_msec() - _last_ms > HOLD_MS:
 		end_drag()
+
+
+## Movement of this sample, or zero when the previous position cannot serve as a
+## reference: a gap means the pen left the tablet, and a step faster than a hand
+## is a re-acquired position rather than travel.
+func _step(p_real: Vector2, p_now: int) -> Vector2:
+	if !_valid:
+		return Vector2.ZERO
+	var elapsed := p_now - _last_ms
+	if elapsed > SAMPLE_GAP_MS:
+		return Vector2.ZERO
+	var delta := p_real - _last_pos
+	var allowed := MAX_SPEED_PX_S * clampf(float(elapsed), DT_MIN_MS, DT_MAX_MS) / 1000.0
+	if delta.length() > allowed:
+		_dropped += 1
+		if _trace:
+			print("[pen] drop ", delta, " > ", allowed)
+		return Vector2.ZERO
+	return delta
+
+
+## Whether the engine built this `relative` out of the absolute position, which
+## is what it does for a device that only reports where it is. A mouse reports a
+## movement instead, so its `relative` stays unrelated to the offset from the
+## capture point even though its position sits on that same point.
+func _echoes_position(p_motion: InputEventMouseMotion) -> bool:
+	var offset := p_motion.position - _centre
+	return (p_motion.relative - offset).length() <= ECHO_TOL_PX
 
 
 func _pin(motion: InputEventMouseMotion) -> void:
@@ -131,48 +182,46 @@ func _pin(motion: InputEventMouseMotion) -> void:
 	motion.global_position = _anchor
 
 
-## Rewrites the event in place. It is shared with the GUI pass that runs after
-## the input pass, so the values here are what the widgets see.
+## Rewrites the event in place. It runs before the event is pushed, so the values
+## here are what the widgets see.
 func fix(motion: InputEventMouseMotion) -> void:
-	# The engine drops the capture when the drag ends, so the mode is the honest
-	# signal. Input.is_mouse_button_pressed() reports false for pen contacts.
+	var now := Time.get_ticks_msec()
 	if _frozen and !_engine_captured():
+		# The engine drops the capture when its own drag ends.
 		end_drag()
 
-	if motion.pressure <= 0.0:
-		# Mouse, or a pen out of contact: its own fields are never rewritten.
-		if motion.button_mask == 0:
-			_valid = false
-		if _frozen:
-			_pin(motion)
+	if !_gesture:
+		# Outside a gesture `relative` only drives hover, which this node does not
+		# own: the engine's value is left exactly as it came in.
 		return
 
-	var now := Time.get_ticks_msec()
 	var real := motion.position
-
-	if _frozen:
-		if _valid:
-			motion.relative = real - _last_pos
-		_pin(motion)
-	elif _engine_captured():
-		# The drag just started: from here on the widgets see the press point.
-		start_drag(now, real)
+	if !_frozen:
+		if !_engine_captured():
+			# Before the capture the engine has no drag of its own to feed.
+			return
+		start_drag(real)
 		motion.relative = Vector2.ZERO
 		_pin(motion)
-	elif _valid and now - _last_ms <= PEN_GAP_MS:
-		motion.relative = real - _last_pos
-	# else: the first sample of a new gesture keeps the engine's own value.
+		_last_pos = real
+		_last_ms = now
+		_valid = true
+		return
 
+	if motion.pressure > 0.0 or _echoes_position(motion):
+		motion.relative = _step(real, now)
+		_authored += motion.relative
+		_samples += 1
+	_pin(motion)
 	_last_pos = real
 	_last_ms = now
 	_valid = true
 	_trace_sample(real, motion)
 
 
-## Diagnostic (only when tracing is armed): the reachable range, the rebuilt
-## delta, and which control the engine considers hovered. The window and screen
-## geometry are printed so a stop at the client rect can be told from one at the
-## desk.
+## Diagnostic (only when tracing is armed): the reachable range, the authored
+## delta, and which control the engine considers hovered. The per-gesture totals
+## printed by end_drag() tell whether the authored stream followed the pen.
 func _trace_sample(p_real: Vector2, p_motion: InputEventMouseMotion) -> void:
 	if !_trace:
 		return
@@ -185,7 +234,6 @@ func _trace_sample(p_real: Vector2, p_motion: InputEventMouseMotion) -> void:
 		var control := viewport.gui_get_hovered_control()
 		if control != null:
 			hovered = "%s/%s" % [control.get_class(), control.name]
-	print("[pen] pos=%s fixed=%s p=%.2f mode=%d frozen=%s anchor=%s win=%s+%s screen=%s over=%s" % [
-		p_real, p_motion.relative, p_motion.pressure, Input.get_mouse_mode(),
-		_frozen, _anchor, DisplayServer.window_get_position(),
-		DisplayServer.window_get_size(), DisplayServer.screen_get_size(), hovered])
+	print("[pen] pos=%s fixed=%s p=%.2f mask=%d mode=%d frozen=%s anchor=%s over=%s" % [
+		p_real, p_motion.relative, p_motion.pressure, p_motion.button_mask,
+		Input.get_mouse_mode(), _frozen, _anchor, hovered])
