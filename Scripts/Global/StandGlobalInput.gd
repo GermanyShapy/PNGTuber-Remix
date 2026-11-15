@@ -3,7 +3,9 @@ extends GlobalInput
 
 @onready var cycle :Node = %Cycle
 
-var rawMouseInput : RawMouseInput = null;
+# Typed as Object on purpose: the extension only ships a Windows library, so on other
+# platforms the class is never registered and naming the type would break this script.
+var rawMouseInput : Object = null;
 var mouse_relative_movement:Vector2i = Vector2i.ZERO
 var is_mouse_relative_movement:bool = false
 var mouse_relative_movement_buffer:Vector2i = Vector2i.ZERO
@@ -146,11 +148,13 @@ func _rawmouse_init():
 	if Global.has_diag_flag("no-rawmouse"):
 		print("[diag] RawMouseInput disabled by --no-rawmouse")
 		return
-	if rawMouseInput == null and OS.get_name() == "Windows":
+	# The extension only ships a Windows library, so the class is absent
+	# elsewhere; guard before touching it.
+	if rawMouseInput == null and OS.get_name() == "Windows" and ClassDB.class_exists("RawMouseInput"):
 		print("raw input init start")
 		Global.diag_phase("rawmouse_new")
 		Global.diag_trace("rawmouse:new enter")
-		rawMouseInput = RawMouseInput.new()
+		rawMouseInput = ClassDB.instantiate("RawMouseInput")
 		Global.diag_trace("rawmouse:new exit")
 		rawMouseInput.raw_mouse.connect(_on_raw_mouse_input_updated)
 

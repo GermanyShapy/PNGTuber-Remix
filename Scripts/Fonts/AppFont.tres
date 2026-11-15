@@ -3,12 +3,16 @@
 [ext_resource type="FontFile" uid="uid://2jnndjm4c7yc" path="res://Scripts/Fonts/OpenSans-Medium.ttf" id="1_base"]
 [ext_resource type="FontFile" uid="uid://b4q2jwmyqgyao" path="res://Scripts/Fonts/BrandIcons.ttf" id="2_brand"]
 
+[sub_resource type="SystemFont" id="SystemFont_cjk"]
+font_names = PackedStringArray("PingFang SC", "Hiragino Sans GB", "Heiti SC", "Songti SC", "STHeiti", "Microsoft YaHei", "Microsoft YaHei UI", "Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC", "WenQuanYi Micro Hei", "Droid Sans Fallback", "sans-serif")
+subpixel_positioning = 0
+
 [sub_resource type="SystemFont" id="SystemFont_symbols"]
-font_names = PackedStringArray("Segoe UI Symbol", "Noto Sans Symbols 2", "Symbola", "DejaVu Sans")
+font_names = PackedStringArray("Apple Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", "Symbola", "DejaVu Sans")
 subpixel_positioning = 0
 
 [resource]
-fallbacks = Array[Font]([SubResource("SystemFont_symbols"), ExtResource("2_brand")])
+fallbacks = Array[Font]([SubResource("SystemFont_cjk"), SubResource("SystemFont_symbols"), ExtResource("2_brand")])
 base_font = ExtResource("1_base")
 variation_opentype = {
 0: 1
