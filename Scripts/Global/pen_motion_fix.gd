@@ -129,7 +129,10 @@ func end_drag() -> void:
 ## Dropping the clip keeps the capture, which parks the cursor inside the window
 ## and therefore never draws it, while the pen reports its real position again.
 func _release_clip() -> void:
-	var raw: RawMouseInput = GlobInput.rawMouseInput
+	# Typed as Object: RawMouseInput only ships a Windows library, so naming the
+	# type would stop this script from compiling on every other platform -- and
+	# an uncompilable class_name breaks the autoload that references it.
+	var raw: Object = GlobInput.rawMouseInput
 	if raw != null and raw.has_method("release_cursor_clip"):
 		raw.release_cursor_clip()
 
