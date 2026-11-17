@@ -108,7 +108,10 @@ func apply_cjk_font_fallback(force: bool = false) -> void:
 			for fname in th.get_font_list(type):
 				var f: Font = th.get_font(fname, type)
 				if f is FontFile and cjk not in f.fallbacks:
+					# Prepend, never replace: a theme may carry its own fallbacks
+					# later on, and dropping them would bring the tofu back.
 					var arr: Array[Font] = [cjk]
+					arr.append_array(f.fallbacks)
 					f.fallbacks = arr
 
 func save_before_closing():
