@@ -9,6 +9,8 @@ var last_dist : Vector2 = Vector2(0,0)
 ## relative report, which a pen never produces.
 var _cursor_pos_last : Vector2 = Vector2.ZERO
 var _cursor_pos_valid : bool = false
+## Last value of follow_mouse_velocity, so re-enabling it can reset the diff.
+var _velocity_follow : bool = false
 var mouse_coords : Vector2 = Vector2(0,0)
 var vel = Vector2.ZERO
 var distance : Vector2 = Vector2.ZERO
@@ -109,7 +111,15 @@ func mouse_delay():
 		mouse_delta = Vector2.ZERO
 
 func _process(delta: float) -> void:
-	if actor.get_value("follow_mouse_velocity"):
+	# `== true` rather than a cast: an older model may have no such key, and a
+	# Variant null cannot be assigned to a typed bool.
+	var velocity_follow: bool = actor.get_value("follow_mouse_velocity") == true
+	if velocity_follow != _velocity_follow:
+		_velocity_follow = velocity_follow
+		# The cursor kept moving while the follow was off, so that distance must
+		# not be counted as one frame of motion when it comes back on.
+		_cursor_pos_valid = false
+	if velocity_follow:
 		mouse_delay()
 
 		# Frame-rate independent forms of lerp(x, y, rate) per rendered frame.

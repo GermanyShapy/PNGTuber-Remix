@@ -11,13 +11,14 @@ var is_mouse_relative_movement:bool = false
 var mouse_relative_movement_buffer:Vector2i = Vector2i.ZERO
 var is_mouse_relative_movement_buffer:bool = false
 
-## An absolute device (pen tablet, RDP session) keeps reporting while it drives
-## the pointer. Once it stops, the system cursor is authoritative again; the
-## window has to be short enough that a mouse move is not masked by a stale pen.
-const ABSOLUTE_CURSOR_MAX_AGE_MS: int = 150
-
-## How long an event position stays usable after the last mouse event.
-const EVENT_CURSOR_MAX_AGE_MS: int = 150
+## How long a positional source other than the system cursor stays usable:
+## an absolute report from a pen tablet (once it stops, GetCursorPos is
+## authoritative again) and an event position (Windows Ink keeps feeding pointer
+## events while the cursor itself is frozen). Short enough that a mouse move is
+## never masked by a stale pen, long enough to survive a stutter or a dropped
+## sample. Both sources carried their own copy of this window before, and two
+## constants with the same value only drift apart.
+const CURSOR_FALLBACK_MAX_AGE_MS: int = 150
 
 ## Distance within which an absolute report and the system cursor describe the
 ## same point. A wrong mapping is off by a whole screen edge, never by pixels.
@@ -65,7 +66,7 @@ func _update_cursor_screen_position() -> void:
 		_update_absolute_trust(sys)
 
 	var event_age: int = -1 if mouse_event_tick < 0 else Time.get_ticks_msec() - mouse_event_tick
-	if event_age >= 0 and event_age <= EVENT_CURSOR_MAX_AGE_MS:
+	if event_age >= 0 and event_age <= CURSOR_FALLBACK_MAX_AGE_MS:
 		# Screen space = window origin + viewport position, the same relation
 		# the engine uses to derive the viewport mouse position in the first place.
 		_event_cursor_position = Vector2(DisplayServer.window_get_position()) + mouse_event_position
@@ -86,7 +87,7 @@ func _update_cursor_screen_position() -> void:
 ## source that is right. While the cursor is alive the two can be compared, so a
 ## device that disagrees is marked untrusted; it only earns trust by agreeing.
 func _update_absolute_trust(p_sys: Vector2) -> void:
-	if mouse_absolute_age_ms < 0 or mouse_absolute_age_ms > ABSOLUTE_CURSOR_MAX_AGE_MS:
+	if mouse_absolute_age_ms < 0 or mouse_absolute_age_ms > CURSOR_FALLBACK_MAX_AGE_MS:
 		return # nothing to judge against, keep the previous verdict
 	_absolute_report_trusted = mouse_absolute_position.distance_squared_to(p_sys) \
 			<= ABSOLUTE_CURSOR_AGREE_PX * ABSOLUTE_CURSOR_AGREE_PX
@@ -96,7 +97,7 @@ func _update_absolute_trust(p_sys: Vector2) -> void:
 func _absolute_report_usable() -> bool:
 	return _absolute_report_trusted \
 			and mouse_absolute_age_ms >= 0 \
-			and mouse_absolute_age_ms <= ABSOLUTE_CURSOR_MAX_AGE_MS
+			and mouse_absolute_age_ms <= CURSOR_FALLBACK_MAX_AGE_MS
 
 ## Diagnostic (`-- --cursor-trace`): prints every cursor source four times a
 ## second, so "the pen freezes GetCursorPos" can be told apart from "the pen
