@@ -172,12 +172,10 @@ func get_mouse_coords(main_marker, screen) -> Vector2:
 	var coord : Vector2 = Vector2.ZERO
 	if actor.get_value("use_object_pos"):
 		screen_half = Vector2.ZERO # object-relative mode keeps its own origin
-		# get_local_mouse_position() is already in canvas space, so no screen
-		# origin belongs here. Subtracting one shifted the whole offset by the
-		# monitor position and pinned the sprite to a clamp edge on a secondary
-		# display. The old code passed a literal 0, which only looked harmless
-		# because the primary screen usually sits at the virtual origin.
-		coord = actor.get_local_mouse_position() / Global.camera.zoom.clampf(0.001, 10.0)
+		# Same point get_local_mouse_position() returns, rebuilt from GlobInput's
+		# cursor: the engine keeps the viewport mouse position frozen while a pen
+		# is on the tablet, so this mode never moved under Windows Ink.
+		coord = _cursor_canvas_position() / Global.camera.zoom.clampf(0.001, 10.0)
 	else:
 		var display_size : Vector2 = main_marker.get_screen_size()
 		# Prefers the pen's own absolute report while it is fresh: a pen driver
@@ -190,6 +188,14 @@ func get_mouse_coords(main_marker, screen) -> Vector2:
 		coord = mouse_pos - screen_half
 
 	return coord
+
+## get_local_mouse_position() with the frozen-mouse problem removed: the same
+## viewport -> canvas -> node chain, fed with GlobInput's cursor. No screen
+## origin belongs in here -- adding one shifts the offset by a whole monitor
+## and pins the sprite to a clamp edge on a secondary display.
+func _cursor_canvas_position() -> Vector2:
+	return actor.get_global_transform_with_canvas().affine_inverse() \
+			* GlobInput.get_cursor_viewport_position()
 
 ## Midpoint of the configured per-axis displacement range: the displacement the
 ## sprite reaches when the mouse sits at the edge of the screen area.

@@ -38,6 +38,9 @@ var raw_report_counts: Vector2i = Vector2i.ZERO
 ## DisplayServer.mouse_get_position() / window_get_position() enumerate the
 ## monitors internally, so calling them per sprite was pure overhead.
 var cursor_screen_position: Vector2 = Vector2.ZERO
+## Viewport-space twin of cursor_screen_position, refreshed in the same pass.
+## Follow code works in canvas space, so it cannot use the screen pair directly.
+var cursor_viewport_position: Vector2 = Vector2.ZERO
 var _sys_last: Vector2 = Vector2(-1, -1)
 var _sys_stable_frames: int = 0
 ## Latch for the event path. A pen that stops does not restart the system
@@ -50,10 +53,18 @@ var _event_cursor_position: Vector2 = Vector2.ZERO
 func get_cursor_screen_position() -> Vector2:
 	return cursor_screen_position
 
+## The same point in viewport pixels. Needed because the engine's own viewport
+## mouse position is the one a Windows Ink pen leaves frozen.
+func get_cursor_viewport_position() -> Vector2:
+	return cursor_viewport_position
+
 ## A pen in Windows Ink mode feeds pointer events to the focused window while
 ## GetCursorPos stays frozen, so a still system cursor plus a fresh event means
 ## the event is the truthful one. Everything else keeps the system cursor.
 func _update_cursor_screen_position() -> void:
+	# window_get_position() enumerates the monitors internally, so it is read once
+	# per frame here and shared by both conversions below.
+	var win := Vector2(DisplayServer.window_get_position())
 	var sys := Vector2(DisplayServer.mouse_get_position())
 	if sys == _sys_last:
 		_sys_stable_frames += 1
@@ -69,7 +80,7 @@ func _update_cursor_screen_position() -> void:
 	if event_age >= 0 and event_age <= CURSOR_FALLBACK_MAX_AGE_MS:
 		# Screen space = window origin + viewport position, the same relation
 		# the engine uses to derive the viewport mouse position in the first place.
-		_event_cursor_position = Vector2(DisplayServer.window_get_position()) + mouse_event_position
+		_event_cursor_position = win + mouse_event_position
 		if _sys_stable_frames >= 2:
 			_use_event_cursor = true
 
@@ -79,6 +90,16 @@ func _update_cursor_screen_position() -> void:
 		cursor_screen_position = mouse_absolute_position
 	else:
 		cursor_screen_position = sys
+	cursor_viewport_position = _screen_to_viewport(cursor_screen_position, win)
+
+## Window client area -> viewport pixels. Identity while stretch is disabled, but
+## a stretch mode would make the two differ and every cursor consumer drift.
+func _screen_to_viewport(p_screen: Vector2, p_window_origin: Vector2) -> Vector2:
+	var vp := get_viewport()
+	var window_pos := p_screen - p_window_origin
+	if vp == null:
+		return window_pos
+	return vp.get_screen_transform().affine_inverse() * window_pos
 
 ## A pen display may normalise its absolute reports over its own screen without
 ## setting MOUSE_VIRTUAL_DESKTOP. Reading those as primary-screen coordinates
