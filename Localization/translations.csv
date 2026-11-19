@@ -701,3 +701,21 @@ TR_TABLET_DRIVER_AUTO,Automatic (prefer WinTab),Automatic (prefer WinTab),自动
 TR_TABLET_DRIVER_WININK,Windows Ink,Windows Ink,Windows Ink
 TR_TABLET_DRIVER_WINTAB,WinTab,WinTab,WinTab
 TR_TABLET_DRIVER_DUMMY,Off (use it as a mouse),Off (use it as a mouse),关闭（当鼠标用）
+TR_UNSAVED_TITLE,Unsaved changes,Unsaved changes,未保存的更改
+TR_UNSAVED_OPEN_TEXT,You may have unsaved changes. Open the new model anyway?,You may have unsaved changes. Open the new model anyway?,当前编辑可能有尚未保存的内容，确定要打开新模型吗？
+TR_UNSAVED_QUIT_TEXT,You may have unsaved changes. Quit anyway?,You may have unsaved changes. Quit anyway?,当前编辑可能有尚未保存的内容，确定要退出吗？
+TR_UNSAVED_SINCE_SAVE,Last saved %s ago,Last saved %s ago,距离上次保存已过 %s
+TR_UNSAVED_SINCE_OPEN,Not saved since it was opened (opened %s ago),Not saved since it was opened (opened %s ago),打开模型后尚未保存（已打开 %s）
+TR_UNSAVED_NEVER_SAVED,Nothing has been saved yet,Ничего ещё не сохранено,本次编辑尚未保存过
+TR_UNSAVED_JUST_NOW,just now,just now,刚刚
+TR_UNSAVED_SINCE_SAVE_JUST,Saved just now,Saved just now,刚刚保存过
+TR_UNSAVED_SINCE_OPEN_JUST,Opened just now. Not saved since.,Opened just now. Not saved since.,刚打开，尚未保存
+TR_UNSAVED_SAVE_FAILED,Saving failed. Quit anyway?,Saving failed. Quit anyway?,保存失败。仍要退出吗？
+TR_NEW_PNGTUBER_UNSAVED_TEXT,You have unsaved changes. Creating a new model will discard them. Continue?,You have unsaved changes. Creating a new model will discard them. Continue?,当前编辑有尚未保存的内容，新建模型会丢弃它们。确定继续吗？
+TR_OPEN_NEW_MODEL,Open new model,Open new model,打开新模型
+TR_QUIT_NOW,Quit now,Quit now,直接退出
+TR_SAVE_AND_QUIT,Save and quit,Save and quit,保存并退出
+TR_BACK_TO_CHECK,Go back and check,Go back and check,返回检查
+TR_UNIT_SEC,s,с,秒
+TR_UNIT_MIN,min,мин,分
+TR_UNIT_HOUR,h,ч,小时
