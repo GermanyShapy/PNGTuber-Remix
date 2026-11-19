@@ -17,7 +17,7 @@ func _ready() -> void:
 func choosing_files(id):
 	match id:
 		0:
-			Global.main.load_file()
+			UnsavedGuard.request(UnsavedDialog.Ask.OPEN, Callable(Global.main, "load_file"))
 		1:
 			pass
 		2:

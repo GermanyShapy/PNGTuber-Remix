@@ -18,6 +18,7 @@ enum State {
 	}
 var current_state : State
 var can_scroll : bool = false
+var _dropped_model_path : String = ""
 
 @onready var origin = %SpritesContainer
 var of := Vector2.ZERO
@@ -57,8 +58,8 @@ func file_dropped(files : PackedStringArray):
 		elif file.get_extension().to_lower() == "pngremix":
 			current_state = State.LoadFile
 			sprite_paths.clear()
-			Global.new_file.emit()
-			SaveAndLoad.load_file(file, true)
+			_dropped_model_path = file
+			UnsavedGuard.request(UnsavedDialog.Ask.OPEN, _open_dropped_model)
 			break
 	
 	if sprite_paths.is_empty(): return
@@ -73,6 +74,14 @@ func file_dropped(files : PackedStringArray):
 func update_pieces():
 	%ProjectNamePanel.visible = Settings.theme_settings.hide_bottom_bar
 
+func _open_dropped_model() -> void:
+	if _dropped_model_path == "":
+		return
+	var path := _dropped_model_path
+	_dropped_model_path = ""
+	Global.new_file.emit()
+	SaveAndLoad.load_file(path, true)
+
 func mode_changed(mode : int):
 	if Settings.theme_settings.hide_bottom_bar:
 		if mode == 0:
@@ -86,6 +95,12 @@ func update_theme(new_theme : Theme = preload("res://Themes/PurpleTheme/GUITheme
 	%ConfirmationDialog.theme = new_theme
 
 func new_file():
+	# Creating a model clears the editor without offering a save first, so the
+	# prompt has to name the loss when there is work at risk.
+	if SaveAndLoad.is_dirty():
+		%ConfirmationDialog.dialog_text = tr("TR_NEW_PNGTUBER_UNSAVED_TEXT")
+	else:
+		%ConfirmationDialog.dialog_text = tr("TR_NEW_PNGTUBER_TEXT")
 	%ConfirmationDialog.popup()
 
 func load_file():
@@ -249,6 +264,7 @@ func _on_confirmation_dialog_confirmed():
 	%ConfirmationDialog.hide()
 	Global.project_updates.emit("New Project!")
 	Global.load_sprite_states(0)
+	SaveAndLoad.mark_baseline(SaveAndLoad.BaselineKind.NEW)
 
 func clear_sprites():
 	Global.held_sprite = null
@@ -325,7 +341,9 @@ func _on_confirmation_dialog_canceled() -> void:
 
 func update_text(arg):
 	if arg is String:
-		if arg == "New Project!":
+		# A demo model has no save target, so show the same placeholder a new
+		# project gets instead of an empty label.
+		if arg == "New Project!" or Global.save_path == "":
 			%ProjectNameLabel.text = "No Path"
 		else:
 			%ProjectNameLabel.text = Global.save_path

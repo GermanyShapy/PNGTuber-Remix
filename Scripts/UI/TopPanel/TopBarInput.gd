@@ -21,6 +21,15 @@ const FILE_IMPORT_ITEMS := [
 	"TR_PSD_IMPORT",
 ]
 
+# Menu index is the array index: the popup ids are the order the scene declares.
+const DEMO_PATHS := [
+	"res://DemoModels/PickleModel.pngRemix",
+	"res://DemoModels/PickleModelWithNormalMap.pngRemix",
+	"res://DemoModels/PickleModelFollowMouse.pngRemix",
+	"res://DemoModels/PicklesModelJoypad.pngRemix",
+	"res://DemoModels/PickleModelAssets.pngRemix",
+]
+
 const WindowMenuId := {
 	TOGGLE_BORDERS = 0,
 	SAVE_WINDOW_POSITIONS = 1,
@@ -197,7 +206,7 @@ func _on_files_id_pressed(id: int) -> void:
 		0:
 			main.new_file()
 		1:
-			main.load_file()
+			UnsavedGuard.request(UnsavedDialog.Ask.OPEN, Callable(main, "load_file"))
 		2:
 			if Global.save_path != "":
 				SaveAndLoad.save_file(Global.save_path)
@@ -215,10 +224,16 @@ func _on_files_id_pressed(id: int) -> void:
 				_check_auto_saves()
 				var save_location: String = Settings.autosave_location + "ReloadedFileBackup" + "/" + str(randi())
 				SaveAndLoad.save_file(save_location)
+				# Reloading after a failed write would replace the model on
+				# screen with whatever is on disk, so stop right there.
+				if SaveAndLoad.last_save_failed:
+					return
 				await get_tree().physics_frame
 				SaveAndLoad.load_file(save_location)
 			else:
 				SaveAndLoad.save_file(Global.save_path)
+				if SaveAndLoad.last_save_failed:
+					return
 				await get_tree().physics_frame
 				SaveAndLoad.load_file(Global.save_path)
 		7:
@@ -242,17 +257,10 @@ func _on_file_import_id_pressed(id: int) -> void:
 
 
 func _on_demos_id_pressed(id: int) -> void:
-	match id:
-		0:
-			SaveAndLoad.load_file("res://DemoModels/PickleModel.pngRemix")
-		1:
-			SaveAndLoad.load_file("res://DemoModels/PickleModelWithNormalMap.pngRemix")
-		2:
-			SaveAndLoad.load_file("res://DemoModels/PickleModelFollowMouse.pngRemix")
-		3:
-			SaveAndLoad.load_file("res://DemoModels/PicklesModelJoypad.pngRemix")
-		4:
-			SaveAndLoad.load_file("res://DemoModels/PickleModelAssets.pngRemix")
+	if id < 0 or id >= DEMO_PATHS.size():
+		return
+	var path: String = DEMO_PATHS[id]
+	UnsavedGuard.request(UnsavedDialog.Ask.OPEN, func() -> void: SaveAndLoad.load_file(path))
 
 
 func _on_mode_changed(new_mode: int) -> void:
