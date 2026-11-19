@@ -535,7 +535,7 @@ TR_TRIM_DIALOG_TEXT,Would you like to have your Sprites Trimmed?\n(Removes all u
 TR_TRIM_IMPORT,Trim Import,Обрезать при импорте,裁剪输入
 TR_TRITANOPIA,Tritanopia,Тританопия,蓝色盲
 TR_TRI_GRID,Tri Grid,Треугольная сетка,三角网格
-TR_UDP,UDP,,UDP
+TR_UDP,UDP,UDP,UDP
 TR_UDP_ITEM_CHEEK_RAISE_LEFT,Cheek Raise Left,Поднятие левой щеки,左脸颊上提
 TR_UDP_ITEM_CHEEK_RAISE_RIGHT,Cheek Raise Right,Поднятие правой щеки,右脸颊上提
 TR_UDP_ITEM_EYEBROW_LEFT,Eyebrow Left,Левая бровь,左眉毛
