@@ -4,6 +4,24 @@ var save_dict: Dictionary = {}
 var can_load_plus: bool = false
 const YIELD_EVERY: int = 25
 
+# --- unsaved-changes baseline -------------------------------------------------
+# The guard asks "would saving now differ from the last save?" and answers with
+# a data-layer fingerprint. Rebuilding save_dict is not an option: get_data()
+# re-encodes every image as PNG, which costs seconds on a large model.
+enum BaselineKind { NONE, NEW, LOADED, SAVED }
+
+# Written to the file, but they are camera/session state, not model content.
+const FINGERPRINT_IGNORED_SETTINGS := ["zoom", "pan", "checkinput", "auto_save", "auto_save_timer"]
+
+var baseline_fp: int = 0
+var baseline_ms: int = 0
+var baseline_kind: int = BaselineKind.NONE
+
+# Set by save_model so callers can refuse to quit after a failed write. The
+# failure branch returns before the first await, so the flag is already settled
+# by the time save_file() hands control back.
+var last_save_failed: bool = false
+
 var import_trimmed: bool = false
 var import_resized: bool = false
 var import_percent: float = 50.0
@@ -237,12 +255,14 @@ func save_model(path: String) -> void:
 	save_data()
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if not file:
+		last_save_failed = true
 		push_error("SaveAndLoad: failed to open for write '%s': %s" % [path, FileAccess.get_open_error()])
 		Global.project_updates.emit("Save Failed!")
 		return
 
 	file.store_var(save_dict, true)
 	file.close()
+	last_save_failed = false
 	
 	if !path.begins_with("res://"):
 		save_backup(save_dict, path)
@@ -250,6 +270,7 @@ func save_model(path: String) -> void:
 
 	Global.project_updates.emit("Project Saved!")
 	save_dict.clear()
+	mark_baseline(BaselineKind.SAVED)
 
 func load_file(path: String, autoload : bool = false):
 	if !FileAccess.file_exists(path):
@@ -257,7 +278,10 @@ func load_file(path: String, autoload : bool = false):
 	if autoload:
 		Settings.theme_settings.path = path
 		Settings.save()
-	Global.save_path = path
+	# A demo model ships inside the package. Adopting its path as the save target
+	# would point the next Ctrl+S at the shipped file, so such a model stays an
+	# unsaved document and the first save has to pick a new location.
+	Global.save_path = "" if path.begins_with("res://") else path
 	can_load_plus = false
 	if path.get_extension() == "save":
 		can_load_plus = true
@@ -345,6 +369,12 @@ func load_model(path: String) -> void:
 	Global.load_sprite_states(0)
 	Global.remake_layers.emit()
 	Global.reparent_objects.emit(get_tree().get_nodes_in_group("Sprites"))
+	# The reparent above still lands on children during the next frames, so the
+	# baseline has to be taken after it, otherwise a fresh load reads as dirty.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	mark_baseline(BaselineKind.LOADED)
 
 	if import_trimmed and !Global.settings_dict.trimmed:
 		for i in get_tree().get_nodes_in_group("Sprites"):
@@ -1007,3 +1037,56 @@ func load_images_from_psd(path : String):
 
 func add_object_to_scene(image_data, add_as_appendage : bool = false, folder : bool = false, force_offset : bool = false, custom_name : String = ""):
 	LoadMisc.add_object_to_scene(image_data, add_as_appendage, folder, force_offset, custom_name)
+
+#----------------------------------------------------------------------------
+# Unsaved-changes tracking
+#
+# The fingerprint samples the data layer only, never node transforms: follow
+# and wiggle write the node every frame, so sampling those would report an edit
+# forever. states_ver covers the case where an edit was written back to a state
+# the user then switched away from, because that value never returns to
+# sprite_data. Measured ~3 ms on a 336-sprite model, and it only runs right
+# before a dialog, so the cost stays off the frame path.
+
+func _event_key(p_event: Variant) -> String:
+	return p_event.as_text() if p_event is InputEvent else ""
+
+
+func take_fingerprint() -> int:
+	var acc := 0
+	for s in get_tree().get_nodes_in_group("Sprites"):
+		# A sprite queued for deletion is still in the group until the frame
+		# ends; reading its data would be a use-after-free in disguise.
+		if not is_instance_valid(s):
+			continue
+		var chords: Array = []
+		for c in s.chord_modifiers:
+			chords.append(_event_key(c))
+		acc = hash([acc, s.sprite_id, s.parent_id, s.sprite_name, s.is_asset,
+			s.used_image_id, s.used_image_id_normal, s.rest_mode,
+			s.states.size(), s.states_ver, hash(s.sprite_data),
+			_event_key(s.saved_event), chords])
+	for b in get_tree().get_nodes_in_group("StateButtons"):
+		if not is_instance_valid(b):
+			continue
+		acc = hash([acc, b.state_name, _event_key(b.saved_event),
+			b.state_hold_to_show, b.state_inclusive_key_check])
+	var settings: Dictionary = Global.settings_dict.duplicate(false)
+	for k in FINGERPRINT_IGNORED_SETTINGS:
+		settings.erase(k)
+	return hash([acc, hash(settings)])
+
+
+func mark_baseline(p_kind: int) -> void:
+	baseline_kind = p_kind
+	baseline_ms = Time.get_ticks_msec()
+	baseline_fp = take_fingerprint()
+
+
+## True when the model on screen likely differs from the last save. An
+## unbaselined session counts as dirty so nothing is ever dropped silently.
+func is_dirty() -> bool:
+	if baseline_kind == BaselineKind.NONE:
+		return not get_tree().get_nodes_in_group("Sprites").is_empty()
+	return take_fingerprint() != baseline_fp
+
