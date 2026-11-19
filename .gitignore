@@ -71,6 +71,9 @@ Icon
 # Local CLI tool state created in the working directory (e.g. .local/state/gh)
 .local/
 
+# Throw-away probes and crash captures: they live here so git status stays clean
+/_only_for_test/
+
 # Local AI workspace: AGENTS.md pointer + .ai/ doc space (personal, separate git)
 /AGENTS.md
 /.ai/
