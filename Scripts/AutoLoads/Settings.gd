@@ -103,6 +103,9 @@ func apply_cjk_font_fallback(force: bool = false) -> void:
 	for path in EMBEDDED_FONT_THEMES:
 		var th: Theme = load(path)
 		if th == null:
+			# A renamed or moved theme would otherwise lose its fallback without
+			# a trace, and the tofu only shows up on macOS.
+			push_warning("CJK fallback: theme not found: " + path)
 			continue
 		for type in th.get_font_type_list():
 			for fname in th.get_font_list(type):
@@ -416,7 +419,16 @@ func change_cursor():
 # messages), so UI clicks land twice and the cursor state machine misses the
 # release. WinTab has neither problem, hence the preference order below.
 const PEN_DRIVERS: Array[String] = ["auto", "winink", "wintab", "dummy"]
-const WINTAB_DLL := "C:/Windows/System32/Wintab32.dll"
+
+## Wintab32.dll ships with the vendor driver, and Windows is not always on C:.
+## Resolved per call so a relocated installation still counts as present.
+static func wintab_dll_path() -> String:
+	var root := OS.get_environment("SystemRoot")
+	if root.is_empty():
+		root = OS.get_environment("WINDIR")
+	if root.is_empty():
+		root = "C:/Windows"
+	return root.path_join("System32").path_join("Wintab32.dll")
 
 ## Applies the saved driver. "auto" resolves to WinTab when the vendor library
 ## is installed; without it WinTab cannot initialise, so the engine default stays.
@@ -424,12 +436,14 @@ func apply_pen_driver() -> void:
 	# Only the native Windows backends drive a tablet; headless has no cursor.
 	if !OS.has_feature("windows") or DisplayServer.get_name() == "headless":
 		return
-	# A command line override is the diagnostic escape hatch and must win.
-	if OS.get_cmdline_args().has("--tablet-driver"):
-		return
+	# A command line override is the diagnostic escape hatch and must win. The
+	# engine accepts both the spaced and the "=" spelling, so both must be seen.
+	for arg in OS.get_cmdline_args():
+		if arg == "--tablet-driver" or arg.begins_with("--tablet-driver="):
+			return
 	var driver := str(theme_settings.pen_driver)
 	if driver == "auto":
-		driver = "wintab" if FileAccess.file_exists(WINTAB_DLL) else "winink"
+		driver = "wintab" if FileAccess.file_exists(wintab_dll_path()) else "winink"
 	DisplayServer.tablet_set_current_driver(driver)
 
 func set_pen_driver(driver: String) -> void:
