@@ -119,14 +119,25 @@ func apply_cjk_font_fallback(force: bool = false) -> void:
 
 func save_before_closing():
 	if theme_settings.save_on_exit:
-		if FileAccess.file_exists(Global.save_path):
-			SaveAndLoad.save_file(Global.save_path)
-		else:
-			DirAccess.make_dir_absolute(autosave_location)
-			SaveAndLoad.save_file(autosave_location + "/" + str(randi()))
-		window_size_changed()
+		save_model_for_quit()
 	save()
 	get_tree().quit()
+
+## Saves the model the way "save on exit" expects, without quitting: the quit
+## itself belongs to the menu, which also owns stop_hook() and the final kill.
+## Returns false when the write failed, so the caller can keep the document open
+## instead of quitting on top of unsaved work.
+func save_model_for_quit() -> bool:
+	# Demo models live inside the package and a brand new model has no path yet;
+	# writing into res:// would either fail or pollute the project, so those go
+	# to the autosave folder.
+	if Global.save_path != "" and not Global.save_path.begins_with("res://") and FileAccess.file_exists(Global.save_path):
+		SaveAndLoad.save_file(Global.save_path)
+	else:
+		DirAccess.make_dir_absolute(autosave_location)
+		SaveAndLoad.save_file(autosave_location.path_join(str(randi()) + ".pngRemix"))
+	window_size_changed()
+	return not SaveAndLoad.last_save_failed
 
 func save() -> void:
 	var save_file := FileAccess.open(save_location, FileAccess.WRITE)

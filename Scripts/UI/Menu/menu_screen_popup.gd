@@ -26,6 +26,7 @@ func _on_editor_mode_pressed() -> void:
 		Settings.theme_settings.session = 0
 		Settings.save()
 		current_mode = 0
+		SaveAndLoad.mark_baseline(SaveAndLoad.BaselineKind.NEW)
 		auto_load_model()
 		Global.mode_changed.emit(Global.mode)
 
@@ -41,6 +42,7 @@ func _on_steamer_mode_pressed() -> void:
 		Settings.theme_settings.session = 1
 		Settings.save()
 		current_mode = 1
+		SaveAndLoad.mark_baseline(SaveAndLoad.BaselineKind.NEW)
 		auto_load_model()
 		Global.mode_changed.emit(Global.mode)
 
