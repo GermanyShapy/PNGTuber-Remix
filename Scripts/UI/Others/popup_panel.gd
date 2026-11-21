@@ -18,6 +18,11 @@ func _ready() -> void:
 	confirmed.connect(_confirm)
 	canceled.connect(_cancel)
 	close_requested.connect(_cancel)
+	# The light themes paint button labels dark on a mid-grey face, which makes
+	# these two read as form controls instead of actions. White at rest matches
+	# the focus colour, so the label no longer changes when the button is picked.
+	for button in [get_ok_button(), get_cancel_button()]:
+		button.add_theme_color_override("font_color", Color.WHITE)
 
 
 func ask(p_kind: int, p_action: Callable, p_on_cancel: Callable = Callable()) -> void:
