@@ -192,9 +192,10 @@ func update_key_text():
 			# Compact in the button, full aliases in the tooltip.
 			tooltip_text = InputDisplayName.full_text(bound, members) if not members.is_empty() else ""
 		else:
-			# An unbound direction stays unbound on purpose: four empty slots are a
-			# zero vector, never a WASD fallback.
-			BindingLabel.set_button_text(self, tr("TR_BIND_KEY") if key_type.is_empty() else "Null", false)
+			# An unbound slot stays unbound on purpose: four empty slots are a zero
+			# vector, never a WASD fallback. It still reads like every other binding
+			# button -- "Null" looked like a value instead of "press to bind".
+			BindingLabel.set_button_text(self, tr("TR_BIND_KEY"), false)
 			tooltip_text = ""
 
 
