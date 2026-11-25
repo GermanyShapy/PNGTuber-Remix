@@ -272,7 +272,7 @@ func save_model(path: String) -> void:
 	save_dict.clear()
 	mark_baseline(BaselineKind.SAVED)
 
-func load_file(path: String, autoload : bool = false):
+func load_file(path: String, autoload : bool = false, keep_unsaved : bool = false):
 	if !FileAccess.file_exists(path):
 		return
 	if autoload:
@@ -281,20 +281,20 @@ func load_file(path: String, autoload : bool = false):
 	# A demo model ships inside the package. Adopting its path as the save target
 	# would point the next Ctrl+S at the shipped file, so such a model stays an
 	# unsaved document and the first save has to pick a new location.
-	Global.save_path = "" if path.begins_with("res://") else path
+	Global.save_path = "" if keep_unsaved or path.begins_with("res://") else path
 	can_load_plus = false
 	if path.get_extension() == "save":
 		can_load_plus = true
 		load_pngplus_file(path)
 
 	else:
-		load_model(path)
+		load_model(path, keep_unsaved)
 	
 	
 	Global.camera_pos.global_position = Global.settings_dict.pan
 	Global.camera.zoom = Global.settings_dict.zoom
 
-func load_model(path: String) -> void:
+func load_model(path: String, keep_unsaved : bool = false) -> void:
 	Global.delete_states.emit()
 	Global.main.clear_sprites()
 	Global.main.get_node("Timer").start()
@@ -336,7 +336,7 @@ func load_model(path: String) -> void:
 			Global.settings_dict.monitor = Monitor.ALL_SCREENS
 
 	Global.remake_states.emit(load_dict.settings_dict.states)
-	if !path.begins_with("res://"):
+	if !path.begins_with("res://") and not keep_unsaved:
 		Global.save_path = path
 		
 		

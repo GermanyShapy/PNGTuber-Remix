@@ -21,6 +21,10 @@ const FILE_IMPORT_ITEMS := [
 	"TR_PSD_IMPORT",
 ]
 
+# "Save & Reload" of an unsaved document has to round-trip through a file. A
+# fixed name keeps repeated uses from piling copies up in autosaves/Backups.
+const RELOAD_BUFFER_PATH := "user://reload_buffer.pngRemix"
+
 # Menu index is the array index: the popup ids are the order the scene declares.
 const DEMO_PATHS := [
 	"res://DemoModels/PickleModel.pngRemix",
@@ -221,15 +225,20 @@ func _on_files_id_pressed(id: int) -> void:
 		6:
 			SaveAndLoad.import_trimmed = false
 			if Global.save_path == null or Global.save_path == "":
-				_check_auto_saves()
-				var save_location: String = Settings.autosave_location + "ReloadedFileBackup" + "/" + str(randi())
-				SaveAndLoad.save_file(save_location)
+				SaveAndLoad.save_file(RELOAD_BUFFER_PATH)
 				# Reloading after a failed write would replace the model on
 				# screen with whatever is on disk, so stop right there.
 				if SaveAndLoad.last_save_failed:
 					return
 				await get_tree().physics_frame
-				SaveAndLoad.load_file(save_location)
+				# keep_unsaved: the buffer is only transport, so the model must not
+				# adopt it as the target of the next save.
+				SaveAndLoad.load_file(RELOAD_BUFFER_PATH, false, true)
+				# load_model opens the buffer two frames in; removing it earlier
+				# would just fail, and the next use overwrites it anyway.
+				await get_tree().process_frame
+				await get_tree().process_frame
+				DirAccess.remove_absolute(ProjectSettings.globalize_path(RELOAD_BUFFER_PATH))
 			else:
 				SaveAndLoad.save_file(Global.save_path)
 				if SaveAndLoad.last_save_failed:
