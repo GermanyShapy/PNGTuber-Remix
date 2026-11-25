@@ -38,7 +38,7 @@ const EMBEDDED_FONT_THEMES: Array[String] = [
 	properties = 0,
 	layers = -100,
 	file_manager = 0,
-	lipsync_file_path = path_helper(OS.get_executable_path().get_base_dir(), "/DefaultTraining.tres"),
+	lipsync_file_path = path_helper(get_writable_base_dir(), "/DefaultTraining.tres"),
 	microphone = null,
 	enable_trimmer = true,
 	save_raw_sprite = false, #save the original sprite even when trimmed
@@ -81,9 +81,9 @@ var websocket_api = ""
 
 func _enter_tree() -> void:
 	apply_cjk_font_fallback()
-	save_location = path_helper(OS.get_executable_path().get_base_dir(), "/Preferences.pRDat")
-	autosave_location = path_helper(OS.get_executable_path().get_base_dir(), "/autosaves")
-	websocket_api = path_helper(OS.get_executable_path().get_base_dir(), "/WebsocketDocumentation.txt")
+	save_location = path_helper(get_writable_base_dir(), "/Preferences.pRDat")
+	autosave_location = path_helper(get_writable_base_dir(), "/autosaves")
+	websocket_api = path_helper(get_writable_base_dir(), "/WebsocketDocumentation.txt")
 
 ## Prepends the bundled CJK font to every UI font chain. Windows builds never
 ## trigger this: their Chinese renders through the system cascade (YaHei),
@@ -472,6 +472,17 @@ func set_ui_pieces(val : int, id : int):
 	elif id == 7:
 		theme_settings.hide_bottom_bar = val
 	save()
+
+## Base folder for the files the app writes next to itself (preferences,
+## autosaves, backups, exported assets). On macOS the executable lives inside
+## the .app bundle, which is signed and read-only once the app sits in
+## /Applications, so there the user data folder is used instead.
+## force_macos mirrors apply_cjk_font_fallback(force): tests on a non-mac host
+## still need to exercise the macOS branch.
+func get_writable_base_dir(force_macos: bool = false) -> String:
+	if force_macos or OS.has_feature("macos"):
+		return OS.get_user_data_dir()
+	return OS.get_executable_path().get_base_dir()
 
 func path_helper(path: String, dir: String = "") -> String:
 	var target = ""
