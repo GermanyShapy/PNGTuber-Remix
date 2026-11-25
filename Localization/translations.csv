@@ -106,6 +106,8 @@ TR_CREDITS,Credits,Авторы,致谢
 TR_CROP_IMAGES_TO_CONTENT,Crop Images to Content,Обрезка изображений по содержимому,自动裁剪导入图片
 TR_CURVATURE_LABEL,Curvature,Кривизна,曲率
 TR_CUSTOM,Custom,Пользовательский,自定义
+TR_CUSTOM_KEYS,Custom Direction Keys,Custom Direction Keys,自定义方向键
+TR_CUSTOM_KEYS_TOOLTIP,Bind all four directions to move like WASD,Bind all four directions to move like WASD,四个方向都绑定才会像 WASD 一样移动
 TR_CYCLE,Cycle,Цикл,循环
 TR_CYCLE_BACKWARD_LABEL,Cycle Backward,Цикл назад,向后循环
 TR_CYCLE_FORWARD_LABEL,Cycle Forward,Цикл вперёд,向前循环
@@ -243,6 +245,10 @@ TR_JITTER_FIX,Jitter Fix,Исправление джиттера,抖动修正
 TR_KEEP_DATA_BEFORE_TRIM,Keep Data Before Trim,Сохранить данные перед обрезкой,保留裁剪前的数据
 TR_KEEP_DATA_BEFORE_TRIM_TOOLTIP,"Keeps a save of the Sprites before trimming. If toggled off, the file will only save the trimmed Sprites","Сохраняет спрайты перед обрезкой. Если отключено, файл сохранит только обрезанные спрайты",在修剪之前保存精灵。如果关闭此选项，文件将仅保存修剪过的精灵。
 TR_KEEP_LENGTH,Keep Length,Сохранять длину,保持长度
+TR_KEY_DOWN,Key Down,Key Down,下
+TR_KEY_LEFT,Key Left,Key Left,左
+TR_KEY_RIGHT,Key Right,Key Right,右
+TR_KEY_UP,Key Up,Key Up,上
 TR_LANGUAGE_LABEL,Language,Язык,语言
 TR_LAYER,Layer,Слой,图层
 TR_LAYOUT,Layout,Разметка,布局

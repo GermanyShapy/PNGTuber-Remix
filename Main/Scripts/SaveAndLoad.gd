@@ -71,6 +71,14 @@ func save_data():
 			"state_name": input.state_name,
 			"hot_key": input.saved_event,
 			"chord_modifiers": input.chord_modifiers,
+			"key_up": input.key_up,
+			"key_down": input.key_down,
+			"key_left": input.key_left,
+			"key_right": input.key_right,
+			"key_up_members": input.key_up_members,
+			"key_down_members": input.key_down_members,
+			"key_left_members": input.key_left_members,
+			"key_right_members": input.key_right_members,
 			"state_hold_to_show": input.state_hold_to_show,
 			"state_inclusive_key_check": input.state_inclusive_key_check
 		})
@@ -350,6 +358,10 @@ func load_model(path: String, keep_unsaved : bool = false) -> void:
 			var btn = buttons[i]
 			if typeof(data) == TYPE_DICTIONARY:
 				btn.apply_binding(data.get("hot_key"), data.get("chord_modifiers", []))
+				# Absent in saves made before the custom directions existed: an
+				# empty slot then means "no key", never a fallback.
+				for key_type in StateButton.CUSTOM_KEY_TYPES:
+					btn.apply_custom_key(key_type, data.get(key_type), data.get(key_type + "_members", []))
 				btn.state_name = data.get("state_name", "")
 				btn.state_hold_to_show = data.get("state_hold_to_show", false)
 				btn.state_inclusive_key_check = data.get("state_inclusive_key_check", false)
