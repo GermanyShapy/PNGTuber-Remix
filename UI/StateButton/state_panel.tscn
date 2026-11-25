@@ -146,6 +146,7 @@ layout_mode = 2
 
 [node name="CustomKeysLabel" type="Label" parent="StateRemapPopup/Margin/Panel/VBox"]
 layout_mode = 2
+mouse_filter = 1
 tooltip_text = "TR_CUSTOM_KEYS_TOOLTIP"
 text = "TR_CUSTOM_KEYS"
 horizontal_alignment = 1
