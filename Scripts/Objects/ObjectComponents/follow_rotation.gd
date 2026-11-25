@@ -62,6 +62,13 @@ func update_rotation(delta: float) -> void:
 		else:
 			target_rot = follow_controller_rotation(keyboard_axis)
 
+	elif follow_type2 == 14:
+		keyboard_axis = GlobalCalculations.some_keyboard_custom()
+		if actor.get_value("snap_rot") and not keyboard_axis.is_zero_approx():
+			target_rot = lerp(target_rot, follow_controller_rotation(keyboard_axis), 0.15)
+		else:
+			target_rot = follow_controller_rotation(keyboard_axis)
+
 	elif follow_type2 == 0:
 		if actor.get_value("follow_mouse_velocity"):
 			target_rot = follow_mouse_vel_rotation()

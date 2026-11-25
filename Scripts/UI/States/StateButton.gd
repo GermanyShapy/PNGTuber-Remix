@@ -13,6 +13,20 @@ var saved_event : InputEvent:
 		chord_modifiers = []
 var _saved_event : InputEvent
 var chord_modifiers : Array = []
+## Per-state direction keys (follow type 14). Each slot is a full binding: a
+## primary event plus its own chord members, so "Ctrl+W" is as valid a direction
+## as a bare key.
+var key_up : InputEvent
+var key_down : InputEvent
+var key_left : InputEvent
+var key_right : InputEvent
+var key_up_members : Array = []
+var key_down_members : Array = []
+var key_left_members : Array = []
+var key_right_members : Array = []
+## Slot names in the order the panel shows them. The string is also the prefix of
+## the InputMap action and the name of the saved field.
+const CUSTOM_KEY_TYPES : Array[String] = ["key_up", "key_down", "key_left", "key_right"]
 var state_name : String 
 var state_hold_to_show : bool = false
 var state_inclusive_key_check : bool = false
@@ -25,6 +39,68 @@ static var other_states : Array[StateButton] = []
 func apply_binding(p_event: InputEvent, p_members: Array = []) -> void:
 	saved_event = p_event
 	chord_modifiers = p_members.duplicate(true) if p_members != null else []
+
+
+## The InputMap action that carries a direction slot. `input_key` is a stable
+## per-state name, so the pair stays unique across states.
+func custom_action_name(p_type: String) -> String:
+	return p_type + input_key
+
+
+func custom_key(p_type: String) -> InputEvent:
+	match p_type:
+		"key_up": return key_up
+		"key_down": return key_down
+		"key_left": return key_left
+		"key_right": return key_right
+	return null
+
+
+func custom_key_members(p_type: String) -> Array:
+	match p_type:
+		"key_up": return key_up_members
+		"key_down": return key_down_members
+		"key_left": return key_left_members
+		"key_right": return key_right_members
+	return []
+
+
+## Same atomic write as `apply_binding`, for one direction slot.
+func apply_custom_key(p_type: String, p_event: InputEvent, p_members: Array = []) -> void:
+	var members: Array = p_members.duplicate(true) if p_members != null else []
+	match p_type:
+		"key_up":
+			key_up = p_event
+			key_up_members = members
+		"key_down":
+			key_down = p_event
+			key_down_members = members
+		"key_left":
+			key_left = p_event
+			key_left_members = members
+		"key_right":
+			key_right = p_event
+			key_right_members = members
+
+
+## Whether one direction is held. Goes through GlobalInput because the plugin
+## owns the key state (synthetic engine events never reach it), and passes the
+## slot's chord members so a combination works like the hotkey's.
+func custom_key_pressed(p_type: String) -> bool:
+	var event := custom_key(p_type)
+	if event == null:
+		return false
+	return GlobInput.is_input_pressed(event, state_inclusive_key_check, custom_key_members(p_type))
+
+
+## Drops every InputMap slot this state registered. The delete paths free the
+## node, so nothing would ever release them again and InputMap would keep the
+## stale bindings for the rest of the session.
+func erase_actions() -> void:
+	for p_type in CUSTOM_KEY_TYPES:
+		var action := custom_action_name(p_type)
+		if InputMap.has_action(action):
+			InputMap.erase_action(action)
 
 func _ready():
 	if state_name.is_empty():
@@ -116,6 +192,21 @@ func update_stuff():
 	if saved_event != null && InputMap.has_action(input_key):
 		InputMap.action_erase_events(input_key)
 		InputMap.action_add_event(input_key, saved_event)
+	for p_type in CUSTOM_KEY_TYPES:
+		_sync_custom_action(p_type)
+
+
+## Registers one direction slot. The action is created even while unbound, so a
+## later rebuild never has to special-case a missing one; an unbound slot simply
+## keeps no events (no fallback key, by design).
+func _sync_custom_action(p_type: String) -> void:
+	var action := custom_action_name(p_type)
+	if not InputMap.has_action(action):
+		InputMap.add_action(action)
+	var event := custom_key(p_type)
+	InputMap.action_erase_events(action)
+	if event != null:
+		InputMap.action_add_event(action, event)
 
 static func multi_edit(value, value_name, _obj : SpriteObject, states : Array, should_change : bool = false, type : String = "x"):
 	if other_states.size() > 0:

@@ -72,3 +72,21 @@ static func some_keyboard_calc_wasd(type_name: String = "follow_type", actor: No
 			normal = Vector2(ad.x - ad.y, ws.x - ws.y)
 
 	return normal
+
+
+## Direction vector of the per-state custom keys (follow type 14).
+##
+## Reads `selected_state` on purpose, matching upstream: the state currently
+## picked in the editor decides the key table for every sprite. An unbound slot
+## contributes zero, and no slot bound at all yields a zero vector -- which the
+## move/rotate/scale chains treat exactly like "no key held", never a fallback.
+static func some_keyboard_custom() -> Vector2:
+	var state : StateButton = StateButton.selected_state
+	if state == null or not is_instance_valid(state):
+		return Vector2.ZERO
+	var up : float = 1.0 if state.custom_key_pressed("key_up") else 0.0
+	var down : float = 1.0 if state.custom_key_pressed("key_down") else 0.0
+	var left : float = 1.0 if state.custom_key_pressed("key_left") else 0.0
+	var right : float = 1.0 if state.custom_key_pressed("key_right") else 0.0
+
+	return Vector2(right - left, down - up)
