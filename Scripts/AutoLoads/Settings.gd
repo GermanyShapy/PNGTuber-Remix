@@ -477,8 +477,9 @@ func path_helper(path: String, dir: String = "") -> String:
 	var target = ""
 	var current = DirAccess.open(path)
 	if current == null:
-		target = OS.get_user_data_dir()
-		
+		# Keep the file name: every caller passes a distinct one, so dropping it
+		# makes all of them collide in the same user:// directory.
+		target = OS.get_user_data_dir() + dir
 	else:
 		target = path + dir
 	return target
