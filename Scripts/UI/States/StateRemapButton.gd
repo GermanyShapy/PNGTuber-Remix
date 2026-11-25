@@ -3,10 +3,18 @@ extends Button
 class_name RemapButton
 
 @export var action: String
+## Empty = the state's own hotkey. Otherwise a direction slot ("key_up" /
+## "key_down" / "key_left" / "key_right"): the widget then edits that slot of the
+## selected state instead of the hotkey, keeping the same chord recording.
+@export var key_type: String = ""
 var state_button: Node
 # Collects the inputs pressed while awaiting; a binding commits once every
 # member is released (see BindingSession).
 var _session := BindingSession.new()
+# Only one widget may await at a time: `_input` reaches every node with input
+# processing on, so two awaiting rows in the same panel would both commit the
+# same press.
+static var _awaiting: RemapButton = null
 
 
 func _init():
@@ -23,11 +31,16 @@ func _ready():
 func _toggled(_button_pressed):
 	set_process_input(_button_pressed)
 	if _button_pressed:
+		if _awaiting != null and is_instance_valid(_awaiting) and _awaiting != self:
+			_awaiting.cancel_await()
+		_awaiting = self
 		_session.clear()
 		text = tr("TR_AWAITING_INPUT")
 		release_focus()
 		MouseCaptureArea.show_for(self)
 	else:
+		if _awaiting == self:
+			_awaiting = null
 		update_key_text()
 		release_focus()
 		MouseCaptureArea.hide_for(self)
@@ -39,6 +52,8 @@ func cancel_await() -> void:
 	_session.clear()
 	set_process_input(false)
 	MouseCaptureArea.hide_for(self)
+	if _awaiting == self:
+		_awaiting = null
 	if button_pressed:
 		button_pressed = false
 	else:
@@ -142,37 +157,68 @@ func _update_preview() -> void:
 ## mouse/keyboard path and the stick path (which passes a normalised axis event).
 func _remap_selected_state(event: InputEvent, members: Array = []) -> void:
 	if StateButton.selected_state != null && is_instance_valid(StateButton.selected_state):
-		InputMap.action_erase_events(StateButton.selected_state.input_key)
-		InputMap.action_add_event(StateButton.selected_state.input_key, event)
-		StateButton.selected_state.apply_binding(event, members)
+		var state := StateButton.selected_state
+		var target := _target_action(state)
+		if not InputMap.has_action(target):
+			InputMap.add_action(target)
+		InputMap.action_erase_events(target)
+		InputMap.action_add_event(target, event)
+		if key_type.is_empty():
+			state.apply_binding(event, members)
+		else:
+			state.apply_custom_key(key_type, event, members)
 		GlobInput.refresh_action_cache()
 
 	button_pressed = false
 
 
+## The InputMap action this widget edits: the state hotkey, or one direction slot.
+func _target_action(state: StateButton) -> String:
+	return state.input_key if key_type.is_empty() else state.custom_action_name(key_type)
+
+
+## The chord members of the binding this widget edits.
+func _target_members(state: StateButton) -> Array:
+	return state.chord_modifiers if key_type.is_empty() else state.custom_key_members(key_type)
+
+
 func update_key_text():
 	if StateButton.selected_state != null && is_instance_valid(StateButton.selected_state):
-		if InputMap.action_get_events(StateButton.selected_state.input_key).size() != 0:
-			var members: Array = StateButton.selected_state.chord_modifiers
-			var bound: InputEvent = InputMap.action_get_events(StateButton.selected_state.input_key)[0]
+		var members: Array = _target_members(StateButton.selected_state)
+		var events := InputMap.action_get_events(_target_action(StateButton.selected_state))
+		if events.size() != 0:
+			var bound: InputEvent = events[0]
 			BindingLabel.set_button_text(self, InputDisplayName.text(bound, members), not members.is_empty())
 			# Compact in the button, full aliases in the tooltip.
 			tooltip_text = InputDisplayName.full_text(bound, members) if not members.is_empty() else ""
 		else:
-			BindingLabel.set_button_text(self, tr("TR_BIND_KEY"), false)
+			# An unbound direction stays unbound on purpose: four empty slots are a
+			# zero vector, never a WASD fallback.
+			BindingLabel.set_button_text(self, tr("TR_BIND_KEY") if key_type.is_empty() else "Null", false)
 			tooltip_text = ""
 
 
 func update_stuff():
 	if StateButton.selected_state != null && is_instance_valid(StateButton.selected_state):
-		InputMap.action_erase_events(StateButton.selected_state.input_key)
-		InputMap.action_add_event(StateButton.selected_state.input_key, state_button.saved_event)
+		var state := StateButton.selected_state
+		var target := _target_action(state)
+		if not InputMap.has_action(target):
+			InputMap.add_action(target)
+		InputMap.action_erase_events(target)
+		var event: InputEvent = state.saved_event if key_type.is_empty() else state.custom_key(key_type)
+		if event != null:
+			InputMap.action_add_event(target, event)
 	update_key_text()
 
 
 func _on_remove_pressed():
 	if StateButton.selected_state != null && is_instance_valid(StateButton.selected_state):
-		if InputMap.action_get_events(StateButton.selected_state.input_key).size() != 0:
-			InputMap.action_erase_events(StateButton.selected_state.input_key)
-			StateButton.selected_state.apply_binding(null)
+		var state := StateButton.selected_state
+		var target := _target_action(state)
+		if InputMap.action_get_events(target).size() != 0:
+			InputMap.action_erase_events(target)
+			if key_type.is_empty():
+				state.apply_binding(null)
+			else:
+				state.apply_custom_key(key_type, null)
 			update_key_text()

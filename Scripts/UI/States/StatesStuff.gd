@@ -22,6 +22,7 @@ func _on_delete_state_pressed():
 		var state_btn  = get_tree().get_nodes_in_group("StateButtons")
 		
 		InputMap.erase_action(state_btn[Global.current_state].input_key)
+		state_btn[Global.current_state].erase_actions()
 		
 		
 		state_btn[Global.current_state].queue_free()
@@ -64,6 +65,7 @@ func delete_all_states():
 	for i in state_btn:
 		if InputMap.has_action(i.input_key):
 			InputMap.erase_action(i.input_key)
+		i.erase_actions()
 		
 	for i in state_btn:
 		i.queue_free()
@@ -142,6 +144,8 @@ func _on_state_remap_pressed() -> void:
 		%StateHoldToShowCheck.set_pressed(StateButton.selected_state.state_hold_to_show)
 		%StateInclusiveKeyCheckCheck.set_pressed(StateButton.selected_state.state_inclusive_key_check)
 	%StateButtonHbox.get_node("StateRemapButton").update_key_text()
+	for row in [%CustomKeyUp, %CustomKeyDown, %CustomKeyLeft, %CustomKeyRight]:
+		row.refresh()
 	%StateRemapPopup.popup()
 	is_showing_state_remap_popup = true
 

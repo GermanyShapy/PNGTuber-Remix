@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bjehgsjwju532" path="res://Scripts/UI/States/StatesStuff.gd" id="1_j5jjx"]
 [ext_resource type="PackedScene" uid="uid://drok2umdmycjc" path="res://UI/StateButton/state_remap_button.tscn" id="2_dfbov"]
+[ext_resource type="PackedScene" path="res://UI/StateButton/state_custom_remap_button.tscn" id="3_cstm"]
 
 [node name="StatePanel" type="VBoxContainer" unique_id=806621602]
 custom_minimum_size = Vector2(350, 107)
@@ -84,14 +85,14 @@ size_flags_vertical = 3
 unique_name_in_owner = true
 transparent_bg = true
 initial_position = 2
-size = Vector2i(358, 300)
+size = Vector2i(358, 430)
 visible = false
 popup_window = true
 
 [node name="Margin" type="MarginContainer" parent="StateRemapPopup" unique_id=301053879]
-anchors_preset = -1
+anchors_preset = 15
 anchor_right = 1.0
-anchor_bottom = 0.7
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
@@ -140,6 +141,35 @@ size_flags_vertical = 0
 tooltip_text = "TR_INCLUSIVE_KEY_CHECK_TOOLTIP"
 text = "TR_INCLUSIVE_KEY_CHECK"
 
+[node name="CustomKeysSeparator" type="HSeparator" parent="StateRemapPopup/Margin/Panel/VBox"]
+layout_mode = 2
+
+[node name="CustomKeysLabel" type="Label" parent="StateRemapPopup/Margin/Panel/VBox"]
+layout_mode = 2
+tooltip_text = "TR_CUSTOM_KEYS_TOOLTIP"
+text = "TR_CUSTOM_KEYS"
+horizontal_alignment = 1
+
+[node name="CustomKeyUp" parent="StateRemapPopup/Margin/Panel/VBox" instance=ExtResource("3_cstm")]
+unique_name_in_owner = true
+layout_mode = 2
+key_type = "key_up"
+
+[node name="CustomKeyDown" parent="StateRemapPopup/Margin/Panel/VBox" instance=ExtResource("3_cstm")]
+unique_name_in_owner = true
+layout_mode = 2
+key_type = "key_down"
+
+[node name="CustomKeyLeft" parent="StateRemapPopup/Margin/Panel/VBox" instance=ExtResource("3_cstm")]
+unique_name_in_owner = true
+layout_mode = 2
+key_type = "key_left"
+
+[node name="CustomKeyRight" parent="StateRemapPopup/Margin/Panel/VBox" instance=ExtResource("3_cstm")]
+unique_name_in_owner = true
+layout_mode = 2
+key_type = "key_right"
+
 [node name="Margin2" type="MarginContainer" parent="StateRemapPopup" unique_id=2132992317]
 anchors_preset = -1
 anchor_top = 0.7
@@ -147,6 +177,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 5
 theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 5
